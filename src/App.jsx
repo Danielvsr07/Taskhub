@@ -54,9 +54,10 @@ const TAG_COLORS   = {
 };
 const TAG_ICONS    = { nova_demanda:"✦", bug:"🐛" };
 const STATUS_META  = {
-  pendente:  { label:"Pendente",  color:"#94a3b8", bg:"rgba(148,163,184,.1)", icon:"⏳" },
-  aprovada:  { label:"Aprovada",  color:"#4ade80", bg:"rgba(74,222,128,.1)",  icon:"✅" },
-  rejeitada: { label:"Rejeitada", color:"#f87171", bg:"rgba(248,113,113,.1)", icon:"❌" },
+  pendente:   { label:"Pendente",   color:"#94a3b8", bg:"rgba(148,163,184,.1)", icon:"⏳" },
+  aprovada:   { label:"Aprovada",   color:"#4ade80", bg:"rgba(74,222,128,.1)",  icon:"✅" },
+  rejeitada:  { label:"Rejeitada",  color:"#f87171", bg:"rgba(248,113,113,.1)", icon:"❌" },
+  concluida:  { label:"Concluída",  color:"#818cf8", bg:"rgba(129,140,248,.1)", icon:"🏁" },
 };
 const REQ_STATUS       = ["pendente","em andamento","concluído","cancelado"];
 const REQ_STATUS_COLOR = { pendente:"#f97316","em andamento":"#38bdf8",concluído:"#4ade80",cancelado:"#94a3b8" };
@@ -120,6 +121,29 @@ async function db_updateDemand(id,patch){
   if(sb){ const {error}=await sb.from("demands").update(patch).eq("id",id); return !error; }
   const d=lsGet()||{demands:[]};
   d.demands=d.demands.map(x=>x.id===id?{...x,...patch}:x); lsSet(d); return true;
+}
+async function db_deleteDemand(id){
+  const sb=getSupabase();
+  if(sb){ await sb.from("demands").delete().eq("id",id); return; }
+  const d=lsGet()||{demands:[]};
+  d.demands=d.demands.filter(x=>x.id!==id); lsSet(d);
+}
+async function db_getNotifications(userId){
+  const sb=getSupabase();
+  if(sb){ const {data}=await sb.from("notifications").select("*").eq("user_id",userId).order("created_at",{ascending:false}).limit(30); return data||[]; }
+  return (lsGet()?.notifications||[]).filter(n=>n.user_id===userId);
+}
+async function db_insertNotification(notif){
+  const sb=getSupabase();
+  if(sb){ await sb.from("notifications").insert([notif]); return; }
+  const d=lsGet()||{notifications:[]};
+  d.notifications=[notif,...(d.notifications||[])]; lsSet(d);
+}
+async function db_markAllRead(userId){
+  const sb=getSupabase();
+  if(sb){ await sb.from("notifications").update({read:true}).eq("user_id",userId); return; }
+  const d=lsGet()||{notifications:[]};
+  d.notifications=(d.notifications||[]).map(n=>n.user_id===userId?{...n,read:true}:n); lsSet(d);
 }
 async function db_getConfig(){
   const sb=getSupabase();
@@ -413,6 +437,20 @@ function SetupWizard({onDone}){
 
 const SQL_SCRIPT=`-- Run this in your Supabase SQL Editor
 
+create table if not exists notifications (
+  id text primary key,
+  user_id text,
+  type text,
+  demand_id text,
+  demand_title text,
+  squad text,
+  sprint int,
+  sprint_range text,
+  admin_note text,
+  read boolean default false,
+  created_at timestamptz default now()
+);
+
 create table if not exists profiles (
   id text primary key,
   email text,
@@ -473,12 +511,14 @@ alter table profiles enable row level security;
 alter table demands enable row level security;
 alter table backlog enable row level security;
 alter table config enable row level security;
+alter table notifications enable row level security;
 
 create policy "Public read" on profiles for select using (true);
 create policy "Self write" on profiles for all using (true);
 create policy "Public demands" on demands for all using (true);
 create policy "Public backlog" on backlog for all using (true);
-create policy "Public config" on config for all using (true);`;
+create policy "Public config" on config for all using (true);
+create policy "Public notifications" on notifications for all using (true);`;
 
 // ══════════════════════════════════════════════════════════════════════════════
 // AUTH SCREEN
@@ -494,23 +534,33 @@ function AuthScreen({onLogin}){
   const cfgData=lsData?.config||SEED_CONFIG;
   const emailCfg=cfgData?.emailConfig||{};
   const authCfg=cfgData?.authConfig||{};
-  const redirectUri=window.location.origin+window.location.pathname;
+  const redirectUri=window.location.origin+"/";
 
   useEffect(()=>{
-    const token=parseOAuthHash(); if(!token) return;
-    const provider=sessionStorage.getItem("oauth_provider"); if(!provider) return;
-    sessionStorage.removeItem("oauth_provider"); window.location.hash="";
+    const hash = window.location.hash.slice(1);
+    if(!hash) return;
+    const params = Object.fromEntries(hash.split("&").map(p=>p.split("=")));
+    const token = params.access_token;
+    if(!token) return;
+    const provider=sessionStorage.getItem("oauth_provider");
+    if(!provider) return;
+    sessionStorage.removeItem("oauth_provider");
+    // Clean URL
+    window.history.replaceState(null,"",window.location.pathname);
     setLoading(true);
     const fetcher=provider==="google"?fetchGoogleUser:fetchMicrosoftUser;
-    fetcher(token).then(async info=>{
+    fetcher(decodeURIComponent(token)).then(async info=>{
       if(!info?.email){setErr("Não foi possível obter dados do provedor.");setLoading(false);return;}
       const d=lsGet()||{users:[]};
       let u=d.users?.find(u=>u.email===info.email);
-      if(!u){ u={id:info.email,email:info.email,name:info.name||info.email,password:"",role:"user",provider,avatar_url:info.avatar||null}; d.users=[...(d.users||[]),u]; lsSet(d); }
-      await db_upsertProfile({id:u.id,email:u.email,name:u.name,role:u.role,avatar_url:info.avatar||null,updated_at:new Date().toISOString()});
-      onLogin(u);
+      if(!u){
+        u={id:info.email,email:info.email,name:info.name||info.email,password:"",role:resolveRole(info.email,"user"),provider,avatar_url:info.avatar||null};
+        d.users=[...(d.users||[]),u]; lsSet(d);
+      }
+      await db_upsertProfile({id:u.id,email:u.email,name:u.name,role:resolveRole(u.email,u.role),avatar_url:info.avatar||u.avatar_url||null,updated_at:new Date().toISOString()});
+      onLogin({...u,role:resolveRole(u.email,u.role)});
       setLoading(false);
-    });
+    }).catch(()=>{setErr("Erro ao autenticar com o provedor.");setLoading(false);});
   },[]);
 
   function goOAuth(provider){
@@ -598,32 +648,10 @@ function AuthScreen({onLogin}){
           {loading?<><Spinner/>Aguarde...</>:mode==="login"?"Entrar →":mode==="register"?"Criar conta →":"Enviar instruções →"}
         </button>
 
-        {mode!=="forgot"&&(
-          <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:20}}>
-            <Divider label="ou entre com"/>
-            <button onClick={()=>goOAuth("google")} disabled={loading} style={{width:"100%",padding:"11px 0",border:"1px solid var(--border)",borderRadius:10,background:"var(--surface)",color:"var(--text)",fontSize:13,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:10,transition:"all .15s"}}
-              onMouseOver={e=>e.currentTarget.style.borderColor="#4285f4"} onMouseOut={e=>e.currentTarget.style.borderColor="var(--border)"}>
-              <GoogleIcon/><span>Continuar com Google</span>
-            </button>
-            <button onClick={()=>goOAuth("microsoft")} disabled={loading} style={{width:"100%",padding:"11px 0",border:"1px solid var(--border)",borderRadius:10,background:"var(--surface)",color:"var(--text)",fontSize:13,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:10,transition:"all .15s"}}
-              onMouseOver={e=>e.currentTarget.style.borderColor="#00a4ef"} onMouseOut={e=>e.currentTarget.style.borderColor="var(--border)"}>
-              <MicrosoftIcon/><span>Continuar com Outlook</span>
-            </button>
-          </div>
-        )}
-
         {mode==="login"&&(
           <div style={{marginTop:16,padding:"10px 14px",background:"rgba(14,165,233,.07)",border:"1px solid rgba(14,165,233,.2)",borderRadius:8,fontSize:11,color:"var(--muted)",fontFamily:"var(--mono)"}}>
-            Demo user: joao@empresa.com / demo123<br/>Admin: daniel.cunha@oficinabrasil.com.br / 123123
+            Admin: daniel.cunha@oficinabrasil.com.br / 123123
           </div>
-        )}
-
-        {mode==="login"&&(
-          <button onClick={()=>{localStorage.removeItem('taskhub_supabase');localStorage.removeItem('taskhub_v4');location.reload();}}
-            style={{width:"100%",marginTop:12,padding:"10px 0",border:"1px solid rgba(52,211,153,.3)",borderRadius:10,background:"rgba(52,211,153,.07)",color:"#34d399",fontSize:12,fontWeight:600,transition:"all .15s"}}
-            onMouseOver={e=>e.currentTarget.style.background="rgba(52,211,153,.15)"} onMouseOut={e=>e.currentTarget.style.background="rgba(52,211,153,.07)"}>
-            🗄️ Configurar banco de dados (Supabase)
-          </button>
         )}
       </div>
       <style>{css}</style>
@@ -793,6 +821,8 @@ export default function App(){
   const [backlog,setBacklog]=useState([]);
   const [view,setView]=useState("queue");
   const [toast,setToast]=useState(null);
+  const [notifications,setNotifications]=useState([]);
+  const [showNotif,setShowNotif]=useState(false);
 
   // Auto-connect Supabase on startup
   useEffect(()=>{
@@ -810,23 +840,25 @@ export default function App(){
 
   function showToast(msg,type="success"){ setToast({msg,type}); setTimeout(()=>setToast(null),3500); }
 
-  async function loadAppData(){
-    const [d,c,b]=await Promise.all([db_getDemands(),db_getConfig(),db_getBacklog()]);
+  async function loadAppData(currentUser){
+    const u=currentUser||user;
+    const [d,c,b,n]=await Promise.all([db_getDemands(),db_getConfig(),db_getBacklog(),db_getNotifications(u?.id||u?.email||"")]);
     setDemands(d.length?d:SEED_DEMANDS);
     setConfig(c&&Object.keys(c).length?{emailConfig:c.email_config||{},authConfig:c.auth_config||{},sprintOverrides:c.sprint_overrides||DEFAULT_SPRINT_OVERRIDES}:SEED_CONFIG);
     setBacklog(b.length?b:SEED_BACKLOG);
+    setNotifications(n);
   }
 
   function handleSetupDone(){ setPhase("auth"); }
 
   async function handleLogin(u){
     setUser(u);
-    await loadAppData();
-    setView(u.role==="admin"?"admin":"queue");
+    await loadAppData(u);
+    setView(u.role==="admin"||u.role==="moderador"?"admin":"queue");
     setPhase("app");
   }
 
-  function handleLogout(){ setUser(null); setPhase("auth"); }
+  function handleLogout(){ setUser(null); setPhase("auth"); setNotifications([]); }
   function handleUserUpdate(u){ setUser(u); }
 
   async function handleNewDemand(demand){
@@ -841,12 +873,35 @@ export default function App(){
     const patch={status,sprint:status==="aprovada"?sprint:null,approved_at:new Date().toISOString(),admin_note:adminNote};
     await db_updateDemand(demandId,patch);
     setDemands(p=>p.map(d=>d.id===demandId?{...d,...patch}:d));
-    const cfg=config.emailConfig||{};
     const overrides=config.sprintOverrides||{};
     const spRange=status==="aprovada"?fmtSprintRange(sprint,overrides):"";
-    const r=await sendEmail({...cfg,to_email:demand.user_email,to_name:demand.user_name,demand_title:demand.title,squad:SQUAD_LABELS[demand.squad],sprint_label:`Sprint ${sprint}`,sprint_range:spRange,status_label:STATUS_META[status]?.label||status,admin_note:adminNote||"—"});
-    if(r.ok) showToast(`Demanda ${STATUS_META[status].label.toLowerCase()} · e-mail enviado!`);
-    else showToast(`Demanda atualizada · e-mail não enviado: ${r.reason}`,"warn");
+    const sm=STATUS_META[status];
+
+    // 1. Create in-app notification for the demand owner
+    const notif={
+      id:genId(), user_id:demand.user_id||demand.user_email,
+      type:status, demand_id:demandId, demand_title:demand.title,
+      squad:demand.squad, sprint, sprint_range:spRange,
+      admin_note:adminNote||"", read:false,
+      created_at:new Date().toISOString(),
+    };
+    await db_insertNotification(notif);
+
+    // 2. Open mailto in admin's email client (pre-filled, no external service needed)
+    const subject=encodeURIComponent(`[TaskHUB] Sua demanda foi ${sm.label.toLowerCase()}: ${demand.title}`);
+    const body=encodeURIComponent(
+`Olá, ${demand.user_name}!
+
+Sua demanda "${demand.title}" foi ${sm.label.toLowerCase()} no TaskHUB.
+
+${status==="aprovada"?`✅ Sprint: Sprint ${sprint} (${spRange})`:"❌ Demanda rejeitada"}
+${adminNote?`\n📝 Nota do gestor: ${adminNote}`:""}
+
+Acesse o TaskHUB para mais detalhes.`
+    );
+    window.open(`mailto:${demand.user_email}?subject=${subject}&body=${body}`,"_blank");
+
+    showToast(`Demanda ${sm.label.toLowerCase()}! Notificação enviada e e-mail aberto.`);
   }
 
   async function handleSaveConfig(patch){
@@ -857,8 +912,26 @@ export default function App(){
   }
 
   async function handleSaveBacklog(items){
-    setBacklog(items); // items already upserted/deleted by BacklogPanel
+    setBacklog(items);
     showToast("Backlog salvo!");
+  }
+
+  async function handleDeleteDemand(demandId){
+    await db_deleteDemand(demandId);
+    setDemands(p=>p.filter(d=>d.id!==demandId));
+    showToast("Demanda excluída.");
+  }
+
+  async function handleConcludeDemand(demandId){
+    const patch={status:"concluida",concluded_at:new Date().toISOString()};
+    await db_updateDemand(demandId,patch);
+    setDemands(p=>p.map(d=>d.id===demandId?{...d,...patch}:d));
+    showToast("Demanda marcada como concluída! 🏁");
+  }
+
+  async function handleMarkAllRead(){
+    await db_markAllRead(user?.id||user?.email||"");
+    setNotifications(p=>p.map(n=>({...n,read:true})));
   }
 
   if(phase==="loading") return <div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",alignItems:"center",justifyContent:"center"}}><style>{css}</style><div style={{textAlign:"center"}}><div style={{width:52,height:52,borderRadius:14,background:"linear-gradient(135deg,#0ea5e9,#6366f1)",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:22,marginBottom:16,boxShadow:"0 0 32px rgba(99,102,241,.4)"}}>⚡</div><div style={{color:"var(--muted)",fontSize:14}}>Carregando TaskHUB...</div></div></div>;
@@ -906,8 +979,23 @@ export default function App(){
             </button>
           ))}
         </div>
-        {/* User avatar + menu */}
+        {/* User avatar + notifications + logout */}
         <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {/* Notification Bell */}
+          <div style={{position:"relative"}}>
+            <button onClick={()=>setShowNotif(p=>!p)}
+              style={{width:34,height:34,borderRadius:8,border:`1px solid ${showNotif?"rgba(14,165,233,.5)":"var(--border)"}`,background:showNotif?"rgba(14,165,233,.1)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,transition:"all .15s",position:"relative"}}>
+              🔔
+              {notifications.filter(n=>!n.read).length>0&&(
+                <span style={{position:"absolute",top:4,right:4,width:14,height:14,borderRadius:"50%",background:"#ef4444",fontSize:8,fontWeight:800,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid var(--bg)"}}>
+                  {notifications.filter(n=>!n.read).length}
+                </span>
+              )}
+            </button>
+            {showNotif&&(
+              <NotificationDropdown notifications={notifications} onMarkAllRead={handleMarkAllRead} onClose={()=>setShowNotif(false)}/>
+            )}
+          </div>
           <button onClick={()=>setView("profile")} style={{width:32,height:32,borderRadius:8,background:"linear-gradient(135deg,#1e3a5f,#2d5a8e)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,border:view==="profile"?"2px solid #0ea5e9":"2px solid transparent",overflow:"hidden",padding:0,transition:"border-color .15s"}}>
             {user?.avatar_url?<img src={user.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:(user?.name||"?").charAt(0).toUpperCase()}
           </button>
@@ -921,8 +1009,75 @@ export default function App(){
         {view==="new"     && <NewDemandForm user={user} onSubmit={handleNewDemand} sprintOverrides={overrides}/>}
         {view==="queue"   && <SprintQueueView demands={demands} sprintOverrides={overrides}/>}
         {view==="my"      && <MyDemandsView demands={demands.filter(d=>(d.user_id===user?.id||d.user_email===user?.email))} sprintOverrides={overrides}/>}
-        {view==="admin"   && isModerator && <AdminPanel demands={demands} config={config} backlog={backlog} isAdmin={isAdmin} onApprove={handleApprove} onSaveConfig={handleSaveConfig} onSaveBacklog={handleSaveBacklog}/>}
+        {view==="admin"   && isModerator && <AdminPanel demands={demands} config={config} backlog={backlog} isAdmin={isAdmin} onApprove={handleApprove} onDelete={handleDeleteDemand} onConclude={handleConcludeDemand} onSaveConfig={handleSaveConfig} onSaveBacklog={handleSaveBacklog}/>}
       </main>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// NOTIFICATION DROPDOWN
+// ══════════════════════════════════════════════════════════════════════════════
+function NotificationDropdown({notifications=[],onMarkAllRead,onClose}){
+  const unread=notifications.filter(n=>!n.read).length;
+  useEffect(()=>{
+    function handleClick(e){ if(!e.target.closest(".notif-dropdown")) onClose(); }
+    setTimeout(()=>document.addEventListener("click",handleClick),0);
+    return()=>document.removeEventListener("click",handleClick);
+  },[]);
+
+  return(
+    <div className="notif-dropdown" style={{position:"absolute",top:42,right:0,width:360,background:"var(--card)",border:"1px solid var(--border)",borderRadius:14,boxShadow:"0 16px 48px rgba(0,0,0,.5)",zIndex:999,overflow:"hidden",animation:"fadeIn .2s ease"}}>
+      {/* Header */}
+      <div style={{padding:"14px 16px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{fontWeight:700,fontSize:14}}>
+          🔔 Notificações {unread>0&&<span style={{marginLeft:6,padding:"1px 8px",borderRadius:999,background:"rgba(239,68,68,.15)",border:"1px solid rgba(239,68,68,.3)",fontSize:11,color:"#f87171"}}>{unread} nova(s)</span>}
+        </div>
+        {unread>0&&<button onClick={onMarkAllRead} style={{border:"none",background:"none",color:"#38bdf8",fontSize:11,cursor:"pointer",fontWeight:600}}>Marcar todas como lidas</button>}
+      </div>
+
+      {/* List */}
+      <div style={{maxHeight:380,overflowY:"auto"}}>
+        {notifications.length===0?(
+          <div style={{padding:"32px 16px",textAlign:"center",color:"var(--muted)"}}>
+            <div style={{fontSize:28,marginBottom:8}}>🔕</div>
+            <div style={{fontSize:13}}>Nenhuma notificação ainda</div>
+          </div>
+        ):notifications.map(n=>{
+          const isApproved=n.type==="aprovada";
+          const color=isApproved?"#4ade80":"#f87171";
+          const bg=isApproved?"rgba(74,222,128,.07)":"rgba(248,113,113,.07)";
+          const squadColor=SQUAD_COLORS[n.squad]?.accent||"#94a3b8";
+          return(
+            <div key={n.id} style={{padding:"12px 16px",borderBottom:"1px solid var(--border)",background:n.read?"transparent":bg,transition:"background .2s"}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                <div style={{width:32,height:32,borderRadius:8,background:`${color}18`,border:`1px solid ${color}33`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>
+                  {isApproved?"✅":"❌"}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:n.read?400:600,marginBottom:3,lineHeight:1.4}}>
+                    Sua demanda foi <span style={{color}}>{isApproved?"aprovada":"rejeitada"}</span>
+                  </div>
+                  <div style={{fontSize:12,color:"var(--text)",marginBottom:3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",fontWeight:500}}>
+                    {n.demand_title}
+                  </div>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+                    <span style={{fontSize:11,color:squadColor}}>● {SQUAD_LABELS[n.squad]||n.squad}</span>
+                    {isApproved&&n.sprint&&<span style={{fontSize:11,color:"#38bdf8",fontFamily:"var(--mono)"}}>Sprint {n.sprint} · {n.sprint_range}</span>}
+                    <span style={{fontSize:10,color:"var(--muted)",marginLeft:"auto"}}>{fmt(n.created_at)}</span>
+                  </div>
+                  {n.admin_note&&(
+                    <div style={{marginTop:6,padding:"6px 10px",background:"rgba(99,102,241,.08)",borderRadius:6,fontSize:11,color:"#c7d2fe",lineHeight:1.5}}>
+                      📝 {n.admin_note}
+                    </div>
+                  )}
+                </div>
+                {!n.read&&<div style={{width:7,height:7,borderRadius:"50%",background:"#0ea5e9",flexShrink:0,marginTop:4}}/>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -1038,6 +1193,7 @@ function SprintQueueView({demands,sprintOverrides={}}){
   const approved=sq.filter(d=>d.status==="aprovada"&&d.sprint);
   const backlog=sq.filter(d=>d.status==="pendente");
   const rejected=sq.filter(d=>d.status==="rejeitada");
+  const concluded=sq.filter(d=>d.status==="concluida");
   const sprints=[...new Set(approved.map(d=>d.sprint))].sort((a,b)=>a-b);
   const cur=currentSprint();
 
@@ -1062,6 +1218,7 @@ function SprintQueueView({demands,sprintOverrides={}}){
           ))}
           {backlog.length>0&&<div><SectionHeader color="#94a3b8" label="⏳ Aguardando Aprovação" count={backlog.length}/><div style={{display:"flex",flexDirection:"column",gap:10}}>{backlog.sort((a,b)=>new Date(b.created_at||b.createdAt)-new Date(a.created_at||a.createdAt)).map((d,i)=><DemandCard key={d.id} demand={d} index={i} accent="#94a3b8" sprintOverrides={sprintOverrides}/>)}</div></div>}
           {rejected.length>0&&<div><SectionHeader color="#f87171" label="❌ Rejeitadas" count={rejected.length}/><div style={{display:"flex",flexDirection:"column",gap:10}}>{rejected.map((d,i)=><DemandCard key={d.id} demand={d} index={i} accent="#f87171" sprintOverrides={sprintOverrides}/>)}</div></div>}
+          {concluded.length>0&&<div><SectionHeader color="#818cf8" label="🏁 Concluídas" count={concluded.length}/><div style={{display:"flex",flexDirection:"column",gap:10}}>{concluded.map((d,i)=><DemandCard key={d.id} demand={d} index={i} accent="#818cf8" sprintOverrides={sprintOverrides}/>)}</div></div>}
         </div>
       }
     </div>
@@ -1144,8 +1301,8 @@ function MyDemandsView({demands,sprintOverrides={}}){
   return(
     <div style={{animation:"fadeIn .35s ease"}}>
       <div style={{marginBottom:24}}><h1 style={{fontSize:24,fontWeight:700,letterSpacing:"-.5px"}}>Minhas Demandas</h1><p style={{color:"var(--muted)",fontSize:14,marginTop:4}}>{sorted.length} solicitação(ões)</p></div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:28}}>
-        {["pendente","aprovada","rejeitada"].map(s=>{ const sm=STATUS_META[s]; const cnt=demands.filter(d=>d.status===s).length; return(
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:28}}>
+        {["pendente","aprovada","concluida","rejeitada"].map(s=>{ const sm=STATUS_META[s]; const cnt=demands.filter(d=>d.status===s).length; return(
           <div key={s} style={{padding:20,background:"var(--card)",border:`1px solid ${sm.color}33`,borderRadius:14}}>
             <div style={{fontSize:24,marginBottom:6}}>{sm.icon}</div>
             <div style={{fontSize:28,fontWeight:700,color:sm.color}}>{cnt}</div>
@@ -1162,38 +1319,59 @@ function MyDemandsView({demands,sprintOverrides={}}){
 // ══════════════════════════════════════════════════════════════════════════════
 // ADMIN PANEL
 // ══════════════════════════════════════════════════════════════════════════════
-function AdminPanel({demands,config={},backlog=[],isAdmin=false,onApprove,onSaveConfig,onSaveBacklog}){
+function AdminPanel({demands,config={},backlog=[],isAdmin=false,onApprove,onDelete,onConclude,onSaveConfig,onSaveBacklog}){
   const [tab,setTab]=useState("pending");
   const [users,setUsers]=useState([]);
+  const [confirmDelete,setConfirmDelete]=useState(null);
   const pending=demands.filter(d=>d.status==="pendente");
   const approved=demands.filter(d=>d.status==="aprovada");
   const rejected=demands.filter(d=>d.status==="rejeitada");
+  const concluded=demands.filter(d=>d.status==="concluida");
 
   useEffect(()=>{
     if(isAdmin) db_getAllProfiles().then(setUsers);
   },[isAdmin]);
 
-  async function handleRoleChange(userId, newRole){
-    await db_upsertProfile({...(users.find(u=>u.id===userId)||{}), id:userId, role:newRole, updated_at:new Date().toISOString()});
+  async function handleRoleChange(userId,newRole){
+    await db_upsertProfile({...(users.find(u=>u.id===userId)||{}),id:userId,role:newRole,updated_at:new Date().toISOString()});
     setUsers(p=>p.map(u=>u.id===userId?{...u,role:newRole}:u));
   }
 
   const tabs=[
-    {id:"pending", label:"Pendentes",  count:pending.length,  color:"#f97316", adminOnly:false},
-    {id:"approved",label:"Aprovadas",  count:approved.length, color:"#4ade80", adminOnly:false},
-    {id:"rejected",label:"Rejeitadas", count:rejected.length, color:"#f87171", adminOnly:false},
-    {id:"users",   label:"👥 Usuários", count:null,            color:"#a78bfa", adminOnly:true},
-    {id:"backlog", label:"📦 Backlog",  count:null,            color:"#34d399", adminOnly:true},
-    {id:"sprints", label:"📅 Sprints",  count:null,            color:"#fbbf24", adminOnly:true},
-    {id:"config",  label:"⚙ E-mail",   count:null,            color:"#818cf8", adminOnly:true},
-    {id:"auth",    label:"🔐 Auth",     count:null,            color:"#f472b6", adminOnly:true},
+    {id:"pending",   label:"Pendentes",    count:pending.length,   color:"#f97316", adminOnly:false},
+    {id:"approved",  label:"Aprovadas",    count:approved.length,  color:"#4ade80", adminOnly:false},
+    {id:"concluded", label:"🏁 Concluídas", count:concluded.length, color:"#818cf8", adminOnly:false},
+    {id:"rejected",  label:"Rejeitadas",   count:rejected.length,  color:"#f87171", adminOnly:false},
+    {id:"users",     label:"👥 Usuários",   count:null,             color:"#a78bfa", adminOnly:true},
+    {id:"backlog",   label:"📦 Backlog",    count:null,             color:"#34d399", adminOnly:true},
+    {id:"sprints",   label:"📅 Sprints",    count:null,             color:"#fbbf24", adminOnly:true},
+    {id:"config",    label:"⚙ E-mail",     count:null,             color:"#818cf8", adminOnly:true},
+    {id:"auth",      label:"🔐 Auth",       count:null,             color:"#f472b6", adminOnly:true},
   ].filter(t=>!t.adminOnly||isAdmin);
 
-  const list=tab==="pending"?pending:tab==="approved"?approved:tab==="rejected"?rejected:[];
+  const listMap={pending,approved,rejected,concluded};
+  const list=listMap[tab]||[];
   const overrides=config.sprintOverrides||{};
+  const isDemandTab=["pending","approved","rejected","concluded"].includes(tab);
+  const emptyIcons={pending:"⏳",approved:"✅",rejected:"❌",concluded:"🏁"};
 
   return(
     <div style={{animation:"fadeIn .35s ease"}}>
+      {confirmDelete&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <div style={{background:"var(--card)",border:"1px solid rgba(239,68,68,.4)",borderRadius:16,padding:28,width:380,boxShadow:"0 24px 64px rgba(0,0,0,.6)"}}>
+            <div style={{fontSize:28,marginBottom:12,textAlign:"center"}}>🗑️</div>
+            <div style={{fontSize:16,fontWeight:700,marginBottom:8,textAlign:"center"}}>Excluir demanda?</div>
+            <div style={{fontSize:13,color:"var(--muted)",marginBottom:20,textAlign:"center",lineHeight:1.6}}>
+              "<strong style={{color:"var(--text)"}}>{confirmDelete.title}</strong>" será excluída permanentemente.
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>{onDelete(confirmDelete.id);setConfirmDelete(null);}} style={{flex:1,padding:"11px",border:"1px solid rgba(239,68,68,.4)",borderRadius:10,background:"rgba(239,68,68,.12)",color:"#f87171",fontSize:13,fontWeight:700}}>Sim, excluir</button>
+              <button onClick={()=>setConfirmDelete(null)} style={{flex:1,padding:"11px",border:"1px solid var(--border)",borderRadius:10,background:"var(--surface)",color:"var(--muted)",fontSize:13,fontWeight:600}}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div style={{marginBottom:24}}><h1 style={{fontSize:24,fontWeight:700,letterSpacing:"-.5px"}}>Painel de Aprovação</h1><p style={{color:"var(--muted)",fontSize:14,marginTop:4}}>Gerencie demandas, sprints, backlog e configurações.</p></div>
       <div style={{display:"flex",gap:8,marginBottom:28,flexWrap:"wrap"}}>
         {tabs.map(t=>(
@@ -1207,17 +1385,24 @@ function AdminPanel({demands,config={},backlog=[],isAdmin=false,onApprove,onSave
       {tab==="sprints" && <SprintManagerPanel overrides={overrides} onSave={o=>onSaveConfig({sprintOverrides:o})}/>}
       {tab==="backlog" && <BacklogPanel items={backlog} onSave={onSaveBacklog}/>}
       {tab==="users"   && <UserManagementPanel users={users} onRoleChange={handleRoleChange}/>}
-      {(tab==="pending"||tab==="approved"||tab==="rejected")&&(
-        list.length===0?<EmptyState icon={tab==="pending"?"⏳":tab==="approved"?"✅":"❌"} title={`Nenhuma demanda ${tabs.find(t=>t.id===tab)?.label.toLowerCase()}`} sub=""/>
-        :<div style={{display:"flex",flexDirection:"column",gap:14}}>{[...list].sort((a,b)=>new Date(b.created_at||b.createdAt)-new Date(a.created_at||a.createdAt)).map(d=>(
-          <AdminDemandCard key={d.id} demand={d} sprintOverrides={overrides} onApprove={onApprove} canAct={tab==="pending"}/>
-        ))}</div>
+      {isDemandTab&&(
+        list.length===0
+          ?<EmptyState icon={emptyIcons[tab]} title={`Nenhuma demanda ${tabs.find(t=>t.id===tab)?.label.toLowerCase()}`} sub=""/>
+          :<div style={{display:"flex",flexDirection:"column",gap:14}}>
+            {[...list].sort((a,b)=>new Date(b.created_at||b.createdAt)-new Date(a.created_at||a.createdAt)).map(d=>(
+              <AdminDemandCard key={d.id} demand={d} sprintOverrides={overrides}
+                onApprove={onApprove} canAct={tab==="pending"}
+                canConclude={tab==="approved"}
+                onConclude={()=>onConclude(d.id)}
+                onDelete={()=>setConfirmDelete(d)}/>
+            ))}
+          </div>
       )}
     </div>
   );
 }
 
-function AdminDemandCard({demand,onApprove,canAct,sprintOverrides={}}){
+function AdminDemandCard({demand,onApprove,canAct,canConclude,onConclude,onDelete,sprintOverrides={}}){
   const [open,setOpen]=useState(false); const [actionOpen,setActionOpen]=useState(false);
   const [sprint,setSprint]=useState(currentSprint()); const [note,setNote]=useState(""); const [loading,setLoading]=useState(false);
   const {accent}=SQUAD_COLORS[demand.squad]; const pColor=PRIO_COLORS[demand.priority];
@@ -1241,6 +1426,8 @@ function AdminDemandCard({demand,onApprove,canAct,sprintOverrides={}}){
         <Badge label={PRIO_LABELS[demand.priority]} color={pColor}/>
         {demand.tag&&<Badge label={TAG_LABELS[demand.tag]} color={TAG_COLORS[demand.tag].color} bg={TAG_COLORS[demand.tag].bg} border={TAG_COLORS[demand.tag].border} icon={TAG_ICONS[demand.tag]}/>}
         {canAct&&<button onClick={e=>{e.stopPropagation();setActionOpen(p=>!p);}} style={{padding:"7px 16px",border:`1px solid ${actionOpen?"#6366f1":"var(--border)"}`,borderRadius:9,background:actionOpen?"rgba(99,102,241,.15)":"var(--surface)",color:actionOpen?"#818cf8":"var(--muted)",fontSize:12,fontWeight:600,transition:"all .15s"}}>{actionOpen?"Fechar ✕":"Avaliar →"}</button>}
+        {canConclude&&<button onClick={e=>{e.stopPropagation();onConclude&&onConclude();}} style={{padding:"7px 14px",border:"1px solid rgba(129,140,248,.4)",borderRadius:9,background:"rgba(129,140,248,.1)",color:"#818cf8",fontSize:12,fontWeight:600,transition:"all .15s"}} onMouseOver={e=>e.currentTarget.style.background="rgba(129,140,248,.2)"} onMouseOut={e=>e.currentTarget.style.background="rgba(129,140,248,.1)"}>🏁 Concluir</button>}
+        <button onClick={e=>{e.stopPropagation();onDelete&&onDelete();}} style={{padding:"7px 10px",border:"1px solid rgba(239,68,68,.25)",borderRadius:9,background:"transparent",color:"#f87171",fontSize:13,transition:"all .15s"}} onMouseOver={e=>e.currentTarget.style.background="rgba(239,68,68,.1)"} onMouseOut={e=>e.currentTarget.style.background="transparent"} title="Excluir demanda">🗑️</button>
         <div style={{color:"var(--muted)",fontSize:11,transition:"transform .2s",transform:open?"rotate(180deg)":"none"}}>▼</div>
       </div>
       {open&&<div style={{padding:"0 20px 16px",borderTop:"1px solid var(--border)"}} onClick={e=>e.stopPropagation()}><div style={{padding:14,background:"var(--surface)",borderRadius:10,marginTop:12}}><div style={{fontSize:11,color:"var(--muted)",marginBottom:6,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px"}}>Descrição</div><p style={{fontSize:13,lineHeight:1.7}}>{demand.description}</p></div></div>}
@@ -1555,7 +1742,7 @@ function EmailConfigPanel({config,onSave}){
 function AuthConfigPanel({config={},onSave}){
   const [form,setForm]=useState({googleClientId:config.googleClientId||"",microsoftClientId:config.microsoftClientId||""});
   const f=k=>e=>setForm(p=>({...p,[k]:e.target.value}));
-  const redirectUri=window.location.origin+window.location.pathname;
+  const redirectUri=window.location.origin+"/";
   return(
     <div style={{maxWidth:640}}>
       <div style={{padding:28,background:"var(--card)",border:"1px solid var(--border)",borderRadius:16}}>
