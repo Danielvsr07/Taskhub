@@ -21,7 +21,12 @@ async function initSupabase(url, anonKey) {
   return _supabase;
 }
 
-// ── LocalStorage fallback (used before Supabase is configured) ───────────────
+// ── Supabase auto-connect ─────────────────────────────────────────────────
+const SUPABASE_URL = "https://azoabvqhwoctdrfrkjhg.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6b2FidnFod29jdGRyZnJramhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NDg4MTIsImV4cCI6MjA5MzEyNDgxMn0.Ju9xLLVrATyes_WKrDKj2E1rv5EV5Rnc82kxk2UlKds";
+
+// Auto-save config so it persists
+setSBConfig({ url: SUPABASE_URL, key: SUPABASE_KEY });
 const LSK = "taskhub_v4";
 const SBCFG = "taskhub_supabase";
 function lsGet()  { try { return JSON.parse(localStorage.getItem(LSK)||"null"); } catch { return null; } }
@@ -150,6 +155,11 @@ async function db_getProfile(userId){
   if(sb){ const {data}=await sb.from("profiles").select("*").eq("id",userId).single(); return data||null; }
   return lsGet()?.profiles?.[userId]||null;
 }
+async function db_getAllProfiles(){
+  const sb=getSupabase();
+  if(sb){ const {data}=await sb.from("profiles").select("*").order("created_at",{ascending:false}); return data||[]; }
+  const d=lsGet(); return Object.values(d?.profiles||{});
+}
 async function db_upsertProfile(profile){
   const sb=getSupabase();
   if(sb){ await sb.from("profiles").upsert([profile]); return; }
@@ -178,6 +188,11 @@ const ADMIN_EMAILS = ["daniel.cunha@oficinabrasil.com.br"];
 function resolveRole(email, storedRole) {
   return ADMIN_EMAILS.includes(email) ? "admin" : (storedRole || "user");
 }
+const ROLE_META = {
+  admin:     { label:"Admin",      color:"#818cf8", bg:"rgba(99,102,241,.15)",  border:"rgba(99,102,241,.4)",  icon:"🛡️" },
+  moderador: { label:"Moderador",  color:"#f472b6", bg:"rgba(244,114,182,.15)", border:"rgba(244,114,182,.4)", icon:"⚖️" },
+  user:      { label:"Usuário",    color:"#38bdf8", bg:"rgba(56,189,248,.12)",  border:"rgba(56,189,248,.3)",  icon:"👤" },
+};
 async function sendEmail(params){
   const {serviceId,templateId,publicKey,...tp}=params;
   if(!serviceId||!templateId||!publicKey) return {ok:false,reason:"EmailJS não configurado"};
@@ -602,6 +617,14 @@ function AuthScreen({onLogin}){
             Demo user: joao@empresa.com / demo123<br/>Admin: daniel.cunha@oficinabrasil.com.br / 123123
           </div>
         )}
+
+        {mode==="login"&&(
+          <button onClick={()=>{localStorage.removeItem('taskhub_supabase');localStorage.removeItem('taskhub_v4');location.reload();}}
+            style={{width:"100%",marginTop:12,padding:"10px 0",border:"1px solid rgba(52,211,153,.3)",borderRadius:10,background:"rgba(52,211,153,.07)",color:"#34d399",fontSize:12,fontWeight:600,transition:"all .15s"}}
+            onMouseOver={e=>e.currentTarget.style.background="rgba(52,211,153,.15)"} onMouseOut={e=>e.currentTarget.style.background="rgba(52,211,153,.07)"}>
+            🗄️ Configurar banco de dados (Supabase)
+          </button>
+        )}
       </div>
       <style>{css}</style>
     </div>
@@ -763,7 +786,7 @@ function ProfilePage({user,onUpdate,onBack,demands=[]}){
 // ROOT APP
 // ══════════════════════════════════════════════════════════════════════════════
 export default function App(){
-  const [phase,setPhase]=useState("setup"); // "setup"|"auth"|"app"
+  const [phase,setPhase]=useState("loading"); // "loading"|"auth"|"app"
   const [user,setUser]=useState(null);
   const [demands,setDemands]=useState([]);
   const [config,setConfig]=useState(SEED_CONFIG);
@@ -771,7 +794,7 @@ export default function App(){
   const [view,setView]=useState("queue");
   const [toast,setToast]=useState(null);
 
-  // Check if Supabase already configured
+  // Auto-connect Supabase on startup
   useEffect(()=>{
     // Migration: ensure ADMIN_EMAILS always have role="admin" in localStorage
     const d=lsGet();
@@ -780,10 +803,9 @@ export default function App(){
       d.users=d.users.map(u=>{ const r=resolveRole(u.email,u.role); if(r!==u.role){changed=true;return {...u,role:r};} return u; });
       if(changed) lsSet(d);
     }
-    const sbCfg=getSBConfig();
-    if(sbCfg){
-      initSupabase(sbCfg.url,sbCfg.key).then(()=>setPhase("auth")).catch(()=>setPhase("auth"));
-    } else { setPhase("auth"); }
+    initSupabase(SUPABASE_URL, SUPABASE_KEY)
+      .then(()=>setPhase("auth"))
+      .catch(()=>setPhase("auth"));
   },[]);
 
   function showToast(msg,type="success"){ setToast({msg,type}); setTimeout(()=>setToast(null),3500); }
@@ -839,16 +861,19 @@ export default function App(){
     showToast("Backlog salvo!");
   }
 
-  if(phase==="setup") return <SetupWizard onDone={handleSetupDone}/>;
+  if(phase==="loading") return <div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",alignItems:"center",justifyContent:"center"}}><style>{css}</style><div style={{textAlign:"center"}}><div style={{width:52,height:52,borderRadius:14,background:"linear-gradient(135deg,#0ea5e9,#6366f1)",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:22,marginBottom:16,boxShadow:"0 0 32px rgba(99,102,241,.4)"}}>⚡</div><div style={{color:"var(--muted)",fontSize:14}}>Carregando TaskHUB...</div></div></div>;
   if(phase==="auth")  return <AuthScreen onLogin={handleLogin}/>;
 
   const isAdmin=user?.role==="admin";
+  const isModerator=user?.role==="moderador"||isAdmin;
   const pendingCount=demands.filter(d=>d.status==="pendente").length;
   const overrides=config.sprintOverrides||{};
   const cur=currentSprint();
 
   const navItems=isAdmin
     ?[{id:"admin",label:"Painel Admin",icon:"🛡️"},{id:"queue",label:"Filas / Sprints",icon:"📋"}]
+    :isModerator
+    ?[{id:"admin",label:"Painel",icon:"⚖️"},{id:"queue",label:"Filas / Sprints",icon:"📋"}]
     :[{id:"queue",label:"Filas / Sprints",icon:"📋"},{id:"new",label:"+ Nova Demanda",icon:""},{id:"my",label:"Minhas Demandas",icon:"📂"}];
 
   return(
@@ -870,6 +895,7 @@ export default function App(){
           <div style={{width:32,height:32,borderRadius:8,background:"linear-gradient(135deg,#0ea5e9,#6366f1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>⚡</div>
           <span style={{fontWeight:700,fontSize:15,letterSpacing:"-.3px"}}>TaskHUB</span>
           {isAdmin&&<span style={{padding:"2px 8px",borderRadius:6,background:"rgba(99,102,241,.2)",border:"1px solid rgba(99,102,241,.4)",fontSize:10,fontWeight:700,color:"#818cf8",letterSpacing:".5px"}}>ADMIN</span>}
+          {!isAdmin&&isModerator&&<span style={{padding:"2px 8px",borderRadius:6,background:"rgba(244,114,182,.2)",border:"1px solid rgba(244,114,182,.4)",fontSize:10,fontWeight:700,color:"#f472b6",letterSpacing:".5px"}}>MOD</span>}
           {getSBConfig()&&<span style={{padding:"2px 8px",borderRadius:6,background:"rgba(74,222,128,.1)",border:"1px solid rgba(74,222,128,.3)",fontSize:9,fontWeight:700,color:"#4ade80",letterSpacing:".5px"}}>● SUPABASE</span>}
         </div>
         <div style={{display:"flex",gap:4}}>
@@ -895,7 +921,7 @@ export default function App(){
         {view==="new"     && <NewDemandForm user={user} onSubmit={handleNewDemand} sprintOverrides={overrides}/>}
         {view==="queue"   && <SprintQueueView demands={demands} sprintOverrides={overrides}/>}
         {view==="my"      && <MyDemandsView demands={demands.filter(d=>(d.user_id===user?.id||d.user_email===user?.email))} sprintOverrides={overrides}/>}
-        {view==="admin"   && isAdmin && <AdminPanel demands={demands} config={config} backlog={backlog} onApprove={handleApprove} onSaveConfig={handleSaveConfig} onSaveBacklog={handleSaveBacklog}/>}
+        {view==="admin"   && isModerator && <AdminPanel demands={demands} config={config} backlog={backlog} isAdmin={isAdmin} onApprove={handleApprove} onSaveConfig={handleSaveConfig} onSaveBacklog={handleSaveBacklog}/>}
       </main>
     </div>
   );
@@ -1136,20 +1162,33 @@ function MyDemandsView({demands,sprintOverrides={}}){
 // ══════════════════════════════════════════════════════════════════════════════
 // ADMIN PANEL
 // ══════════════════════════════════════════════════════════════════════════════
-function AdminPanel({demands,config={},backlog=[],onApprove,onSaveConfig,onSaveBacklog}){
+function AdminPanel({demands,config={},backlog=[],isAdmin=false,onApprove,onSaveConfig,onSaveBacklog}){
   const [tab,setTab]=useState("pending");
+  const [users,setUsers]=useState([]);
   const pending=demands.filter(d=>d.status==="pendente");
   const approved=demands.filter(d=>d.status==="aprovada");
   const rejected=demands.filter(d=>d.status==="rejeitada");
+
+  useEffect(()=>{
+    if(isAdmin) db_getAllProfiles().then(setUsers);
+  },[isAdmin]);
+
+  async function handleRoleChange(userId, newRole){
+    await db_upsertProfile({...(users.find(u=>u.id===userId)||{}), id:userId, role:newRole, updated_at:new Date().toISOString()});
+    setUsers(p=>p.map(u=>u.id===userId?{...u,role:newRole}:u));
+  }
+
   const tabs=[
-    {id:"pending", label:"Pendentes",  count:pending.length,  color:"#f97316"},
-    {id:"approved",label:"Aprovadas",  count:approved.length, color:"#4ade80"},
-    {id:"rejected",label:"Rejeitadas", count:rejected.length, color:"#f87171"},
-    {id:"backlog", label:"📦 Backlog",  count:null,            color:"#34d399"},
-    {id:"sprints", label:"📅 Sprints",  count:null,            color:"#fbbf24"},
-    {id:"config",  label:"⚙ E-mail",   count:null,            color:"#818cf8"},
-    {id:"auth",    label:"🔐 Auth",     count:null,            color:"#f472b6"},
-  ];
+    {id:"pending", label:"Pendentes",  count:pending.length,  color:"#f97316", adminOnly:false},
+    {id:"approved",label:"Aprovadas",  count:approved.length, color:"#4ade80", adminOnly:false},
+    {id:"rejected",label:"Rejeitadas", count:rejected.length, color:"#f87171", adminOnly:false},
+    {id:"users",   label:"👥 Usuários", count:null,            color:"#a78bfa", adminOnly:true},
+    {id:"backlog", label:"📦 Backlog",  count:null,            color:"#34d399", adminOnly:true},
+    {id:"sprints", label:"📅 Sprints",  count:null,            color:"#fbbf24", adminOnly:true},
+    {id:"config",  label:"⚙ E-mail",   count:null,            color:"#818cf8", adminOnly:true},
+    {id:"auth",    label:"🔐 Auth",     count:null,            color:"#f472b6", adminOnly:true},
+  ].filter(t=>!t.adminOnly||isAdmin);
+
   const list=tab==="pending"?pending:tab==="approved"?approved:tab==="rejected"?rejected:[];
   const overrides=config.sprintOverrides||{};
 
@@ -1167,6 +1206,7 @@ function AdminPanel({demands,config={},backlog=[],onApprove,onSaveConfig,onSaveB
       {tab==="auth"    && <AuthConfigPanel config={config.authConfig||{}} onSave={c=>onSaveConfig({authConfig:c})}/>}
       {tab==="sprints" && <SprintManagerPanel overrides={overrides} onSave={o=>onSaveConfig({sprintOverrides:o})}/>}
       {tab==="backlog" && <BacklogPanel items={backlog} onSave={onSaveBacklog}/>}
+      {tab==="users"   && <UserManagementPanel users={users} onRoleChange={handleRoleChange}/>}
       {(tab==="pending"||tab==="approved"||tab==="rejected")&&(
         list.length===0?<EmptyState icon={tab==="pending"?"⏳":tab==="approved"?"✅":"❌"} title={`Nenhuma demanda ${tabs.find(t=>t.id===tab)?.label.toLowerCase()}`} sub=""/>
         :<div style={{display:"flex",flexDirection:"column",gap:14}}>{[...list].sort((a,b)=>new Date(b.created_at||b.createdAt)-new Date(a.created_at||a.createdAt)).map(d=>(
@@ -1246,6 +1286,102 @@ function AdminDemandCard({demand,onApprove,canAct,sprintOverrides={}}){
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// USER MANAGEMENT PANEL  (admin only)
+// ══════════════════════════════════════════════════════════════════════════════
+function UserManagementPanel({ users=[], onRoleChange }) {
+  const [search, setSearch] = useState("");
+  const [saving, setSaving] = useState({});
+
+  const filtered = users.filter(u =>
+    u.name?.toLowerCase().includes(search.toLowerCase()) ||
+    u.email?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  async function changeRole(userId, newRole) {
+    setSaving(p=>({...p,[userId]:true}));
+    await onRoleChange(userId, newRole);
+    setSaving(p=>({...p,[userId]:false}));
+  }
+
+  return (
+    <div style={{animation:"fadeIn .35s ease"}}>
+      <div style={{marginBottom:20,display:"flex",alignItems:"center",justifyContent:"space-between",gap:16}}>
+        <div>
+          <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>Gerenciar Usuários</div>
+          <div style={{fontSize:13,color:"var(--muted)"}}>{users.length} usuário(s) cadastrado(s)</div>
+        </div>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar por nome ou e-mail..."
+          style={{padding:"9px 14px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:9,color:"var(--text)",fontSize:13,outline:"none",width:280}}
+          onFocus={e=>e.target.style.borderColor="#a78bfa"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+      </div>
+
+      {/* Legend */}
+      <div style={{display:"flex",gap:10,marginBottom:20,flexWrap:"wrap"}}>
+        {Object.entries(ROLE_META).map(([k,v])=>(
+          <div key={k} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 12px",borderRadius:999,background:v.bg,border:`1px solid ${v.border}`,fontSize:12,fontWeight:600,color:v.color}}>
+            <span>{v.icon}</span>{v.label}
+            {k==="moderador"&&<span style={{fontSize:10,opacity:.7}}>· pode aprovar/rejeitar</span>}
+            {k==="admin"&&<span style={{fontSize:10,opacity:.7}}>· acesso total</span>}
+          </div>
+        ))}
+      </div>
+
+      {filtered.length===0
+        ? <EmptyState icon="👥" title="Nenhum usuário encontrado" sub=""/>
+        : <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {filtered.map((u,i)=>{
+              const rm=ROLE_META[u.role]||ROLE_META.user;
+              const isProtected=ADMIN_EMAILS.includes(u.email);
+              return(
+                <div key={u.id} className="card-hover" style={{background:"var(--card)",border:"1px solid var(--border)",borderRadius:14,padding:"16px 20px",display:"flex",alignItems:"center",gap:14,animation:`fadeIn .25s ease ${i*.03}s both`,transition:"all .2s"}}>
+                  {/* Avatar */}
+                  <div style={{width:42,height:42,borderRadius:11,background:"linear-gradient(135deg,#1e3a5f,#2d5a8e)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,flexShrink:0,overflow:"hidden"}}>
+                    {u.avatar_url?<img src={u.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:(u.name||u.email||"?").charAt(0).toUpperCase()}
+                  </div>
+
+                  {/* Info */}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:600,fontSize:14,marginBottom:2,display:"flex",alignItems:"center",gap:8}}>
+                      {u.name||"Sem nome"}
+                      {isProtected&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:999,background:"rgba(99,102,241,.2)",border:"1px solid rgba(99,102,241,.4)",color:"#818cf8",fontWeight:700}}>🔒 protegido</span>}
+                    </div>
+                    <div style={{fontSize:12,color:"var(--muted)",display:"flex",gap:10,flexWrap:"wrap"}}>
+                      <span>✉️ {u.email}</span>
+                      {u.job_title&&<span>💼 {u.job_title}</span>}
+                      {u.team&&<span>🏷️ {u.team}</span>}
+                    </div>
+                  </div>
+
+                  {/* Current role badge */}
+                  <div style={{padding:"4px 12px",borderRadius:999,background:rm.bg,border:`1px solid ${rm.border}`,fontSize:12,fontWeight:700,color:rm.color,flexShrink:0}}>
+                    {rm.icon} {rm.label}
+                  </div>
+
+                  {/* Role selector — disabled for protected accounts */}
+                  {!isProtected && (
+                    <div style={{display:"flex",gap:6,flexShrink:0}}>
+                      {Object.entries(ROLE_META).map(([role,meta])=>{
+                        const isCurrent=u.role===role||(!u.role&&role==="user");
+                        return(
+                          <button key={role} onClick={()=>!isCurrent&&changeRole(u.id,role)}
+                            disabled={isCurrent||saving[u.id]}
+                            style={{padding:"6px 12px",border:`1px solid ${isCurrent?meta.border:"var(--border)"}`,borderRadius:8,background:isCurrent?meta.bg:"var(--surface)",color:isCurrent?meta.color:"var(--muted)",fontSize:11,fontWeight:isCurrent?700:400,transition:"all .15s",cursor:isCurrent?"default":"pointer",opacity:saving[u.id]?.6:1}}>
+                            {saving[u.id]&&!isCurrent?<Spinner/>:<>{meta.icon} {meta.label}</>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+      }
     </div>
   );
 }
