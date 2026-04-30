@@ -62,9 +62,10 @@ const STATUS_META  = {
 const REQ_STATUS       = ["pendente","em andamento","concluído","cancelado"];
 const REQ_STATUS_COLOR = { pendente:"#f97316","em andamento":"#38bdf8",concluído:"#4ade80",cancelado:"#94a3b8" };
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SPRINT HELPERS
-// ══════════════════════════════════════════════════════════════════════════════
+const SESSION_KEY = "taskhub_session";
+function saveSession(u){ try{ localStorage.setItem(SESSION_KEY, JSON.stringify({id:u.id,email:u.email,name:u.name,role:u.role,avatar_url:u.avatar_url||null})); }catch{} }
+function loadSession(){ try{ return JSON.parse(localStorage.getItem(SESSION_KEY)||"null"); }catch{ return null; } }
+function clearSession(){ try{ localStorage.removeItem(SESSION_KEY); }catch{} }
 const SPRINT_ANCHOR = new Date("2025-01-06");
 function getSprintNumber(date=new Date()){
   return Math.max(1, Math.floor((new Date(date)-SPRINT_ANCHOR)/(1000*60*60*24*14))+1);
@@ -649,8 +650,8 @@ function AuthScreen({onLogin}){
         </button>
 
         {mode==="login"&&(
-          <div style={{marginTop:16,padding:"10px 14px",background:"rgba(14,165,233,.07)",border:"1px solid rgba(14,165,233,.2)",borderRadius:8,fontSize:11,color:"var(--muted)",fontFamily:"var(--mono)"}}>
-            Admin: daniel.cunha@oficinabrasil.com.br / 123123
+          <div style={{marginTop:16,padding:"10px 14px",background:"rgba(14,165,233,.07)",border:"1px solid rgba(14,165,233,.2)",borderRadius:8,fontSize:11,color:"var(--muted)"}}>
+            Não tem conta? Clique em "Criar conta" para se registrar.
           </div>
         )}
       </div>
@@ -696,7 +697,14 @@ function ProfilePage({user,onUpdate,onBack,demands=[]}){
   }
 
   const myDemands=demands.filter(d=>d.user_id===user.id||d.user_email===user.email);
-  const stats={ total:myDemands.length, aprovada:myDemands.filter(d=>d.status==="aprovada").length, pendente:myDemands.filter(d=>d.status==="pendente").length, rejeitada:myDemands.filter(d=>d.status==="rejeitada").length };
+  const sorted=[...myDemands].sort((a,b)=>new Date(b.created_at||b.createdAt)-new Date(a.created_at||a.createdAt));
+  const stats={
+    total:myDemands.length,
+    aprovada:myDemands.filter(d=>d.status==="aprovada").length,
+    pendente:myDemands.filter(d=>d.status==="pendente").length,
+    concluida:myDemands.filter(d=>d.status==="concluida").length,
+    rejeitada:myDemands.filter(d=>d.status==="rejeitada").length,
+  };
   const avatar=profile?.avatar_url;
 
   return(
@@ -733,37 +741,16 @@ function ProfilePage({user,onUpdate,onBack,demands=[]}){
           {/* Stats */}
           <div style={{padding:20,background:"var(--card)",border:"1px solid var(--border)",borderRadius:16}}>
             <div style={{fontSize:12,fontWeight:600,color:"var(--muted)",marginBottom:14,textTransform:"uppercase",letterSpacing:".5px"}}>Atividade</div>
-            {[["📋","Total de demandas",stats.total,"var(--text)"],["✅","Aprovadas",stats.aprovada,"#4ade80"],["⏳","Pendentes",stats.pendente,"#f97316"],["❌","Rejeitadas",stats.rejeitada,"#f87171"]].map(([ic,lb,vl,cl])=>(
+            {[["📋","Total",stats.total,"var(--text)"],["✅","Aprovadas",stats.aprovada,"#4ade80"],["🏁","Concluídas",stats.concluida,"#818cf8"],["⏳","Pendentes",stats.pendente,"#f97316"],["❌","Rejeitadas",stats.rejeitada,"#f87171"]].map(([ic,lb,vl,cl])=>(
               <div key={lb} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
                 <span style={{fontSize:13,color:"var(--muted)"}}>{ic} {lb}</span>
                 <span style={{fontWeight:700,fontSize:16,color:cl}}>{vl}</span>
               </div>
             ))}
           </div>
-
-          {/* Recent activity */}
-          <div style={{padding:20,background:"var(--card)",border:"1px solid var(--border)",borderRadius:16}}>
-            <div style={{fontSize:12,fontWeight:600,color:"var(--muted)",marginBottom:14,textTransform:"uppercase",letterSpacing:".5px"}}>Últimas demandas</div>
-            {myDemands.slice(0,4).length===0?<div style={{fontSize:12,color:"var(--muted)"}}>Nenhuma demanda ainda.</div>:
-              myDemands.slice(0,4).map(d=>{
-                const sm=STATUS_META[d.status]||STATUS_META.pendente;
-                const ac=SQUAD_COLORS[d.squad]?.accent||"#94a3b8";
-                return(
-                  <div key={d.id} style={{padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
-                    <div style={{fontSize:12,fontWeight:600,marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{d.title}</div>
-                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                      <span style={{fontSize:10,color:ac}}>●{SQUAD_LABELS[d.squad]}</span>
-                      <span style={{fontSize:10,color:sm.color}}>{sm.icon}{sm.label}</span>
-                      <span style={{fontSize:10,color:"var(--muted)",marginLeft:"auto"}}>{fmt(d.created_at||d.createdAt).split(" ")[0]}</span>
-                    </div>
-                  </div>
-                );
-              })
-            }
-          </div>
         </div>
 
-        {/* Right: edit form */}
+        {/* Right: edit form + full demands list */}
         <div style={{display:"flex",flexDirection:"column",gap:20}}>
           {/* Personal info */}
           <div style={{padding:24,background:"var(--card)",border:"1px solid var(--border)",borderRadius:16}}>
@@ -804,6 +791,51 @@ function ProfilePage({user,onUpdate,onBack,demands=[]}){
           <button onClick={save} disabled={saving} style={{padding:"14px",border:"none",borderRadius:12,fontSize:14,fontWeight:700,background:"linear-gradient(135deg,#0ea5e9,#6366f1)",color:"#fff",transition:"opacity .15s",display:"flex",alignItems:"center",justifyContent:"center",gap:10,opacity:saving?.7:1}}>
             {saving?<><Spinner/>Salvando...</>:saved?"✓ Salvo!":"Salvar alterações"}
           </button>
+
+          {/* Full demands list */}
+          <div style={{padding:24,background:"var(--card)",border:"1px solid var(--border)",borderRadius:16}}>
+            <div style={{fontSize:15,fontWeight:700,marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <span>Minhas Demandas</span>
+              <span style={{fontSize:12,color:"var(--muted)",fontWeight:400}}>{sorted.length} no total</span>
+            </div>
+            {sorted.length===0
+              ?<div style={{textAlign:"center",padding:"24px 0",color:"var(--muted)",fontSize:13}}>Nenhuma demanda enviada ainda.</div>
+              :<div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {sorted.map((d,i)=>{
+                  const sm=STATUS_META[d.status]||STATUS_META.pendente;
+                  const ac=SQUAD_COLORS[d.squad]?.accent||"#94a3b8";
+                  const pColor=PRIO_COLORS[d.priority];
+                  return(
+                    <div key={d.id} style={{padding:"12px 14px",background:"var(--surface)",border:`1px solid ${ac}22`,borderRadius:10,animation:`fadeIn .25s ease ${i*.03}s both`}}>
+                      <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                        <div style={{width:32,height:32,borderRadius:8,background:`${ac}18`,border:`1px solid ${ac}33`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>{SQUAD_ICONS[d.squad]}</div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontWeight:600,fontSize:13,marginBottom:4,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{d.title}</div>
+                          <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+                            <span style={{fontSize:11,color:ac}}>● {SQUAD_LABELS[d.squad]}</span>
+                            {d.team&&<span style={{fontSize:11,color:"var(--muted)"}}>🏷️ {d.team}</span>}
+                            <span style={{fontSize:11,color:pColor}}>⚡ {PRIO_LABELS[d.priority]}</span>
+                            <span style={{fontSize:10,color:"var(--muted)",marginLeft:"auto"}}>{fmt(d.created_at||d.createdAt).split(" ")[0]}</span>
+                          </div>
+                        </div>
+                        <div style={{padding:"3px 10px",borderRadius:999,background:sm.bg,border:`1px solid ${sm.color}44`,fontSize:11,fontWeight:700,color:sm.color,flexShrink:0,display:"flex",alignItems:"center",gap:4}}>
+                          {sm.icon} {sm.label}
+                        </div>
+                      </div>
+                      {d.admin_note&&(
+                        <div style={{marginTop:8,padding:"6px 10px",background:"rgba(99,102,241,.08)",borderRadius:6,fontSize:11,color:"#c7d2fe"}}>
+                          📝 {d.admin_note}
+                        </div>
+                      )}
+                      {d.sprint&&(
+                        <div style={{marginTop:6,fontSize:10,color:"#38bdf8",fontFamily:"var(--mono)"}}>Sprint {d.sprint} · {fmtSprintRange(d.sprint,{})}</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            }
+          </div>
         </div>
       </div>
     </div>
@@ -824,9 +856,8 @@ export default function App(){
   const [notifications,setNotifications]=useState([]);
   const [showNotif,setShowNotif]=useState(false);
 
-  // Auto-connect Supabase on startup
+  // Auto-connect Supabase + restore session on startup
   useEffect(()=>{
-    // Migration: ensure ADMIN_EMAILS always have role="admin" in localStorage
     const d=lsGet();
     if(d?.users){
       let changed=false;
@@ -834,7 +865,21 @@ export default function App(){
       if(changed) lsSet(d);
     }
     initSupabase(SUPABASE_URL, SUPABASE_KEY)
-      .then(()=>setPhase("auth"))
+      .then(async ()=>{
+        // Try to restore saved session
+        const saved=loadSession();
+        if(saved){
+          // Re-fetch profile to get latest data
+          const profile=await db_getProfile(saved.id||saved.email);
+          const u=profile?{...saved,...profile,role:resolveRole(saved.email,profile.role||saved.role)}:saved;
+          setUser(u);
+          await loadAppData(u);
+          setView(u.role==="admin"||u.role==="moderador"?"admin":"queue");
+          setPhase("app");
+        } else {
+          setPhase("auth");
+        }
+      })
       .catch(()=>setPhase("auth"));
   },[]);
 
@@ -853,13 +898,14 @@ export default function App(){
 
   async function handleLogin(u){
     setUser(u);
+    saveSession(u);
     await loadAppData(u);
     setView(u.role==="admin"||u.role==="moderador"?"admin":"queue");
     setPhase("app");
   }
 
-  function handleLogout(){ setUser(null); setPhase("auth"); setNotifications([]); }
-  function handleUserUpdate(u){ setUser(u); }
+  function handleLogout(){ setUser(null); clearSession(); setPhase("auth"); setNotifications([]); }
+  function handleUserUpdate(u){ setUser(u); saveSession(u); }
 
   async function handleNewDemand(demand){
     await db_insertDemand(demand);
@@ -1190,7 +1236,7 @@ function SprintQueueView({demands,sprintOverrides={}}){
   const [activeSquad,setActiveSquad]=useState("industria");
   const {accent}=SQUAD_COLORS[activeSquad];
   const sq=demands.filter(d=>d.squad===activeSquad);
-  const approved=sq.filter(d=>d.status==="aprovada"&&d.sprint);
+  const approved=sq.filter(d=>(d.status==="aprovada"||d.status==="concluida")&&d.sprint);
   const backlog=sq.filter(d=>d.status==="pendente");
   const rejected=sq.filter(d=>d.status==="rejeitada");
   const concluded=sq.filter(d=>d.status==="concluida");
