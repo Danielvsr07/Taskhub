@@ -54,11 +54,14 @@ const TAG_COLORS   = {
 };
 const TAG_ICONS    = { nova_demanda:"✦", bug:"🐛" };
 const STATUS_META  = {
-  pendente:   { label:"Pendente",   color:"#94a3b8", bg:"rgba(148,163,184,.1)", icon:"⏳" },
-  aprovada:   { label:"Aprovada",   color:"#4ade80", bg:"rgba(74,222,128,.1)",  icon:"✅" },
-  rejeitada:  { label:"Rejeitada",  color:"#f87171", bg:"rgba(248,113,113,.1)", icon:"❌" },
-  concluida:  { label:"Concluída",  color:"#818cf8", bg:"rgba(129,140,248,.1)", icon:"🏁" },
+  pendente:    { label:"Pendente",       color:"#94a3b8", bg:"rgba(148,163,184,.1)", icon:"⏳", order:0 },
+  aprovada:    { label:"Aprovada",       color:"#4ade80", bg:"rgba(74,222,128,.1)",  icon:"✅", order:1 },
+  em_andamento:{ label:"Em Andamento",   color:"#38bdf8", bg:"rgba(56,189,248,.1)",  icon:"🔄", order:2 },
+  em_aprovacao:{ label:"Em Aprovação", color:"#f59e0b", bg:"rgba(245,158,11,.1)",  icon:"🔍", order:3 },
+  concluida:   { label:"Concluída",      color:"#818cf8", bg:"rgba(129,140,248,.1)", icon:"🏁", order:4 },
+  rejeitada:   { label:"Rejeitada",      color:"#f87171", bg:"rgba(248,113,113,.1)", icon:"❌", order:5 },
 };
+const FLOW_STATUSES = ["pendente","aprovada","em_andamento","em_aprovacao","concluida"];
 const REQ_STATUS       = ["pendente","em andamento","concluído","cancelado"];
 const REQ_STATUS_COLOR = { pendente:"#f97316","em andamento":"#38bdf8",concluído:"#4ade80",cancelado:"#94a3b8" };
 
@@ -214,9 +217,12 @@ function resolveRole(email, storedRole) {
   return ADMIN_EMAILS.includes(email) ? "admin" : (storedRole || "user");
 }
 const ROLE_META = {
-  admin:     { label:"Admin",      color:"#818cf8", bg:"rgba(99,102,241,.15)",  border:"rgba(99,102,241,.4)",  icon:"🛡️" },
-  moderador: { label:"Moderador",  color:"#f472b6", bg:"rgba(244,114,182,.15)", border:"rgba(244,114,182,.4)", icon:"⚖️" },
-  user:      { label:"Usuário",    color:"#38bdf8", bg:"rgba(56,189,248,.12)",  border:"rgba(56,189,248,.3)",  icon:"👤" },
+  admin:      { label:"Admin",       color:"#818cf8", bg:"rgba(99,102,241,.15)",  border:"rgba(99,102,241,.4)",  icon:"🛡️" },
+  moderador:  { label:"Moderador",   color:"#f472b6", bg:"rgba(244,114,182,.15)", border:"rgba(244,114,182,.4)", icon:"⚖️" },
+  reparador:  { label:"Reparador",   color:"#f7971e", bg:"rgba(247,151,30,.15)",  border:"rgba(247,151,30,.4)",  icon:"🔧" },
+  industria:  { label:"Indústria",   color:"#00c9a7", bg:"rgba(0,201,167,.15)",   border:"rgba(0,201,167,.4)",   icon:"🏭" },
+  inovacao:   { label:"Inovação",    color:"#a78bfa", bg:"rgba(167,139,250,.15)", border:"rgba(167,139,250,.4)", icon:"💡" },
+  user:       { label:"Usuário",     color:"#38bdf8", bg:"rgba(56,189,248,.12)",  border:"rgba(56,189,248,.3)",  icon:"👤" },
 };
 async function sendEmail(params){
   const {serviceId,templateId,publicKey,...tp}=params;
@@ -253,38 +259,46 @@ async function fetchMicrosoftUser(token){
 // ══════════════════════════════════════════════════════════════════════════════
 // SEED (local fallback only)
 // ══════════════════════════════════════════════════════════════════════════════
-const SEED_DEMANDS=[
-  {id:"d1",user_id:"joao@empresa.com",user_email:"joao@empresa.com",user_name:"João Silva",team:"Operações",squad:"industria",priority:"alta",tag:"nova_demanda",title:"Ajuste no fluxo de produção",description:"Revisar pipeline de fabricação para reduzir gargalos na linha 3.",files:[],created_at:new Date(Date.now()-86400000*3).toISOString(),status:"pendente",sprint:null},
-  {id:"d2",user_id:"joao@empresa.com",user_email:"joao@empresa.com",user_name:"João Silva",team:"TI",squad:"reparadores",priority:"critica",tag:"bug",title:"Sistema de ordens caindo",description:"Erros críticos em produção no sistema de OS.",files:[],created_at:new Date(Date.now()-3600000*8).toISOString(),status:"aprovada",sprint:currentSprint(),approved_at:new Date(Date.now()-3600000*2).toISOString(),admin_note:"Prioridade máxima."},
-];
+const SEED_DEMANDS=[];
 const SEED_CONFIG={
   emailConfig:{serviceId:"",templateId:"",publicKey:""},
   authConfig:{googleClientId:"",microsoftClientId:""},
   sprintOverrides:DEFAULT_SPRINT_OVERRIDES,
 };
-const SEED_BACKLOG=[
-  {id:"b1",type:"account",title:"Acesso Jenkins",login:"deploy@empresa.com",password:"J3nk!ns#2024",notes:"Deploy de produção.",created_at:new Date(Date.now()-86400000*5).toISOString()},
-  {id:"b2",type:"request",title:"Renovar certificado SSL",notes:"Vence em 15/06/2026.",created_at:new Date(Date.now()-3600000*3).toISOString(),status:"em andamento"},
-];
+const SEED_BACKLOG=[];
 
 // ══════════════════════════════════════════════════════════════════════════════
 // CSS
 // ══════════════════════════════════════════════════════════════════════════════
 const css=`
-  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  :root{--bg:#080d14;--surface:#0d1520;--card:#111c2d;--border:#1e3050;--text:#e2eaf8;--muted:#5a7ca0;--font:'Sora',sans-serif;--mono:'JetBrains Mono',monospace;}
-  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh}
-  ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
-  input,textarea,select{font-family:var(--font)}button{cursor:pointer;font-family:var(--font)}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  :root{
+    --bg:#06090f;--surface:#0c1219;--card:#111827;--card2:#162032;
+    --border:#1f2e42;--border2:#263648;
+    --text:#f0f4ff;--text2:#a8bdd4;--muted:#4e6a87;
+    --accent:#3b82f6;--accent2:#6366f1;
+    --font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
+    --radius:12px;--radius-sm:8px;
+    --shadow:0 4px 24px rgba(0,0,0,.4);--shadow-lg:0 12px 48px rgba(0,0,0,.6);
+  }
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;line-height:1.5}
+  ::-webkit-scrollbar{width:5px;height:5px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+  input,textarea,select,button{font-family:var(--font)}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
   @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
   @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
   @keyframes spin{to{transform:rotate(360deg)}}
-  .nav-btn:hover{background:rgba(255,255,255,.06)!important}
-  .squad-tab:hover{opacity:.85}
-  .card-hover:hover{border-color:rgba(255,255,255,.12)!important;transform:translateY(-1px)}
+  .nav-btn{transition:all .15s!important}
+  .nav-btn:hover{background:rgba(255,255,255,.06)!important;color:var(--text2)!important}
+  .squad-tab:hover{opacity:.85;transform:translateY(-1px)}
+  .card-hover{transition:all .2s!important}
+  .card-hover:hover{border-color:var(--border2)!important;transform:translateY(-2px);box-shadow:var(--shadow)!important}
 `;
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -374,10 +388,9 @@ function SetupWizard({onDone}){
 
   function skipToLocal(){
     // Initialize with pre-loaded local data
-    if(!lsGet()) lsSet({demands:SEED_DEMANDS,config:SEED_CONFIG,backlog:SEED_BACKLOG,profiles:{},
+    if(!lsGet()) lsSet({demands:[],config:SEED_CONFIG,backlog:[],profiles:{},
       users:[
         {id:"daniel.cunha@oficinabrasil.com.br",email:"daniel.cunha@oficinabrasil.com.br",password:"123123",name:"Daniel Cunha",role:"admin"},
-        {id:"joao@empresa.com",email:"joao@empresa.com",password:"demo123",name:"João Silva",role:"user"},
       ]});
     onDone(null);
   }
@@ -888,9 +901,9 @@ export default function App(){
   async function loadAppData(currentUser){
     const u=currentUser||user;
     const [d,c,b,n]=await Promise.all([db_getDemands(),db_getConfig(),db_getBacklog(),db_getNotifications(u?.id||u?.email||"")]);
-    setDemands(d.length?d:SEED_DEMANDS);
+    setDemands(d||[]);
     setConfig(c&&Object.keys(c).length?{emailConfig:c.email_config||{},authConfig:c.auth_config||{},sprintOverrides:c.sprint_overrides||DEFAULT_SPRINT_OVERRIDES}:SEED_CONFIG);
-    setBacklog(b.length?b:SEED_BACKLOG);
+    setBacklog(b||[]);
     setNotifications(n);
   }
 
@@ -907,47 +920,107 @@ export default function App(){
   function handleLogout(){ setUser(null); clearSession(); setPhase("auth"); setNotifications([]); }
   function handleUserUpdate(u){ setUser(u); saveSession(u); }
 
+  // ── Email helper (mailto — no external service needed) ──────────────────
+  function openMailto(toEmail, toName, subject, bodyLines){
+    const body=bodyLines.join("\n");
+    window.open(`mailto:${toEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,"_blank");
+  }
+
+  function demandEmailBody(demand, statusLabel, extra=[]){
+    const now=new Date().toLocaleString("pt-BR");
+    return [
+      `Olá, ${demand.user_name}!`,``,
+      `Atualização na sua demanda no TaskHUB:`,``,
+      `📋 Demanda: ${demand.title}`,
+      `🏷️ Time: ${demand.team||"—"}`,
+      `🏭 Squad: ${SQUAD_LABELS[demand.squad]}`,
+      `⚡ Prioridade: ${PRIO_LABELS[demand.priority]}`,
+      `📌 Status: ${statusLabel}`,
+      `🕐 Data/Hora: ${now}`,
+      ...extra,``,
+      `Acesse o TaskHUB para mais detalhes.`,
+    ];
+  }
+
   async function handleNewDemand(demand){
-    await db_insertDemand(demand);
-    setDemands(p=>[demand,...p]);
-    showToast("Demanda enviada! Aguarde a aprovação do gestor.");
+    const withTimeline={...demand, timeline:[{status:"pendente",at:new Date().toISOString(),note:"Demanda criada"}]};
+    await db_insertDemand(withTimeline);
+    setDemands(p=>[withTimeline,...p]);
+    // Send email: criação
+    openMailto(demand.user_email, demand.user_name,
+      `[TaskHUB] Nova demanda criada: ${demand.title}`,
+      demandEmailBody(demand,"⏳ Pendente (aguardando aprovação)")
+    );
+    showToast("Demanda enviada! E-mail de confirmação aberto.");
     setView("my");
   }
 
   async function handleApprove({demandId,status,sprint,adminNote}){
     const demand=demands.find(d=>d.id===demandId);
-    const patch={status,sprint:status==="aprovada"?sprint:null,approved_at:new Date().toISOString(),admin_note:adminNote};
-    await db_updateDemand(demandId,patch);
-    setDemands(p=>p.map(d=>d.id===demandId?{...d,...patch}:d));
     const overrides=config.sprintOverrides||{};
     const spRange=status==="aprovada"?fmtSprintRange(sprint,overrides):"";
     const sm=STATUS_META[status];
-
-    // 1. Create in-app notification for the demand owner
-    const notif={
-      id:genId(), user_id:demand.user_id||demand.user_email,
-      type:status, demand_id:demandId, demand_title:demand.title,
-      squad:demand.squad, sprint, sprint_range:spRange,
-      admin_note:adminNote||"", read:false,
-      created_at:new Date().toISOString(),
+    const now=new Date().toISOString();
+    const timelineEntry={status,at:now,note:adminNote||sm.label,sprint:status==="aprovada"?sprint:null};
+    const prevTimeline=demand.timeline||[];
+    const patch={
+      status, sprint:status==="aprovada"?sprint:null,
+      approved_at:now, admin_note:adminNote,
+      timeline:[...prevTimeline,timelineEntry]
     };
+    await db_updateDemand(demandId,patch);
+    setDemands(p=>p.map(d=>d.id===demandId?{...d,...patch}:d));
+
+    // In-app notification
+    const notif={id:genId(),user_id:demand.user_id||demand.user_email,type:status,demand_id:demandId,demand_title:demand.title,squad:demand.squad,sprint,sprint_range:spRange,admin_note:adminNote||"",read:false,created_at:now};
     await db_insertNotification(notif);
 
-    // 2. Open mailto in admin's email client (pre-filled, no external service needed)
-    const subject=encodeURIComponent(`[TaskHUB] Sua demanda foi ${sm.label.toLowerCase()}: ${demand.title}`);
-    const body=encodeURIComponent(
-`Olá, ${demand.user_name}!
+    // Email via mailto
+    const extra=status==="aprovada"
+      ?[`✅ Sprint: Sprint ${sprint} (${spRange})`,adminNote?`📝 Nota: ${adminNote}`:""]
+      :[`❌ Demanda rejeitada`,adminNote?`📝 Motivo: ${adminNote}`:""];
+    openMailto(demand.user_email,demand.user_name,`[TaskHUB] Demanda ${sm.label}: ${demand.title}`,demandEmailBody(demand,`${sm.icon} ${sm.label}`,[...extra]));
+    showToast(`Demanda ${sm.label.toLowerCase()}! E-mail aberto.`);
+  }
 
-Sua demanda "${demand.title}" foi ${sm.label.toLowerCase()} no TaskHUB.
+  async function handleUpdateStatus(demandId, newStatus, note=""){
+    const demand=demands.find(d=>d.id===demandId);
+    const sm=STATUS_META[newStatus];
+    const now=new Date().toISOString();
+    const timelineEntry={status:newStatus,at:now,note:note||sm.label};
+    const patch={status:newStatus,timeline:[...(demand.timeline||[]),timelineEntry]};
+    if(newStatus==="concluida") patch.concluded_at=now;
+    await db_updateDemand(demandId,patch);
+    setDemands(p=>p.map(d=>d.id===demandId?{...d,...patch}:d));
+    // In-app notification
+    const notif={id:genId(),user_id:demand.user_id||demand.user_email,type:newStatus,demand_id:demandId,demand_title:demand.title,squad:demand.squad,sprint:demand.sprint,sprint_range:"",admin_note:note,read:false,created_at:now};
+    await db_insertNotification(notif);
+    // Email
+    openMailto(demand.user_email,demand.user_name,`[TaskHUB] Status atualizado: ${demand.title}`,demandEmailBody(demand,`${sm.icon} ${sm.label}`,note?[`📝 Nota: ${note}`]:[]));
+    showToast(`Status atualizado para "${sm.label}"! E-mail aberto.`);
+  }
 
-${status==="aprovada"?`✅ Sprint: Sprint ${sprint} (${spRange})`:"❌ Demanda rejeitada"}
-${adminNote?`\n📝 Nota do gestor: ${adminNote}`:""}
+  async function handleMoveSprint(demandId, newSprint){
+    const overrides=config.sprintOverrides||{};
+    const spRange=fmtSprintRange(newSprint,overrides);
+    const demand=demands.find(d=>d.id===demandId);
+    const now=new Date().toISOString();
+    const timelineEntry={status:"sprint_move",at:now,note:`Movida para Sprint ${newSprint} (${spRange})`};
+    const patch={sprint:newSprint,timeline:[...(demand.timeline||[]),timelineEntry]};
+    await db_updateDemand(demandId,patch);
+    setDemands(p=>p.map(d=>d.id===demandId?{...d,...patch}:d));
+    openMailto(demand.user_email,demand.user_name,`[TaskHUB] Sprint atualizada: ${demand.title}`,demandEmailBody(demand,STATUS_META[demand.status]?.label||demand.status,[`📅 Nova sprint: Sprint ${newSprint} (${spRange})`]));
+    showToast(`Demanda movida para Sprint ${newSprint}!`);
+  }
 
-Acesse o TaskHUB para mais detalhes.`
-    );
-    window.open(`mailto:${demand.user_email}?subject=${subject}&body=${body}`,"_blank");
-
-    showToast(`Demanda ${sm.label.toLowerCase()}! Notificação enviada e e-mail aberto.`);
+  async function handleEditDemand(demandId, patch){
+    const demand=demands.find(d=>d.id===demandId);
+    const now=new Date().toISOString();
+    const timelineEntry={status:"editada",at:now,note:"Demanda editada pelo solicitante"};
+    const fullPatch={...patch,updated_at:now,timeline:[...(demand.timeline||[]),timelineEntry]};
+    await db_updateDemand(demandId,fullPatch);
+    setDemands(p=>p.map(d=>d.id===demandId?{...d,...fullPatch}:d));
+    showToast("Demanda atualizada!");
   }
 
   async function handleSaveConfig(patch){
@@ -966,13 +1039,6 @@ Acesse o TaskHUB para mais detalhes.`
     await db_deleteDemand(demandId);
     setDemands(p=>p.filter(d=>d.id!==demandId));
     showToast("Demanda excluída.");
-  }
-
-  async function handleConcludeDemand(demandId){
-    const patch={status:"concluida",concluded_at:new Date().toISOString()};
-    await db_updateDemand(demandId,patch);
-    setDemands(p=>p.map(d=>d.id===demandId?{...d,...patch}:d));
-    showToast("Demanda marcada como concluída! 🏁");
   }
 
   async function handleMarkAllRead(){
@@ -1054,8 +1120,8 @@ Acesse o TaskHUB para mais detalhes.`
         {view==="profile" && <ProfilePage user={user} onUpdate={handleUserUpdate} onBack={()=>setView(isAdmin?"admin":"queue")} demands={demands}/>}
         {view==="new"     && <NewDemandForm user={user} onSubmit={handleNewDemand} sprintOverrides={overrides}/>}
         {view==="queue"   && <SprintQueueView demands={demands} sprintOverrides={overrides}/>}
-        {view==="my"      && <MyDemandsView demands={demands.filter(d=>(d.user_id===user?.id||d.user_email===user?.email))} sprintOverrides={overrides}/>}
-        {view==="admin"   && isModerator && <AdminPanel demands={demands} config={config} backlog={backlog} isAdmin={isAdmin} onApprove={handleApprove} onDelete={handleDeleteDemand} onConclude={handleConcludeDemand} onSaveConfig={handleSaveConfig} onSaveBacklog={handleSaveBacklog}/>}
+        {view==="my"      && <MyDemandsView demands={demands.filter(d=>(d.user_id===user?.id||d.user_email===user?.email))} sprintOverrides={overrides} onEdit={handleEditDemand}/>}
+        {view==="admin"   && isModerator && <AdminPanel demands={demands} config={config} backlog={backlog} isAdmin={isAdmin} onApprove={handleApprove} onDelete={handleDeleteDemand} onUpdateStatus={handleUpdateStatus} onMoveSprint={handleMoveSprint} onSaveConfig={handleSaveConfig} onSaveBacklog={handleSaveBacklog}/>}
       </main>
     </div>
   );
@@ -1236,7 +1302,7 @@ function SprintQueueView({demands,sprintOverrides={}}){
   const [activeSquad,setActiveSquad]=useState("industria");
   const {accent}=SQUAD_COLORS[activeSquad];
   const sq=demands.filter(d=>d.squad===activeSquad);
-  const approved=sq.filter(d=>(d.status==="aprovada"||d.status==="concluida")&&d.sprint);
+  const approved=sq.filter(d=>["aprovada","em_andamento","em_aprovacao","concluida"].includes(d.status)&&d.sprint);
   const backlog=sq.filter(d=>d.status==="pendente");
   const rejected=sq.filter(d=>d.status==="rejeitada");
   const concluded=sq.filter(d=>d.status==="concluida");
@@ -1342,8 +1408,15 @@ function DemandCard({demand,index,accent,sprintOverrides={}}){
 // ══════════════════════════════════════════════════════════════════════════════
 // MY DEMANDS VIEW
 // ══════════════════════════════════════════════════════════════════════════════
-function MyDemandsView({demands,sprintOverrides={}}){
+function MyDemandsView({demands,sprintOverrides={},onEdit}){
+  const [editing,setEditing]=useState(null); // demand being edited
+  const [editForm,setEditForm]=useState({});
   const sorted=[...demands].sort((a,b)=>new Date(b.created_at||b.createdAt)-new Date(a.created_at||a.createdAt));
+
+  function startEdit(d){ setEditing(d.id); setEditForm({title:d.title,description:d.description,priority:d.priority,tag:d.tag,team:d.team||""}); }
+  function cancelEdit(){ setEditing(null); setEditForm({}); }
+  async function saveEdit(id){ await onEdit(id,editForm); setEditing(null); }
+  const fe=k=>e=>setEditForm(p=>({...p,[k]:e.target.value}));
   return(
     <div style={{animation:"fadeIn .35s ease"}}>
       <div style={{marginBottom:24}}><h1 style={{fontSize:24,fontWeight:700,letterSpacing:"-.5px"}}>Minhas Demandas</h1><p style={{color:"var(--muted)",fontSize:14,marginTop:4}}>{sorted.length} solicitação(ões)</p></div>
@@ -1357,7 +1430,98 @@ function MyDemandsView({demands,sprintOverrides={}}){
         );})}
       </div>
       {sorted.length===0?<EmptyState icon="📂" title="Nenhuma demanda enviada" sub="Clique em + Nova Demanda para começar"/>
-        :<div style={{display:"flex",flexDirection:"column",gap:10}}>{sorted.map((d,i)=><DemandCard key={d.id} demand={d} index={i} accent={SQUAD_COLORS[d.squad]?.accent||"#94a3b8"} sprintOverrides={sprintOverrides}/>)}</div>}
+        :<div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {sorted.map((d,i)=>{
+            const isPending=d.status==="pendente";
+            const isEditing=editing===d.id;
+            const sm=STATUS_META[d.status]||STATUS_META.pendente;
+            const ac=SQUAD_COLORS[d.squad]?.accent||"#94a3b8";
+            return(
+              <div key={d.id} style={{background:"var(--card)",border:`1px solid var(--border)`,borderRadius:14,overflow:"hidden",animation:`fadeIn .25s ease ${i*.04}s both`}}>
+                {/* Header */}
+                <div style={{padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{width:34,height:34,borderRadius:9,background:`${ac}18`,border:`1px solid ${ac}33`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>{SQUAD_ICONS[d.squad]}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:600,fontSize:14,marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{d.title}</div>
+                    <div style={{display:"flex",gap:8,fontSize:11,color:"var(--muted)",flexWrap:"wrap"}}>
+                      <span style={{color:ac}}>● {SQUAD_LABELS[d.squad]}</span>
+                      {d.team&&<span>🏷️ {d.team}</span>}
+                      <span>🕐 {fmt(d.created_at||d.createdAt)}</span>
+                    </div>
+                  </div>
+                  <Badge label={PRIO_LABELS[d.priority]} color={PRIO_COLORS[d.priority]}/>
+                  <Badge label={sm.label} color={sm.color} bg={sm.bg} icon={sm.icon}/>
+                  {isPending&&!isEditing&&onEdit&&(
+                    <button onClick={()=>startEdit(d)} style={{padding:"5px 10px",border:"1px solid var(--border)",borderRadius:7,background:"transparent",color:"var(--muted)",fontSize:11,transition:"all .15s"}} onMouseOver={e=>e.currentTarget.style.color="#38bdf8"} onMouseOut={e=>e.currentTarget.style.color="var(--muted)"}>✏️ Editar</button>
+                  )}
+                </div>
+                {/* Edit form */}
+                {isEditing&&(
+                  <div style={{padding:"0 18px 18px",borderTop:"1px solid var(--border)"}}>
+                    <div style={{padding:16,background:"rgba(56,189,248,.05)",border:"1px solid rgba(56,189,248,.2)",borderRadius:10,marginTop:14}}>
+                      <div style={{fontSize:12,fontWeight:700,color:"#38bdf8",marginBottom:14}}>✏️ Editando demanda <span style={{fontSize:10,fontWeight:400,color:"var(--muted)"}}>(só disponível enquanto pendente)</span></div>
+                      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                        <div>
+                          <div style={{fontSize:11,color:"var(--muted)",marginBottom:5,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px"}}>Título</div>
+                          <input value={editForm.title||""} onChange={fe("title")} style={{width:"100%",padding:"9px 12px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text)",fontSize:14,outline:"none"}} onFocus={e=>e.target.style.borderColor="#38bdf8"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+                        </div>
+                        <div>
+                          <div style={{fontSize:11,color:"var(--muted)",marginBottom:5,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px"}}>Time</div>
+                          <input value={editForm.team||""} onChange={fe("team")} placeholder="Ex.: Operações, TI..." style={{width:"100%",padding:"9px 12px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text)",fontSize:13,outline:"none"}} onFocus={e=>e.target.style.borderColor="#38bdf8"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+                        </div>
+                        <div>
+                          <div style={{fontSize:11,color:"var(--muted)",marginBottom:5,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px"}}>Descrição</div>
+                          <textarea value={editForm.description||""} onChange={fe("description")} rows={4} style={{width:"100%",padding:"9px 12px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text)",fontSize:13,outline:"none",resize:"vertical",lineHeight:1.6}} onFocus={e=>e.target.style.borderColor="#38bdf8"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+                        </div>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                          <div>
+                            <div style={{fontSize:11,color:"var(--muted)",marginBottom:5,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px"}}>Prioridade</div>
+                            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                              {Object.entries(PRIO_LABELS).map(([k,v])=>(
+                                <button key={k} onClick={()=>setEditForm(p=>({...p,priority:k}))} style={{padding:"5px 10px",border:`1px solid ${editForm.priority===k?PRIO_COLORS[k]:"var(--border)"}`,borderRadius:7,background:editForm.priority===k?`${PRIO_COLORS[k]}18`:"var(--surface)",color:editForm.priority===k?PRIO_COLORS[k]:"var(--muted)",fontSize:11,fontWeight:editForm.priority===k?700:400,transition:"all .15s"}}>{v}</button>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{fontSize:11,color:"var(--muted)",marginBottom:5,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px"}}>Tipo</div>
+                            <div style={{display:"flex",gap:6}}>
+                              {Object.entries(TAG_LABELS).map(([k,v])=>(
+                                <button key={k} onClick={()=>setEditForm(p=>({...p,tag:k}))} style={{padding:"5px 10px",border:`1px solid ${editForm.tag===k?TAG_COLORS[k].color:"var(--border)"}`,borderRadius:7,background:editForm.tag===k?TAG_COLORS[k].bg:"var(--surface)",color:editForm.tag===k?TAG_COLORS[k].color:"var(--muted)",fontSize:11,fontWeight:editForm.tag===k?700:400,transition:"all .15s"}}>{TAG_ICONS[k]} {v}</button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{display:"flex",gap:8,marginTop:14}}>
+                        <button onClick={()=>saveEdit(d.id)} style={{padding:"9px 20px",border:"none",borderRadius:9,background:"linear-gradient(135deg,#38bdf8,#0ea5e9)",color:"#fff",fontSize:13,fontWeight:700}}>Salvar alterações</button>
+                        <button onClick={cancelEdit} style={{padding:"9px 16px",border:"1px solid var(--border)",borderRadius:9,background:"transparent",color:"var(--muted)",fontSize:13}}>Cancelar</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {/* Description + timeline (when not editing) */}
+                {!isEditing&&(
+                  <div style={{padding:"0 18px 14px",borderTop:"1px solid rgba(255,255,255,.04)"}}>
+                    <p style={{fontSize:12,color:"var(--text2)",lineHeight:1.6,marginTop:10,marginBottom:d.admin_note?8:0}}>{d.description}</p>
+                    {d.admin_note&&<div style={{padding:"7px 10px",background:"rgba(99,102,241,.07)",borderRadius:7,fontSize:11,color:"#c7d2fe"}}>📝 {d.admin_note}</div>}
+                    {d.sprint&&<div style={{marginTop:8,fontSize:10,color:"#38bdf8",fontFamily:"var(--mono)"}}>Sprint {d.sprint} · {fmtSprintRange(d.sprint,sprintOverrides)}</div>}
+                    {/* Mini timeline */}
+                    {d.timeline?.length>0&&(
+                      <div style={{marginTop:10,display:"flex",gap:4,flexWrap:"wrap"}}>
+                        {d.timeline.map((t,ti)=>{const s2=STATUS_META[t.status]||{icon:"📌",color:"var(--muted)"};return(
+                          <div key={ti} title={`${s2.label||t.status} — ${fmt(t.at)}`} style={{padding:"2px 8px",borderRadius:999,background:`${s2.color}15`,border:`1px solid ${s2.color}33`,fontSize:10,color:s2.color,display:"flex",alignItems:"center",gap:4}}>
+                            {s2.icon} {fmt(t.at).split(" ")[0]}
+                          </div>
+                        );})}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      }
     </div>
   );
 }
@@ -1365,14 +1529,16 @@ function MyDemandsView({demands,sprintOverrides={}}){
 // ══════════════════════════════════════════════════════════════════════════════
 // ADMIN PANEL
 // ══════════════════════════════════════════════════════════════════════════════
-function AdminPanel({demands,config={},backlog=[],isAdmin=false,onApprove,onDelete,onConclude,onSaveConfig,onSaveBacklog}){
+function AdminPanel({demands,config={},backlog=[],isAdmin=false,onApprove,onDelete,onUpdateStatus,onMoveSprint,onSaveConfig,onSaveBacklog}){
   const [tab,setTab]=useState("pending");
   const [users,setUsers]=useState([]);
   const [confirmDelete,setConfirmDelete]=useState(null);
   const pending=demands.filter(d=>d.status==="pendente");
   const approved=demands.filter(d=>d.status==="aprovada");
-  const rejected=demands.filter(d=>d.status==="rejeitada");
+  const inProgress=demands.filter(d=>d.status==="em_andamento");
+  const inReview=demands.filter(d=>d.status==="em_aprovacao");
   const concluded=demands.filter(d=>d.status==="concluida");
+  const rejected=demands.filter(d=>d.status==="rejeitada");
 
   useEffect(()=>{
     if(isAdmin) db_getAllProfiles().then(setUsers);
@@ -1384,22 +1550,24 @@ function AdminPanel({demands,config={},backlog=[],isAdmin=false,onApprove,onDele
   }
 
   const tabs=[
-    {id:"pending",   label:"Pendentes",    count:pending.length,   color:"#f97316", adminOnly:false},
-    {id:"approved",  label:"Aprovadas",    count:approved.length,  color:"#4ade80", adminOnly:false},
-    {id:"concluded", label:"🏁 Concluídas", count:concluded.length, color:"#818cf8", adminOnly:false},
-    {id:"rejected",  label:"Rejeitadas",   count:rejected.length,  color:"#f87171", adminOnly:false},
-    {id:"users",     label:"👥 Usuários",   count:null,             color:"#a78bfa", adminOnly:true},
-    {id:"backlog",   label:"📦 Backlog",    count:null,             color:"#34d399", adminOnly:true},
-    {id:"sprints",   label:"📅 Sprints",    count:null,             color:"#fbbf24", adminOnly:true},
-    {id:"config",    label:"⚙ E-mail",     count:null,             color:"#818cf8", adminOnly:true},
-    {id:"auth",      label:"🔐 Auth",       count:null,             color:"#f472b6", adminOnly:true},
+    {id:"pending",      label:"Pendentes",      count:pending.length,    color:"#94a3b8", adminOnly:false},
+    {id:"approved",     label:"✅ Aprovadas",    count:approved.length,   color:"#4ade80", adminOnly:false},
+    {id:"em_andamento", label:"🔄 Em Andamento", count:inProgress.length, color:"#38bdf8", adminOnly:false},
+    {id:"em_aprovacao", label:"🔍 Em Aprovação", count:inReview.length,   color:"#f59e0b", adminOnly:false},
+    {id:"concluded",    label:"🏁 Concluídas",   count:concluded.length,  color:"#818cf8", adminOnly:false},
+    {id:"rejected",     label:"Rejeitadas",      count:rejected.length,   color:"#f87171", adminOnly:false},
+    {id:"users",        label:"👥 Usuários",      count:null,              color:"#a78bfa", adminOnly:true},
+    {id:"backlog",      label:"📦 Backlog",       count:null,              color:"#34d399", adminOnly:true},
+    {id:"sprints",      label:"📅 Sprints",       count:null,              color:"#fbbf24", adminOnly:true},
+    {id:"config",       label:"⚙ E-mail",        count:null,              color:"#818cf8", adminOnly:true},
+    {id:"auth",         label:"🔐 Auth",          count:null,              color:"#f472b6", adminOnly:true},
   ].filter(t=>!t.adminOnly||isAdmin);
 
-  const listMap={pending,approved,rejected,concluded};
+  const listMap={pending,approved,em_andamento:inProgress,em_aprovacao:inReview,rejected,concluded};
   const list=listMap[tab]||[];
   const overrides=config.sprintOverrides||{};
-  const isDemandTab=["pending","approved","rejected","concluded"].includes(tab);
-  const emptyIcons={pending:"⏳",approved:"✅",rejected:"❌",concluded:"🏁"};
+  const isDemandTab=["pending","approved","em_andamento","em_aprovacao","rejected","concluded"].includes(tab);
+  const emptyIcons={pending:"⏳",approved:"✅",em_andamento:"🔄",em_aprovacao:"🔍",rejected:"❌",concluded:"🏁"};
 
   return(
     <div style={{animation:"fadeIn .35s ease"}}>
@@ -1438,8 +1606,9 @@ function AdminPanel({demands,config={},backlog=[],isAdmin=false,onApprove,onDele
             {[...list].sort((a,b)=>new Date(b.created_at||b.createdAt)-new Date(a.created_at||a.createdAt)).map(d=>(
               <AdminDemandCard key={d.id} demand={d} sprintOverrides={overrides}
                 onApprove={onApprove} canAct={tab==="pending"}
-                canConclude={tab==="approved"}
-                onConclude={()=>onConclude(d.id)}
+                canConclude={tab==="approved"||tab==="em_andamento"||tab==="em_aprovacao"}
+                onUpdateStatus={onUpdateStatus}
+                onMoveSprint={onMoveSprint}
                 onDelete={()=>setConfirmDelete(d)}/>
             ))}
           </div>
@@ -1448,16 +1617,28 @@ function AdminPanel({demands,config={},backlog=[],isAdmin=false,onApprove,onDele
   );
 }
 
-function AdminDemandCard({demand,onApprove,canAct,canConclude,onConclude,onDelete,sprintOverrides={}}){
-  const [open,setOpen]=useState(false); const [actionOpen,setActionOpen]=useState(false);
-  const [sprint,setSprint]=useState(currentSprint()); const [note,setNote]=useState(""); const [loading,setLoading]=useState(false);
-  const {accent}=SQUAD_COLORS[demand.squad]; const pColor=PRIO_COLORS[demand.priority];
+function AdminDemandCard({demand,onApprove,canAct,canConclude,onUpdateStatus,onMoveSprint,onDelete,sprintOverrides={}}){
+  const [open,setOpen]=useState(false);
+  const [actionOpen,setActionOpen]=useState(false);
+  const [statusOpen,setStatusOpen]=useState(false);
+  const [sprintOpen,setSprintOpen]=useState(false);
+  const [sprint,setSprint]=useState(currentSprint());
+  const [note,setNote]=useState("");
+  const [statusNote,setStatusNote]=useState("");
+  const [loading,setLoading]=useState(false);
+  const {accent}=SQUAD_COLORS[demand.squad]||SQUAD_COLORS.industria;
+  const pColor=PRIO_COLORS[demand.priority];
   const cur=currentSprint(); const next=cur+1;
+  const sm=STATUS_META[demand.status]||STATUS_META.pendente;
 
   async function act(status){ setLoading(true); await onApprove({demandId:demand.id,status,sprint,adminNote:note}); setLoading(false); setActionOpen(false); }
+  async function updateStatus(s){ setLoading(true); await onUpdateStatus(demand.id,s,statusNote); setLoading(false); setStatusOpen(false); setStatusNote(""); }
+  async function moveSprint(sp){ await onMoveSprint(demand.id,sp); setSprintOpen(false); }
+
+  const flowStatuses=FLOW_STATUSES.filter(s=>s!=="pendente"); // post-approval statuses
 
   return(
-    <div style={{background:"var(--card)",border:"1px solid var(--border)",borderRadius:14,overflow:"hidden"}}>
+    <div style={{background:"var(--card)",border:`1px solid ${demand.status==="rejeitada"?"rgba(248,113,113,.15)":demand.status==="concluida"?"rgba(129,140,248,.15)":"var(--border)"}`,borderRadius:14,overflow:"hidden"}}>
       <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={()=>setOpen(p=>!p)}>
         <div style={{width:36,height:36,borderRadius:10,background:`${accent}18`,border:`1px solid ${accent}33`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{SQUAD_ICONS[demand.squad]}</div>
         <div style={{flex:1,minWidth:0}}>
@@ -1471,31 +1652,64 @@ function AdminDemandCard({demand,onApprove,canAct,canConclude,onConclude,onDelet
         </div>
         <Badge label={PRIO_LABELS[demand.priority]} color={pColor}/>
         {demand.tag&&<Badge label={TAG_LABELS[demand.tag]} color={TAG_COLORS[demand.tag].color} bg={TAG_COLORS[demand.tag].bg} border={TAG_COLORS[demand.tag].border} icon={TAG_ICONS[demand.tag]}/>}
-        {canAct&&<button onClick={e=>{e.stopPropagation();setActionOpen(p=>!p);}} style={{padding:"7px 16px",border:`1px solid ${actionOpen?"#6366f1":"var(--border)"}`,borderRadius:9,background:actionOpen?"rgba(99,102,241,.15)":"var(--surface)",color:actionOpen?"#818cf8":"var(--muted)",fontSize:12,fontWeight:600,transition:"all .15s"}}>{actionOpen?"Fechar ✕":"Avaliar →"}</button>}
-        {canConclude&&<button onClick={e=>{e.stopPropagation();onConclude&&onConclude();}} style={{padding:"7px 14px",border:"1px solid rgba(129,140,248,.4)",borderRadius:9,background:"rgba(129,140,248,.1)",color:"#818cf8",fontSize:12,fontWeight:600,transition:"all .15s"}} onMouseOver={e=>e.currentTarget.style.background="rgba(129,140,248,.2)"} onMouseOut={e=>e.currentTarget.style.background="rgba(129,140,248,.1)"}>🏁 Concluir</button>}
-        <button onClick={e=>{e.stopPropagation();onDelete&&onDelete();}} style={{padding:"7px 10px",border:"1px solid rgba(239,68,68,.25)",borderRadius:9,background:"transparent",color:"#f87171",fontSize:13,transition:"all .15s"}} onMouseOver={e=>e.currentTarget.style.background="rgba(239,68,68,.1)"} onMouseOut={e=>e.currentTarget.style.background="transparent"} title="Excluir demanda">🗑️</button>
+        <Badge label={sm.label} color={sm.color} bg={sm.bg} icon={sm.icon}/>
+        <div style={{display:"flex",gap:6,flexShrink:0}} onClick={e=>e.stopPropagation()}>
+          {canAct&&<button onClick={()=>{setActionOpen(p=>!p);setStatusOpen(false);setSprintOpen(false);}} style={{padding:"6px 12px",border:`1px solid ${actionOpen?"#6366f1":"var(--border)"}`,borderRadius:8,background:actionOpen?"rgba(99,102,241,.15)":"var(--surface)",color:actionOpen?"#818cf8":"var(--muted)",fontSize:12,fontWeight:600,transition:"all .15s"}}>{actionOpen?"✕":"Avaliar →"}</button>}
+          {canConclude&&<button onClick={()=>{setStatusOpen(p=>!p);setActionOpen(false);setSprintOpen(false);}} style={{padding:"6px 12px",border:`1px solid ${statusOpen?"#38bdf8":"var(--border)"}`,borderRadius:8,background:statusOpen?"rgba(56,189,248,.1)":"var(--surface)",color:statusOpen?"#38bdf8":"var(--muted)",fontSize:12,fontWeight:600,transition:"all .15s"}}>🔄 Status</button>}
+          {demand.sprint&&demand.status!=="concluida"&&<button onClick={()=>{setSprintOpen(p=>!p);setStatusOpen(false);setActionOpen(false);}} style={{padding:"6px 12px",border:`1px solid ${sprintOpen?"#fbbf24":"var(--border)"}`,borderRadius:8,background:sprintOpen?"rgba(251,191,36,.1)":"var(--surface)",color:sprintOpen?"#fbbf24":"var(--muted)",fontSize:12,fontWeight:600,transition:"all .15s"}}>📅 Sprint</button>}
+          <button onClick={()=>onDelete&&onDelete()} style={{padding:"6px 10px",border:"1px solid rgba(248,113,113,.2)",borderRadius:8,background:"transparent",color:"#f87171",fontSize:13,transition:"all .15s"}} title="Excluir">🗑️</button>
+        </div>
         <div style={{color:"var(--muted)",fontSize:11,transition:"transform .2s",transform:open?"rotate(180deg)":"none"}}>▼</div>
       </div>
-      {open&&<div style={{padding:"0 20px 16px",borderTop:"1px solid var(--border)"}} onClick={e=>e.stopPropagation()}><div style={{padding:14,background:"var(--surface)",borderRadius:10,marginTop:12}}><div style={{fontSize:11,color:"var(--muted)",marginBottom:6,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px"}}>Descrição</div><p style={{fontSize:13,lineHeight:1.7}}>{demand.description}</p></div></div>}
+
+      {/* Expand: description + timeline */}
+      {open&&(
+        <div style={{padding:"0 20px 16px",borderTop:"1px solid var(--border)"}} onClick={e=>e.stopPropagation()}>
+          <div style={{padding:14,background:"var(--surface)",borderRadius:10,marginTop:12}}>
+            <div style={{fontSize:11,color:"var(--muted)",marginBottom:6,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px"}}>Descrição</div>
+            <p style={{fontSize:13,lineHeight:1.7}}>{demand.description}</p>
+          </div>
+          {demand.admin_note&&<div style={{padding:12,background:"rgba(99,102,241,.07)",border:"1px solid rgba(99,102,241,.2)",borderRadius:10,marginTop:10,fontSize:13,color:"#c7d2fe"}}>📝 <strong>Nota:</strong> {demand.admin_note}</div>}
+          {/* Timeline */}
+          {demand.timeline?.length>0&&(
+            <div style={{marginTop:12}}>
+              <div style={{fontSize:11,color:"var(--muted)",marginBottom:8,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px"}}>Histórico</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {demand.timeline.map((t,i)=>{
+                  const s=STATUS_META[t.status]||{icon:"📌",color:"var(--muted)",label:t.status};
+                  return(<div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"7px 10px",background:"var(--surface)",borderRadius:8}}>
+                    <span style={{fontSize:14,flexShrink:0}}>{s.icon}</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:12,fontWeight:600,color:s.color}}>{s.label||t.status}</div>
+                      {t.note&&t.note!==s.label&&<div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{t.note}</div>}
+                    </div>
+                    <div style={{fontSize:10,color:"var(--muted)",fontFamily:"var(--mono)",flexShrink:0}}>{fmt(t.at)}</div>
+                  </div>);
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Avaliar panel */}
       {actionOpen&&(
         <div style={{padding:"18px 20px",borderTop:"1px solid rgba(99,102,241,.2)",background:"rgba(99,102,241,.04)",animation:"fadeIn .2s ease"}} onClick={e=>e.stopPropagation()}>
           <div style={{marginBottom:16}}>
             <div style={{fontSize:11,fontWeight:600,color:"var(--muted)",marginBottom:10,textTransform:"uppercase",letterSpacing:".5px"}}>Alocar na sprint</div>
-            <div style={{display:"flex",gap:10,marginBottom:12}}>
-              <button onClick={()=>setSprint(cur)} style={{flex:1,padding:"13px 10px",border:`2px solid ${sprint===cur?"#00c9a7":"var(--border)"}`,borderRadius:10,background:sprint===cur?"rgba(0,201,167,.12)":"var(--surface)",color:sprint===cur?"#00c9a7":"var(--muted)",fontSize:13,fontWeight:700,transition:"all .15s"}}>
-                <div style={{fontSize:16,marginBottom:3}}>⚡</div><div>Sprint Atual</div>
-                <div style={{fontSize:10,fontFamily:"var(--mono)",opacity:.8,marginTop:2}}>#{cur} · {fmtSprintRange(cur,sprintOverrides)}</div>
+            <div style={{display:"flex",gap:10,marginBottom:10}}>
+              <button onClick={()=>setSprint(cur)} style={{flex:1,padding:"12px 8px",border:`2px solid ${sprint===cur?"#00c9a7":"var(--border)"}`,borderRadius:10,background:sprint===cur?"rgba(0,201,167,.12)":"var(--surface)",color:sprint===cur?"#00c9a7":"var(--muted)",fontSize:12,fontWeight:700,transition:"all .15s"}}>
+                ⚡ Sprint Atual<div style={{fontSize:10,fontFamily:"var(--mono)",marginTop:2,opacity:.8}}>#{cur} · {fmtSprintRange(cur,sprintOverrides)}</div>
               </button>
-              <button onClick={()=>setSprint(next)} style={{flex:1,padding:"13px 10px",border:`2px solid ${sprint===next?"#6366f1":"var(--border)"}`,borderRadius:10,background:sprint===next?"rgba(99,102,241,.12)":"var(--surface)",color:sprint===next?"#818cf8":"var(--muted)",fontSize:13,fontWeight:700,transition:"all .15s"}}>
-                <div style={{fontSize:16,marginBottom:3}}>📅</div><div>Próxima Sprint</div>
-                <div style={{fontSize:10,fontFamily:"var(--mono)",opacity:.8,marginTop:2}}>#{next} · {fmtSprintRange(next,sprintOverrides)}</div>
+              <button onClick={()=>setSprint(next)} style={{flex:1,padding:"12px 8px",border:`2px solid ${sprint===next?"#6366f1":"var(--border)"}`,borderRadius:10,background:sprint===next?"rgba(99,102,241,.12)":"var(--surface)",color:sprint===next?"#818cf8":"var(--muted)",fontSize:12,fontWeight:700,transition:"all .15s"}}>
+                📅 Próxima Sprint<div style={{fontSize:10,fontFamily:"var(--mono)",marginTop:2,opacity:.8}}>#{next} · {fmtSprintRange(next,sprintOverrides)}</div>
               </button>
             </div>
             <details style={{fontSize:12,color:"var(--muted)"}}>
-              <summary style={{cursor:"pointer",padding:"6px 0",userSelect:"none"}}>Outra sprint →</summary>
-              <div style={{display:"flex",flexDirection:"column",gap:5,marginTop:8,maxHeight:180,overflowY:"auto"}}>
+              <summary style={{cursor:"pointer",padding:"4px 0",userSelect:"none"}}>Outra sprint →</summary>
+              <div style={{display:"flex",flexDirection:"column",gap:4,marginTop:6,maxHeight:160,overflowY:"auto"}}>
                 {buildSprintOptions(8).filter(sp=>sp!==cur&&sp!==next).map(sp=>(
-                  <button key={sp} onClick={()=>setSprint(sp)} style={{padding:"8px 12px",border:`1px solid ${sprint===sp?"#6366f1":"var(--border)"}`,borderRadius:8,background:sprint===sp?"rgba(99,102,241,.15)":"var(--surface)",color:sprint===sp?"#818cf8":"var(--muted)",fontSize:12,fontWeight:sprint===sp?700:400,textAlign:"left",transition:"all .15s",display:"flex",justifyContent:"space-between"}}>
+                  <button key={sp} onClick={()=>setSprint(sp)} style={{padding:"7px 12px",border:`1px solid ${sprint===sp?"#6366f1":"var(--border)"}`,borderRadius:8,background:sprint===sp?"rgba(99,102,241,.15)":"var(--surface)",color:sprint===sp?"#818cf8":"var(--muted)",fontSize:11,fontWeight:sprint===sp?700:400,textAlign:"left",transition:"all .15s",display:"flex",justifyContent:"space-between"}}>
                     <span>Sprint {sp}{sprintOverrides[sp]&&<span style={{fontSize:9,color:"#fbbf24",marginLeft:4}}>📌</span>}</span>
                     <span style={{fontFamily:"var(--mono)",fontSize:10,opacity:.65}}>{fmtSprintRange(sp,sprintOverrides)}</span>
                   </button>
@@ -1503,19 +1717,53 @@ function AdminDemandCard({demand,onApprove,canAct,canConclude,onConclude,onDelet
               </div>
             </details>
           </div>
-          <div style={{marginBottom:16}}>
+          <div style={{marginBottom:14}}>
             <div style={{fontSize:11,fontWeight:600,color:"var(--muted)",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Nota para o solicitante</div>
-            <textarea value={note} onChange={e=>setNote(e.target.value)} rows={4} placeholder="Ex.: Demanda aceita! Entrará na sprint atual."
+            <textarea value={note} onChange={e=>setNote(e.target.value)} rows={3} placeholder="Ex.: Demanda aceita! Entrará na sprint atual."
               style={{width:"100%",padding:"10px 12px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text)",fontSize:13,outline:"none",resize:"none",lineHeight:1.6}}
               onFocus={e=>e.target.style.borderColor="#6366f1"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>act("aprovada")} disabled={loading} style={{flex:1,padding:"12px",border:"1px solid rgba(74,222,128,.4)",borderRadius:10,background:"rgba(74,222,128,.12)",color:"#4ade80",fontSize:13,fontWeight:700,opacity:loading?.6:1}}>
-              {loading?<Spinner/>:"✅ Aprovar → Sprint "+sprint}
+            <button onClick={()=>act("aprovada")} disabled={loading} style={{flex:1,padding:"11px",border:"1px solid rgba(74,222,128,.4)",borderRadius:10,background:"rgba(74,222,128,.12)",color:"#4ade80",fontSize:13,fontWeight:700,opacity:loading?.6:1}}>
+              {loading?<Spinner/>:`✅ Aprovar → Sprint ${sprint}`}
             </button>
-            <button onClick={()=>act("rejeitada")} disabled={loading} style={{flex:1,padding:"12px",border:"1px solid rgba(248,113,113,.35)",borderRadius:10,background:"rgba(248,113,113,.08)",color:"#f87171",fontSize:13,fontWeight:700,opacity:loading?.6:1}}>
+            <button onClick={()=>act("rejeitada")} disabled={loading} style={{flex:1,padding:"11px",border:"1px solid rgba(248,113,113,.35)",borderRadius:10,background:"rgba(248,113,113,.08)",color:"#f87171",fontSize:13,fontWeight:700,opacity:loading?.6:1}}>
               {loading?<Spinner/>:"❌ Rejeitar"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Status update panel */}
+      {statusOpen&&(
+        <div style={{padding:"16px 20px",borderTop:"1px solid rgba(56,189,248,.2)",background:"rgba(56,189,248,.04)",animation:"fadeIn .2s ease"}} onClick={e=>e.stopPropagation()}>
+          <div style={{fontSize:11,fontWeight:600,color:"var(--muted)",marginBottom:10,textTransform:"uppercase",letterSpacing:".5px"}}>Atualizar status</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
+            {flowStatuses.concat(["rejeitada"]).map(s=>{ const sm2=STATUS_META[s]; return(
+              <button key={s} onClick={()=>updateStatus(s)} disabled={demand.status===s||loading}
+                style={{padding:"8px 14px",border:`1px solid ${sm2.color}44`,borderRadius:9,background:demand.status===s?`${sm2.color}20`:"var(--surface)",color:sm2.color,fontSize:12,fontWeight:600,opacity:demand.status===s?.5:1,transition:"all .15s"}}>
+                {sm2.icon} {sm2.label}
+              </button>
+            );})}
+          </div>
+          <textarea value={statusNote} onChange={e=>setStatusNote(e.target.value)} rows={2} placeholder="Nota opcional sobre a atualização..."
+            style={{width:"100%",padding:"9px 12px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text)",fontSize:12,outline:"none",resize:"none"}}
+            onFocus={e=>e.target.style.borderColor="#38bdf8"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+        </div>
+      )}
+
+      {/* Sprint move panel */}
+      {sprintOpen&&(
+        <div style={{padding:"16px 20px",borderTop:"1px solid rgba(251,191,36,.2)",background:"rgba(251,191,36,.04)",animation:"fadeIn .2s ease"}} onClick={e=>e.stopPropagation()}>
+          <div style={{fontSize:11,fontWeight:600,color:"var(--muted)",marginBottom:10,textTransform:"uppercase",letterSpacing:".5px"}}>Mover para outra sprint</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {buildSprintOptions(6).map(sp=>(
+              <button key={sp} onClick={()=>moveSprint(sp)}
+                style={{padding:"8px 14px",border:`1px solid ${demand.sprint===sp?"#fbbf24":"var(--border)"}`,borderRadius:9,background:demand.sprint===sp?"rgba(251,191,36,.12)":"var(--surface)",color:demand.sprint===sp?"#fbbf24":"var(--muted)",fontSize:12,fontWeight:demand.sprint===sp?700:400,transition:"all .15s"}}>
+                Sprint {sp}{sp===cur&&<span style={{fontSize:9,color:"#4ade80",marginLeft:4}}>● atual</span>}
+                <div style={{fontSize:9,fontFamily:"var(--mono)",opacity:.7,marginTop:2}}>{fmtSprintRange(sp,sprintOverrides)}</div>
+              </button>
+            ))}
           </div>
         </div>
       )}
