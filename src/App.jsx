@@ -1065,58 +1065,93 @@ export default function App(){
     <div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",flexDirection:"column"}}>
       <style>{css}</style>
 
+      {/* Toast */}
       {toast&&(
-        <div style={{position:"fixed",top:20,right:20,zIndex:9999,padding:"12px 20px",borderRadius:10,fontSize:13,fontWeight:600,animation:"slideIn .3s ease",
+        <div style={{position:"fixed",top:20,right:20,zIndex:9999,padding:"14px 20px",borderRadius:12,fontSize:13,fontWeight:600,animation:"slideIn .3s ease",
           background:toast.type==="warn"?"rgba(234,179,8,.15)":"rgba(74,222,128,.15)",
           border:`1px solid ${toast.type==="warn"?"rgba(234,179,8,.4)":"rgba(74,222,128,.4)"}`,
-          color:toast.type==="warn"?"#fde047":"#4ade80",boxShadow:"0 8px 32px rgba(0,0,0,.4)"}}>
+          color:toast.type==="warn"?"#fde047":"#4ade80",
+          boxShadow:"0 8px 32px rgba(0,0,0,.5)",backdropFilter:"blur(12px)",maxWidth:380}}>
           {toast.type==="warn"?"⚠️":"✓"} {toast.msg}
         </div>
       )}
 
       {/* Navbar */}
-      <nav style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 28px",height:60,background:"rgba(13,21,32,.95)",borderBottom:"1px solid var(--border)",backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:100}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:32,height:32,borderRadius:8,background:"linear-gradient(135deg,#0ea5e9,#6366f1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>⚡</div>
-          <span style={{fontWeight:700,fontSize:15,letterSpacing:"-.3px"}}>TaskHUB</span>
-          {isAdmin&&<span style={{padding:"2px 8px",borderRadius:6,background:"rgba(99,102,241,.2)",border:"1px solid rgba(99,102,241,.4)",fontSize:10,fontWeight:700,color:"#818cf8",letterSpacing:".5px"}}>ADMIN</span>}
-          {!isAdmin&&isModerator&&<span style={{padding:"2px 8px",borderRadius:6,background:"rgba(244,114,182,.2)",border:"1px solid rgba(244,114,182,.4)",fontSize:10,fontWeight:700,color:"#f472b6",letterSpacing:".5px"}}>MOD</span>}
-          {getSBConfig()&&<span style={{padding:"2px 8px",borderRadius:6,background:"rgba(74,222,128,.1)",border:"1px solid rgba(74,222,128,.3)",fontSize:9,fontWeight:700,color:"#4ade80",letterSpacing:".5px"}}>● SUPABASE</span>}
+      <nav style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 32px",height:64,background:"rgba(6,9,15,.92)",borderBottom:"1px solid var(--border)",backdropFilter:"blur(16px)",position:"sticky",top:0,zIndex:100}}>
+        {/* Logo */}
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#3b82f6,#6366f1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,boxShadow:"0 0 20px rgba(99,102,241,.3)"}}>⚡</div>
+          <div>
+            <div style={{fontWeight:800,fontSize:16,letterSpacing:"-.5px",lineHeight:1}}>TaskHUB</div>
+            <div style={{fontSize:10,color:"var(--muted)",letterSpacing:".5px",lineHeight:1,marginTop:2}}>
+              {isAdmin?"ADMINISTRADOR":isModerator?"MODERADOR":"PLATAFORMA"}
+            </div>
+          </div>
+          {getSBConfig()&&<div style={{width:7,height:7,borderRadius:"50%",background:"#4ade80",boxShadow:"0 0 8px #4ade80",marginLeft:4}} title="Supabase conectado"/>}
         </div>
-        <div style={{display:"flex",gap:4}}>
-          {navItems.map(v=>(
-            <button key={v.id} className="nav-btn" onClick={()=>setView(v.id)} style={{padding:"7px 16px",border:"none",borderRadius:8,fontSize:13,fontWeight:500,transition:"all .15s",background:view===v.id?"rgba(14,165,233,.15)":"transparent",color:view===v.id?"#0ea5e9":"var(--muted)",position:"relative"}}>
-              {v.icon&&<span style={{marginRight:5}}>{v.icon}</span>}{v.label}
-              {v.id==="admin"&&pendingCount>0&&<span style={{position:"absolute",top:4,right:4,width:16,height:16,borderRadius:"50%",background:"#ef4444",fontSize:9,fontWeight:800,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center"}}>{pendingCount}</span>}
-            </button>
-          ))}
+
+        {/* Nav links */}
+        <div style={{display:"flex",gap:2,background:"var(--surface)",borderRadius:12,padding:4}}>
+          {navItems.map(v=>{
+            const active=view===v.id;
+            return(
+              <button key={v.id} className="nav-btn" onClick={()=>setView(v.id)}
+                style={{padding:"8px 18px",border:"none",borderRadius:9,fontSize:13,fontWeight:active?600:400,transition:"all .15s",
+                  background:active?"var(--card)":"transparent",
+                  color:active?"var(--text)":"var(--muted)",
+                  boxShadow:active?"0 2px 8px rgba(0,0,0,.3)":"none",
+                  position:"relative",display:"flex",alignItems:"center",gap:6}}>
+                {v.icon&&<span style={{fontSize:14}}>{v.icon}</span>}
+                {v.label}
+                {v.id==="admin"&&pendingCount>0&&(
+                  <span style={{minWidth:18,height:18,borderRadius:999,background:"#ef4444",fontSize:9,fontWeight:800,color:"#fff",display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"0 5px"}}>
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
-        {/* User avatar + notifications + logout */}
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          {/* Notification Bell */}
+
+        {/* Right: notif + user */}
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          {/* Notif bell */}
           <div style={{position:"relative"}}>
             <button onClick={()=>setShowNotif(p=>!p)}
-              style={{width:34,height:34,borderRadius:8,border:`1px solid ${showNotif?"rgba(14,165,233,.5)":"var(--border)"}`,background:showNotif?"rgba(14,165,233,.1)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,transition:"all .15s",position:"relative"}}>
+              style={{width:38,height:38,borderRadius:10,border:`1px solid ${showNotif?"rgba(59,130,246,.5)":"var(--border)"}`,
+                background:showNotif?"rgba(59,130,246,.1)":"var(--surface)",
+                display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,transition:"all .15s",position:"relative"}}>
               🔔
               {notifications.filter(n=>!n.read).length>0&&(
-                <span style={{position:"absolute",top:4,right:4,width:14,height:14,borderRadius:"50%",background:"#ef4444",fontSize:8,fontWeight:800,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid var(--bg)"}}>
+                <span style={{position:"absolute",top:-4,right:-4,minWidth:18,height:18,borderRadius:999,background:"#ef4444",fontSize:9,fontWeight:800,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid var(--bg)",padding:"0 4px"}}>
                   {notifications.filter(n=>!n.read).length}
                 </span>
               )}
             </button>
-            {showNotif&&(
-              <NotificationDropdown notifications={notifications} onMarkAllRead={handleMarkAllRead} onClose={()=>setShowNotif(false)}/>
-            )}
+            {showNotif&&<NotificationDropdown notifications={notifications} onMarkAllRead={handleMarkAllRead} onClose={()=>setShowNotif(false)}/>}
           </div>
-          <button onClick={()=>setView("profile")} style={{width:32,height:32,borderRadius:8,background:"linear-gradient(135deg,#1e3a5f,#2d5a8e)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,border:view==="profile"?"2px solid #0ea5e9":"2px solid transparent",overflow:"hidden",padding:0,transition:"border-color .15s"}}>
-            {user?.avatar_url?<img src={user.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:(user?.name||"?").charAt(0).toUpperCase()}
+
+          {/* User button */}
+          <button onClick={()=>setView("profile")}
+            style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px 6px 6px",border:`1px solid ${view==="profile"?"rgba(59,130,246,.4)":"var(--border)"}`,borderRadius:10,background:view==="profile"?"rgba(59,130,246,.08)":"var(--surface)",cursor:"pointer",transition:"all .15s"}}>
+            <div style={{width:28,height:28,borderRadius:8,background:"linear-gradient(135deg,#1e3a5f,#2d5a8e)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,overflow:"hidden",flexShrink:0}}>
+              {user?.avatar_url?<img src={user.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:(user?.name||"?").charAt(0).toUpperCase()}
+            </div>
+            <div style={{textAlign:"left"}}>
+              <div style={{fontSize:12,fontWeight:600,color:"var(--text)",lineHeight:1}}>{user?.name?.split(" ")[0]}</div>
+              <div style={{fontSize:10,color:"var(--muted)",lineHeight:1,marginTop:2}}>{ROLE_META[user?.role]?.label||"Usuário"}</div>
+            </div>
           </button>
-          <span style={{fontSize:13,color:"var(--muted)"}}>{user?.name}</span>
-          <button onClick={handleLogout} style={{padding:"6px 12px",border:"1px solid var(--border)",borderRadius:7,fontSize:12,background:"transparent",color:"var(--muted)",transition:"color .15s"}} onMouseOver={e=>e.currentTarget.style.color="var(--text)"} onMouseOut={e=>e.currentTarget.style.color="var(--muted)"}>Sair</button>
+
+          <button onClick={handleLogout}
+            style={{width:38,height:38,borderRadius:10,border:"1px solid var(--border)",background:"var(--surface)",color:"var(--muted)",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}
+            onMouseOver={e=>{e.currentTarget.style.background="rgba(248,113,113,.1)";e.currentTarget.style.color="#f87171";e.currentTarget.style.borderColor="rgba(248,113,113,.3)"}}
+            onMouseOut={e=>{e.currentTarget.style.background="var(--surface)";e.currentTarget.style.color="var(--muted)";e.currentTarget.style.borderColor="var(--border)"}}
+            title="Sair">↩</button>
         </div>
       </nav>
 
-      <main style={{flex:1,padding:32,maxWidth:1200,margin:"0 auto",width:"100%"}}>
+      <main style={{flex:1,padding:"28px 32px",maxWidth:1280,margin:"0 auto",width:"100%"}}>
         {view==="profile" && <ProfilePage user={user} onUpdate={handleUserUpdate} onBack={()=>setView(isAdmin?"admin":"queue")} demands={demands}/>}
         {view==="new"     && <NewDemandForm user={user} onSubmit={handleNewDemand} sprintOverrides={overrides}/>}
         {view==="queue"   && <SprintQueueView demands={demands} sprintOverrides={overrides}/>}
@@ -1308,19 +1343,48 @@ function SprintQueueView({demands,sprintOverrides={}}){
   const concluded=sq.filter(d=>d.status==="concluida");
   const sprints=[...new Set(approved.map(d=>d.sprint))].sort((a,b)=>a-b);
   const cur=currentSprint();
+  const totalAll=demands.length;
 
   return(
     <div style={{animation:"fadeIn .35s ease"}}>
-      <div style={{marginBottom:24}}>
-        <h1 style={{fontSize:24,fontWeight:700,letterSpacing:"-.5px"}}>Filas por Sprint</h1>
-        <p style={{color:"var(--muted)",fontSize:14,marginTop:4}}>Sprint atual: <span style={{color:accent,fontWeight:600}}>Sprint {cur}</span> <span style={{fontFamily:"var(--mono)",fontSize:12}}>({fmtSprintRange(cur,sprintOverrides)})</span></p>
+      {/* Page header */}
+      <div style={{marginBottom:28}}>
+        <h1 style={{fontSize:28,fontWeight:800,letterSpacing:"-.8px",marginBottom:6}}>Filas por Sprint</h1>
+        <p style={{color:"var(--muted)",fontSize:14}}>
+          Sprint atual: <strong style={{color:accent}}>Sprint {cur}</strong>
+          <span style={{fontFamily:"var(--mono)",fontSize:12,marginLeft:6,color:"var(--muted)"}}>{fmtSprintRange(cur,sprintOverrides)}</span>
+          <span style={{marginLeft:12,color:"var(--muted)"}}>· {totalAll} demanda(s) no total</span>
+        </p>
       </div>
-      <div style={{display:"flex",gap:8,marginBottom:28}}>
-        {SQUADS.map(s=>{ const {accent:a,light:l}=SQUAD_COLORS[s]; const active=s===activeSquad; const cnt=demands.filter(d=>d.squad===s).length; return(
-          <button key={s} className="squad-tab" onClick={()=>setActiveSquad(s)} style={{padding:"10px 20px",border:`1px solid ${active?a:"var(--border)"}`,borderRadius:10,background:active?l:"var(--card)",color:active?a:"var(--muted)",fontSize:13,fontWeight:active?700:400,transition:"all .2s",display:"flex",alignItems:"center",gap:8}}>
-            <span>{SQUAD_ICONS[s]}</span>{SQUAD_LABELS[s]}<span style={{padding:"2px 8px",borderRadius:999,background:active?`${a}22`:"rgba(255,255,255,.05)",fontSize:11,fontFamily:"var(--mono)",color:active?a:"var(--muted)"}}>{cnt}</span>
-          </button>
-        );})}
+
+      {/* Squad selector — card style */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:32}}>
+        {SQUADS.map(s=>{
+          const {accent:a,light:l}=SQUAD_COLORS[s];
+          const active=s===activeSquad;
+          const cnt=demands.filter(d=>d.squad===s).length;
+          const pendCnt=demands.filter(d=>d.squad===s&&d.status==="pendente").length;
+          const concCnt=demands.filter(d=>d.squad===s&&d.status==="concluida").length;
+          return(
+            <button key={s} className="squad-tab" onClick={()=>setActiveSquad(s)}
+              style={{padding:"18px 20px",border:`1.5px solid ${active?a:"var(--border)"}`,borderRadius:16,
+                background:active?l:"var(--card)",cursor:"pointer",transition:"all .22s",textAlign:"left",
+                boxShadow:active?`0 4px 20px ${a}30`:"none"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                <div style={{width:36,height:36,borderRadius:10,background:`${a}20`,border:`1px solid ${a}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{SQUAD_ICONS[s]}</div>
+                <div>
+                  <div style={{fontWeight:700,fontSize:15,color:active?a:"var(--text)"}}>{SQUAD_LABELS[s]}</div>
+                  <div style={{fontSize:11,color:"var(--muted)"}}>{cnt} demanda(s)</div>
+                </div>
+                {active&&<div style={{marginLeft:"auto",width:8,height:8,borderRadius:"50%",background:a,boxShadow:`0 0 8px ${a}`,animation:"pulse 2s infinite"}}/>}
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <span style={{fontSize:11,padding:"2px 8px",borderRadius:999,background:"rgba(148,163,184,.1)",color:"var(--muted)"}}>⏳ {pendCnt} pendente(s)</span>
+                <span style={{fontSize:11,padding:"2px 8px",borderRadius:999,background:"rgba(129,140,248,.1)",color:"#818cf8"}}>🏁 {concCnt} concluída(s)</span>
+              </div>
+            </button>
+          );
+        })}
       </div>
       {sprints.length===0&&backlog.length===0&&rejected.length===0
         ?<EmptyState icon="📭" title="Nenhuma demanda nesta squad" sub="Envie uma nova demanda para começar"/>
@@ -1337,22 +1401,56 @@ function SprintQueueView({demands,sprintOverrides={}}){
   );
 }
 function SectionHeader({color,label,count}){
-  return(<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><div style={{padding:"4px 14px",borderRadius:999,background:`${color}10`,border:`1px solid ${color}33`,fontSize:12,fontWeight:700,color}}>{label}</div><span style={{fontSize:12,color:"var(--muted)"}}>· {count} demanda(s)</span></div>);
+  return(
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+      <div style={{height:1,flex:1,background:`linear-gradient(90deg,${color}40,transparent)`}}/>
+      <div style={{padding:"5px 16px",borderRadius:999,background:`${color}10`,border:`1px solid ${color}33`,fontSize:12,fontWeight:700,color,display:"flex",alignItems:"center",gap:6}}>
+        {label} <span style={{opacity:.7}}>({count})</span>
+      </div>
+      <div style={{height:1,width:40,background:`${color}20`}}/>
+    </div>
+  );
 }
+
 function SprintSection({sprint,cur,demands,accent,sprintOverrides={}}){
   const isCurrent=sprint===cur,isPast=sprint<cur;
+  const {start,end,custom}=sprintDates(sprint,sprintOverrides);
+  const totalDays=Math.round((end-start)/(86400000));
+  const elapsed=Math.min(totalDays,Math.max(0,Math.round((new Date()-start)/(86400000))));
+  const sprintPct=isCurrent?Math.round((elapsed/totalDays)*100):isPast?100:0;
+
   return(
-    <div>
-      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
-        <div style={{padding:"5px 16px",borderRadius:999,border:`1px solid ${isCurrent?`${accent}66`:"var(--border)"}`,background:isCurrent?`${accent}14`:"var(--surface)",fontSize:13,fontWeight:700,color:isCurrent?accent:"var(--muted)",display:"flex",alignItems:"center",gap:8}}>
-          {isCurrent&&<span style={{width:7,height:7,borderRadius:"50%",background:accent,display:"inline-block",animation:"pulse 2s infinite"}}/>}
-          Sprint {sprint} · {isCurrent?"Em andamento":isPast?"Concluída":"Futura"}
-          {sprintOverrides[sprint]&&<span style={{fontSize:10,color:"#fbbf24",marginLeft:4}}>📌 editada</span>}
+    <div style={{marginBottom:8}}>
+      {/* Sprint header */}
+      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16,padding:"14px 18px",background:"var(--card)",borderRadius:14,border:`1px solid ${isCurrent?`${accent}44`:"var(--border)"}`}}>
+        <div style={{width:42,height:42,borderRadius:12,background:isCurrent?`${accent}20`:"var(--surface)",border:`2px solid ${isCurrent?accent:"var(--border)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--mono)",fontSize:13,fontWeight:800,color:isCurrent?accent:"var(--muted)",flexShrink:0}}>
+          {sprint}
         </div>
-        <span style={{fontSize:12,color:"var(--muted)",fontFamily:"var(--mono)"}}>{fmtSprintRange(sprint,sprintOverrides)}</span>
-        <span style={{fontSize:12,color:"var(--muted)"}}>· {demands.length} demanda(s)</span>
+        <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+            <span style={{fontWeight:700,fontSize:15,color:isCurrent?accent:"var(--text)"}}>Sprint {sprint}</span>
+            <span style={{padding:"2px 10px",borderRadius:999,fontSize:11,fontWeight:600,
+              background:isCurrent?"rgba(74,222,128,.12)":isPast?"rgba(148,163,184,.1)":"rgba(59,130,246,.1)",
+              color:isCurrent?"#4ade80":isPast?"var(--muted)":"#60a5fa"}}>
+              {isCurrent?"🟢 Em andamento":isPast?"✓ Concluída":"🔵 Futura"}
+            </span>
+            {custom&&<span style={{fontSize:10,color:"#fbbf24"}}>📌 editada</span>}
+          </div>
+          <div style={{fontSize:12,color:"var(--muted)",fontFamily:"var(--mono)"}}>
+            {fmtSprintRange(sprint,sprintOverrides)} · {demands.length} demanda(s)
+          </div>
+          {/* Sprint progress bar */}
+          {(isCurrent||isPast)&&(
+            <div style={{marginTop:8,height:4,background:"var(--border)",borderRadius:4,overflow:"hidden",width:"100%"}}>
+              <div style={{height:"100%",background:`linear-gradient(90deg,${accent},${accent}88)`,width:`${sprintPct}%`,transition:"width .5s ease",borderRadius:4}}/>
+            </div>
+          )}
+        </div>
+        <div style={{fontSize:13,fontWeight:700,color:"var(--muted)",fontFamily:"var(--mono)"}}>{demands.length}</div>
       </div>
-      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+
+      {/* Demand cards */}
+      <div style={{display:"flex",flexDirection:"column",gap:12,paddingLeft:8,borderLeft:`2px solid ${accent}22`}}>
         {[...demands].sort((a,b)=>PRIO_ORDER(a.priority)-PRIO_ORDER(b.priority)).map((d,i)=><DemandCard key={d.id} demand={d} index={i} accent={accent} sprintOverrides={sprintOverrides}/>)}
       </div>
     </div>
@@ -1364,41 +1462,129 @@ function SprintSection({sprint,cur,demands,accent,sprintOverrides={}}){
 // ══════════════════════════════════════════════════════════════════════════════
 function DemandCard({demand,index,accent,sprintOverrides={}}){
   const [open,setOpen]=useState(false);
-  const pColor=PRIO_COLORS[demand.priority]; const sm=STATUS_META[demand.status]||STATUS_META.pendente; const tc=demand.tag?TAG_COLORS[demand.tag]:null;
+  const pColor=PRIO_COLORS[demand.priority];
+  const sm=STATUS_META[demand.status]||STATUS_META.pendente;
+  const tc=demand.tag?TAG_COLORS[demand.tag]:null;
   const createdAt=demand.created_at||demand.createdAt;
+  const timeline=demand.timeline||[];
+
+  // Build timeline steps for progress display
+  const STEPS=["pendente","aprovada","em_andamento","em_aprovacao","concluida"];
+  const curStepIdx=STEPS.indexOf(demand.status);
+  const progressPct=demand.status==="rejeitada"?0:Math.max(0,Math.min(100,(curStepIdx/(STEPS.length-1))*100));
+
   return(
-    <div className="card-hover" onClick={()=>setOpen(p=>!p)} style={{background:"var(--card)",border:"1px solid var(--border)",borderRadius:14,overflow:"hidden",transition:"all .2s",animation:`fadeIn .3s ease ${index*.04}s both`,cursor:"pointer"}}>
-      <div style={{padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
-        <div style={{width:34,height:34,borderRadius:9,background:`${accent}18`,border:`1px solid ${accent}33`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--mono)",fontSize:11,fontWeight:700,color:accent,flexShrink:0}}>#{String(index+1).padStart(2,"00")}</div>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{fontWeight:600,fontSize:14,marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{demand.title}</div>
-          <div style={{display:"flex",alignItems:"center",gap:8,fontSize:11,color:"var(--muted)",flexWrap:"wrap"}}>
-            <span>👤 {demand.user_name||demand.userName}</span>
-            {demand.team&&<span>🏷️ {demand.team}</span>}
-            <span>🕐 {fmt(createdAt)}</span>
-          </div>
+    <div className="card-hover" onClick={()=>setOpen(p=>!p)}
+      style={{background:"var(--card)",border:`1px solid ${open?accent+"44":"var(--border)"}`,borderRadius:16,overflow:"hidden",transition:"all .22s",animation:`fadeIn .3s ease ${index*.04}s both`,cursor:"pointer",boxShadow:open?`0 0 0 1px ${accent}22`:"none"}}>
+
+      {/* Top accent line */}
+      <div style={{height:3,background:`linear-gradient(90deg,${accent},${accent}55)`,opacity:.7}}/>
+
+      {/* Main row */}
+      <div style={{padding:"16px 20px",display:"flex",alignItems:"flex-start",gap:14}}>
+        {/* Squad icon */}
+        <div style={{width:40,height:40,borderRadius:11,background:`${accent}15`,border:`1px solid ${accent}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,marginTop:2}}>
+          {SQUAD_ICONS[demand.squad]}
         </div>
-        <Badge label={PRIO_LABELS[demand.priority]} color={pColor}/>
-        {tc&&<Badge label={TAG_LABELS[demand.tag]} color={tc.color} bg={tc.bg} border={tc.border} icon={TAG_ICONS[demand.tag]}/>}
-        <Badge label={sm.label} color={sm.color} bg={sm.bg} icon={sm.icon}/>
-        <div style={{color:"var(--muted)",fontSize:11,transition:"transform .2s",transform:open?"rotate(180deg)":"none"}}>▼</div>
-      </div>
-      {open&&(
-        <div style={{padding:"0 18px 18px",borderTop:`1px solid ${accent}22`}} onClick={e=>e.stopPropagation()}>
-          <div style={{padding:14,background:"var(--surface)",borderRadius:10,marginTop:12}}>
-            <div style={{fontSize:11,color:"var(--muted)",marginBottom:6,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px"}}>Descrição</div>
-            <p style={{fontSize:13,lineHeight:1.7}}>{demand.description}</p>
+
+        <div style={{flex:1,minWidth:0}}>
+          {/* Title row */}
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+            <span style={{fontWeight:700,fontSize:15,color:"var(--text)",lineHeight:1.3}}>{demand.title}</span>
+            {tc&&<span style={{padding:"2px 8px",borderRadius:999,background:tc.bg,border:`1px solid ${tc.border}`,fontSize:10,fontWeight:700,color:tc.color}}>{TAG_ICONS[demand.tag]} {TAG_LABELS[demand.tag]}</span>}
           </div>
-          {(demand.admin_note||demand.adminNote)&&(
-            <div style={{padding:14,background:"rgba(99,102,241,.07)",border:"1px solid rgba(99,102,241,.2)",borderRadius:10,marginTop:10}}>
-              <div style={{fontSize:11,color:"#818cf8",marginBottom:6,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px"}}>📝 Nota do Gestor</div>
-              <p style={{fontSize:13,lineHeight:1.7,color:"#c7d2fe"}}>{demand.admin_note||demand.adminNote}</p>
+
+          {/* Meta row */}
+          <div style={{display:"flex",alignItems:"center",gap:12,fontSize:12,color:"var(--muted)",flexWrap:"wrap",marginBottom:12}}>
+            <span style={{display:"flex",alignItems:"center",gap:4}}>
+              <span style={{width:18,height:18,borderRadius:"50%",background:"var(--border2)",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:10}}>👤</span>
+              {demand.user_name||demand.userName}
+            </span>
+            {demand.team&&<span style={{display:"flex",alignItems:"center",gap:4}}><span>🏷️</span>{demand.team}</span>}
+            <span style={{display:"flex",alignItems:"center",gap:4}}><span>🕐</span>{fmt(createdAt)}</span>
+            {demand.sprint&&<span style={{padding:"2px 8px",borderRadius:6,background:"rgba(56,189,248,.1)",border:"1px solid rgba(56,189,248,.2)",fontSize:11,color:"#38bdf8",fontFamily:"var(--mono)"}}>Sprint {demand.sprint}</span>}
+          </div>
+
+          {/* Timeline progress bar */}
+          {demand.status!=="rejeitada"&&(
+            <div style={{marginBottom:8}}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                {STEPS.map((s,i)=>{
+                  const done=curStepIdx>i;
+                  const active=curStepIdx===i;
+                  const sm2=STATUS_META[s];
+                  return(
+                    <div key={s} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,flex:1}}>
+                      <div style={{width:24,height:24,borderRadius:"50%",background:done||active?`${sm2.color}20`:"var(--surface)",border:`2px solid ${done||active?sm2.color:"var(--border)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,transition:"all .3s",boxShadow:active?`0 0 10px ${sm2.color}50`:"none"}}>
+                        {done?"✓":active?sm2.icon:""}
+                      </div>
+                      <span style={{fontSize:9,color:done||active?sm2.color:"var(--muted)",fontWeight:active?700:400,textAlign:"center",lineHeight:1.2}}>{sm2.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Progress line */}
+              <div style={{height:3,background:"var(--border)",borderRadius:3,overflow:"hidden",marginTop:4}}>
+                <div style={{height:"100%",background:`linear-gradient(90deg,${accent},${sm.color})`,width:`${progressPct}%`,transition:"width .5s ease",borderRadius:3}}/>
+              </div>
             </div>
           )}
-          <div style={{marginTop:10,display:"flex",gap:8,flexWrap:"wrap"}}>
-            <div style={{padding:"4px 10px",background:`${accent}12`,border:`1px solid ${accent}33`,borderRadius:6,fontSize:11,color:accent,fontFamily:"var(--mono)"}}>ID: {demand.id}</div>
-            {demand.sprint&&<div style={{padding:"4px 10px",background:"rgba(14,165,233,.1)",border:"1px solid rgba(14,165,233,.3)",borderRadius:6,fontSize:11,color:"#38bdf8",fontFamily:"var(--mono)"}}>Sprint {demand.sprint} · {fmtSprintRange(demand.sprint,sprintOverrides)}</div>}
+
+          {/* Rejected banner */}
+          {demand.status==="rejeitada"&&(
+            <div style={{padding:"6px 12px",borderRadius:8,background:"rgba(248,113,113,.08)",border:"1px solid rgba(248,113,113,.2)",fontSize:12,color:"#f87171",marginBottom:8}}>❌ Demanda rejeitada{demand.admin_note&&` — ${demand.admin_note}`}</div>
+          )}
+        </div>
+
+        {/* Right badges */}
+        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}}>
+          <div style={{padding:"4px 10px",borderRadius:999,background:`${pColor}15`,border:`1px solid ${pColor}33`,fontSize:11,fontWeight:700,color:pColor}}>{PRIO_LABELS[demand.priority]}</div>
+          <div style={{padding:"4px 10px",borderRadius:999,background:sm.bg,border:`1px solid ${sm.color}44`,fontSize:11,fontWeight:700,color:sm.color,display:"flex",alignItems:"center",gap:4}}>{sm.icon} {sm.label}</div>
+          <div style={{fontSize:10,color:"var(--muted)",transform:open?"rotate(180deg)":"none",transition:"transform .2s",marginTop:4}}>▼</div>
+        </div>
+      </div>
+
+      {/* Expanded details */}
+      {open&&(
+        <div style={{borderTop:`1px solid ${accent}20`,animation:"fadeIn .2s ease"}} onClick={e=>e.stopPropagation()}>
+          <div style={{padding:"16px 20px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+            {/* Description */}
+            <div style={{padding:14,background:"var(--surface)",borderRadius:10}}>
+              <div style={{fontSize:11,color:"var(--muted)",marginBottom:8,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px"}}>📄 Descrição</div>
+              <p style={{fontSize:13,lineHeight:1.7,color:"var(--text2)"}}>{demand.description}</p>
+            </div>
+
+            {/* Timeline log */}
+            <div style={{padding:14,background:"var(--surface)",borderRadius:10}}>
+              <div style={{fontSize:11,color:"var(--muted)",marginBottom:8,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px"}}>🕐 Histórico</div>
+              {timeline.length===0
+                ?<div style={{fontSize:12,color:"var(--muted)"}}>Sem atualizações.</div>
+                :<div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:160,overflowY:"auto"}}>
+                  {timeline.map((t,i)=>{
+                    const s2=STATUS_META[t.status]||{icon:"📌",color:"var(--muted)",label:t.status||"Atualização"};
+                    return(
+                      <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                        <div style={{width:20,height:20,borderRadius:"50%",background:`${s2.color}15`,border:`1px solid ${s2.color}33`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0}}>{s2.icon}</div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:11,fontWeight:600,color:s2.color}}>{s2.label||t.status}</div>
+                          {t.note&&t.note!==s2.label&&<div style={{fontSize:10,color:"var(--muted)",lineHeight:1.4}}>{t.note}</div>}
+                        </div>
+                        <div style={{fontSize:10,color:"var(--muted)",fontFamily:"var(--mono)",flexShrink:0,textAlign:"right"}}>{fmt(t.at)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              }
+            </div>
           </div>
+
+          {/* Admin note */}
+          {(demand.admin_note||demand.adminNote)&&(
+            <div style={{margin:"0 20px 16px",padding:"10px 14px",background:"rgba(99,102,241,.07)",border:"1px solid rgba(99,102,241,.2)",borderRadius:10,fontSize:13,color:"#c7d2fe",display:"flex",gap:8}}>
+              <span style={{flexShrink:0}}>📝</span>
+              <div><strong style={{color:"#818cf8"}}>Nota do gestor:</strong> {demand.admin_note||demand.adminNote}</div>
+            </div>
+          )}
         </div>
       )}
     </div>
