@@ -121,8 +121,62 @@ async function dbProfile(id) {
   const s = sb(); if (s) { const { data } = await s.from("profiles").select("*").eq("id",id).single(); return data; }
   return ls.get()?.profiles?.[id]||null;
 }
+async function dbProfileByEmail(email) {
+  const s = sb(); if (s) { const { data } = await s.from("profiles").select("*").eq("email",email).single(); return data||null; }
+  // fallback: search localStorage users
+  const u = ls.get()?.users?.find(u=>u.email===email); return u||null;
+}
+async function dbLogin(email, password) {
+  const s = sb();
+  if (s) {
+    const { data, error } = await s.from("profiles").select("*").eq("email",email).eq("password",password).single();
+    if (error||!data) return null;
+    return data;
+  }
+  const u = ls.get()?.users?.find(u=>u.email===email&&u.password===password);
+  return u||null;
+}
+async function dbRegister(email, password, name) {
+  const s = sb();
+  // Check if already exists
+  const exists = await dbProfileByEmail(email);
+  if (exists) return { error:"E-mail já cadastrado." };
+  const role = ADMIN_EMAILS.includes(email)?"admin":"user";
+  const profile = {id:email,email,name,role,password,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+  if (s) {
+    const { error } = await s.from("profiles").insert([profile]);
+    if (error) return { error: error.message };
+  } else {
+    const data = ls.get()||{users:[],profiles:{}};
+    data.users = [...(data.users||[]),{...profile}];
+    data.profiles = {...(data.profiles||{}), [email]:profile};
+    ls.set(data);
+  }
+  return { user: profile };
+}
+async function dbResetPassword(email) {
+  const s = sb();
+  const tmp = Math.random().toString(36).slice(2,10).toUpperCase();
+  if (s) {
+    const { error } = await s.from("profiles").update({password:tmp}).eq("email",email);
+    if (error) return { error: error.message };
+  } else {
+    const data = ls.get()||{users:[]};
+    const u = data.users?.find(u=>u.email===email);
+    if (!u) return { error:"E-mail não encontrado." };
+    u.password = tmp; ls.set(data);
+  }
+  return { tmp };
+}
 async function dbUpsertProfile(p) {
-  const s = sb(); if (s) { await s.from("profiles").upsert([p]); return; }
+  const s = sb();
+  if (s) {
+    // If password not provided in patch, don't overwrite existing password
+    const payload = p.password!==undefined ? p : {...p};
+    if (payload.password===undefined) delete payload.password;
+    await s.from("profiles").upsert([payload]);
+    return;
+  }
   const data = ls.get()||{profiles:{}}; data.profiles = {...(data.profiles||{}), [p.id]:p}; ls.set(data);
 }
 async function dbAvatar(userId, file) {
@@ -382,28 +436,32 @@ function AuthScreen({onLogin}) {
 
   async function submit() {
     setErr(""); setInfo(""); setLoading(true);
-    const data = ls.get()||{users:[]};
     if (mode==="login") {
-      const u = data.users?.find(u=>u.email===form.email&&u.password===form.password);
-      if (!u) { setErr("E-mail ou senha incorretos."); setShake(true); setTimeout(()=>setShake(false),500); setLoading(false); return; }
+      const u = await dbLogin(form.email, form.password);
+      if (!u) {
+        setErr("E-mail ou senha incorretos.");
+        setShake(true); setTimeout(()=>setShake(false),500);
+        setLoading(false); return;
+      }
       const role = resolveRole(u.email, u.role);
-      if (role!==u.role) { u.role=role; ls.set(data); }
-      await dbUpsertProfile({id:u.id||u.email,email:u.email,name:u.name,role,updated_at:new Date().toISOString()});
-      onLogin({...u,role}); setLoading(false);
+      // Update role if needed
+      if (role!==u.role) await dbUpsertProfile({...u,role,updated_at:new Date().toISOString()});
+      onLogin({...u,role});
+      setLoading(false);
     } else if (mode==="register") {
       if (!form.name||!form.email||!form.password) { setErr("Preencha todos os campos."); setLoading(false); return; }
-      if (data.users?.find(u=>u.email===form.email)) { setErr("E-mail já cadastrado."); setLoading(false); return; }
-      const nu = {id:form.email,email:form.email,password:form.password,name:form.name,role:"user"};
-      data.users=[...(data.users||[]),nu]; ls.set(data);
-      await dbUpsertProfile({id:nu.id,email:nu.email,name:nu.name,role:"user",created_at:new Date().toISOString(),updated_at:new Date().toISOString()});
-      onLogin(nu); setLoading(false);
+      const result = await dbRegister(form.email, form.password, form.name);
+      if (result.error) { setErr(result.error); setLoading(false); return; }
+      onLogin(result.user);
+      setLoading(false);
     } else {
+      // Forgot password
       if (!form.email) { setErr("Informe seu e-mail."); setLoading(false); return; }
-      const u = data.users?.find(u=>u.email===form.email);
-      if (!u) { setErr("Nenhuma conta com este e-mail."); setLoading(false); return; }
-      const tmp = Math.random().toString(36).slice(2,10).toUpperCase();
-      u.password = tmp; ls.set(data);
-      setInfo(`Senha temporária: ${tmp} (configure o Resend no admin para envio automático)`);
+      const exists = await dbProfileByEmail(form.email);
+      if (!exists) { setErr("Nenhuma conta com este e-mail."); setLoading(false); return; }
+      const result = await dbResetPassword(form.email);
+      if (result.error) { setErr(result.error); setLoading(false); return; }
+      setInfo(`Senha temporária gerada: ${result.tmp} — Use-a para entrar e depois altere no perfil.`);
       setLoading(false);
     }
   }
@@ -1857,8 +1915,12 @@ function ProfileView({user,onUpdate,demands}) {
   const [saving,setSaving]   = useState(false);
   const [saved,setSaved]     = useState(false);
   const [uploading,setUploading] = useState(false);
+  const [pwForm,setPwForm]   = useState({current:"",newPw:"",confirm:""});
+  const [pwMsg,setPwMsg]     = useState(null);
+  const [pwSaving,setPwSaving] = useState(false);
   const fileRef = useRef();
   const f = k => e => setForm(p=>({...p,[k]:e.target.value}));
+  const fp = k => e => setPwForm(p=>({...p,[k]:e.target.value}));
   const myDemands = demands.filter(d=>d.user_id===user.id||d.user_email===user.email);
   const roles = profile?.roles||[profile?.role||user?.role||"user"];
   const stats = Object.fromEntries(Object.keys(STATUS).map(k=>[k,myDemands.filter(d=>d.status===k).length]));
@@ -1873,6 +1935,22 @@ function ProfileView({user,onUpdate,demands}) {
     await dbUpsertProfile(updated); setProfile(updated); setSaving(false); setSaved(true);
     onUpdate({...user,name:form.name}); setTimeout(()=>setSaved(false),2000);
   }
+
+  async function changePassword() {
+    setPwMsg(null); setPwSaving(true);
+    if (!pwForm.current||!pwForm.newPw||!pwForm.confirm) { setPwMsg({ok:false,text:"Preencha todos os campos."}); setPwSaving(false); return; }
+    if (pwForm.newPw!==pwForm.confirm) { setPwMsg({ok:false,text:"Nova senha e confirmação não coincidem."}); setPwSaving(false); return; }
+    if (pwForm.newPw.length<6) { setPwMsg({ok:false,text:"A senha deve ter pelo menos 6 caracteres."}); setPwSaving(false); return; }
+    // Verify current password
+    const u = await dbLogin(user.email, pwForm.current);
+    if (!u) { setPwMsg({ok:false,text:"Senha atual incorreta."}); setPwSaving(false); return; }
+    // Update password
+    const s = sb();
+    if (s) { await s.from("profiles").update({password:pwForm.newPw,updated_at:new Date().toISOString()}).eq("email",user.email); }
+    else { const d=ls.get()||{users:[]}; const u2=d.users?.find(x=>x.email===user.email); if(u2){u2.password=pwForm.newPw;ls.set(d);} }
+    setPwMsg({ok:true,text:"Senha alterada com sucesso!"}); setPwForm({current:"",newPw:"",confirm:""}); setPwSaving(false);
+  }
+
   async function handleAvatar(e) {
     const file=e.target.files?.[0]; if(!file) return; setUploading(true);
     const url=await dbAvatar(user.id||user.email,file);
@@ -1946,6 +2024,20 @@ function ProfileView({user,onUpdate,demands}) {
           <button className="btn btn-primary" onClick={save} disabled={saving} style={{padding:"13px",fontSize:14,borderRadius:12,justifyContent:"center",width:"100%"}}>
             {saving?<><Spin/>Salvando...</>:saved?"✓ Salvo!":"Salvar alterações"}
           </button>
+
+          {/* Change password */}
+          <div style={{padding:24,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
+            <div style={{fontWeight:700,fontSize:15,marginBottom:16}}>🔑 Alterar Senha</div>
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              <div><FieldLabel>Senha atual</FieldLabel><input className="input" type="password" value={pwForm.current} onChange={fp("current")} placeholder="••••••••"/></div>
+              <div><FieldLabel>Nova senha</FieldLabel><input className="input" type="password" value={pwForm.newPw} onChange={fp("newPw")} placeholder="Mínimo 6 caracteres"/></div>
+              <div><FieldLabel>Confirmar nova senha</FieldLabel><input className="input" type="password" value={pwForm.confirm} onChange={fp("confirm")} placeholder="Repita a nova senha"/></div>
+            </div>
+            {pwMsg&&<div style={{marginTop:12,padding:"9px 14px",borderRadius:8,fontSize:12,background:pwMsg.ok?"rgba(34,197,94,.1)":"rgba(239,68,68,.1)",border:`1px solid ${pwMsg.ok?"rgba(34,197,94,.3)":"rgba(239,68,68,.3)"}`,color:pwMsg.ok?"#4ade80":"#f87171"}}>{pwMsg.text}</div>}
+            <button className="btn btn-ghost" onClick={changePassword} disabled={pwSaving} style={{marginTop:14,width:"100%",justifyContent:"center",padding:"11px"}}>
+              {pwSaving?<><Spin/>Alterando...</>:"Alterar senha"}
+            </button>
+          </div>
 
           {/* My demands */}
           <div style={{padding:24,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
