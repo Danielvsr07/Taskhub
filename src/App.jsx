@@ -1111,7 +1111,7 @@ export default function App() {
       </nav>
 
       {/* MAIN */}
-      <main style={{flex:1,display:"flex",maxWidth:1400,width:"100%",margin:"0 auto",padding:"0 24px"}}>
+      <main style={{flex:1,display:"flex",maxWidth:1400,width:"100%",margin:"0 auto",padding:"0 24px",minHeight:0,overflow:view==="admin"?"hidden":"visible"}}>
         {view==="queue"     && <QueueView demands={demands} overrides={overrides} onOpen={d=>setTaskModal(d)}/>}
         {view==="new"       && <NewTaskView user={user} onSubmit={handleNewDemand}/>}
         {view==="my"        && <MyTasksView demands={demands.filter(d=>d.user_id===user?.id||d.user_email===user?.email)} onOpen={d=>setTaskModal(d)}/>}
@@ -1362,17 +1362,37 @@ function AnalyticsView({demands}) {
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN VIEW
 // ─────────────────────────────────────────────────────────────────────────────
+// Flat SVG icons for admin sidebar
+const IC = {
+  pending:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+  approved:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+  progress:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>,
+  review:     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+  done:       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+  rejected:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
+  users:      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  backlog:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
+  sprints:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+  email:      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>,
+  delete:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>,
+  approve:    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+  reject:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  sprint:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="5 12 12 5 19 12"/><polyline points="5 19 12 12 19 19"/></svg>,
+  status:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>,
+  open:       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>,
+};
+
 function AdminView({demands,config,backlog,isAdmin,overrides,onApprove,onDelete,onUpdateStatus,onMoveSprint,onSaveConfig,onBacklog,onOpen}) {
-  const [tab,setTab]           = useState("pending");
-  const [users,setUsers]       = useState([]);
+  const [tab,setTab]            = useState("pending");
+  const [users,setUsers]        = useState([]);
   const [confirmDel,setConfirm] = useState(null);
 
-  const pending      = demands.filter(d=>d.status==="pendente");
-  const approved     = demands.filter(d=>d.status==="aprovada");
-  const inProgress   = demands.filter(d=>d.status==="em_andamento");
-  const inReview     = demands.filter(d=>d.status==="em_aprovacao");
-  const concluded    = demands.filter(d=>d.status==="concluida");
-  const rejected     = demands.filter(d=>d.status==="rejeitada");
+  const pending    = demands.filter(d=>d.status==="pendente");
+  const approved   = demands.filter(d=>d.status==="aprovada");
+  const inProgress = demands.filter(d=>d.status==="em_andamento");
+  const inReview   = demands.filter(d=>d.status==="em_aprovacao");
+  const concluded  = demands.filter(d=>d.status==="concluida");
+  const rejected   = demands.filter(d=>d.status==="rejeitada");
 
   useEffect(()=>{ if(isAdmin) dbProfiles().then(setUsers); },[isAdmin]);
 
@@ -1383,73 +1403,136 @@ function AdminView({demands,config,backlog,isAdmin,overrides,onApprove,onDelete,
     setUsers(p=>p.map(u=>u.id===userId?updated:u));
   }
 
-  const tabs = [
-    {id:"pending",      label:"Pendentes",      count:pending.length,   color:"#94a3b8"},
-    {id:"approved",     label:"Aprovadas",       count:approved.length,  color:"#22c55e"},
-    {id:"em_andamento", label:"Em Andamento",    count:inProgress.length,color:"#3b82f6"},
-    {id:"em_aprovacao", label:"Em Aprovação",    count:inReview.length,  color:"#f59e0b"},
-    {id:"concluded",    label:"Concluídas",      count:concluded.length, color:"#8b5cf6"},
-    {id:"rejected",     label:"Rejeitadas",      count:rejected.length,  color:"#ef4444"},
-    ...(isAdmin?[
-      {id:"users",    label:"Usuários",    count:null, color:"#a78bfa"},
-      {id:"backlog",  label:"Backlog",     count:null, color:"#34d399"},
-      {id:"sprints",  label:"Sprints",     count:null, color:"#fbbf24"},
-      {id:"email",    label:"E-mail",      count:null, color:"#818cf8"},
-    ]:[]),
+  const demandTabs = [
+    {id:"pending",      icon:IC.pending,   label:"Pendentes",    count:pending.length,    color:"#94a3b8", list:pending},
+    {id:"approved",     icon:IC.approved,  label:"Aprovadas",    count:approved.length,   color:"#22c55e", list:approved},
+    {id:"em_andamento", icon:IC.progress,  label:"Em Andamento", count:inProgress.length, color:"#3b82f6", list:inProgress},
+    {id:"em_aprovacao", icon:IC.review,    label:"Em Aprovação", count:inReview.length,   color:"#f59e0b", list:inReview},
+    {id:"concluded",    icon:IC.done,      label:"Concluídas",   count:concluded.length,  color:"#8b5cf6", list:concluded},
+    {id:"rejected",     icon:IC.rejected,  label:"Rejeitadas",   count:rejected.length,   color:"#ef4444", list:rejected},
   ];
+  const settingTabs = isAdmin ? [
+    {id:"users",   icon:IC.users,   label:"Usuários",  color:"#a78bfa"},
+    {id:"backlog", icon:IC.backlog, label:"Backlog",   color:"#34d399"},
+    {id:"sprints", icon:IC.sprints, label:"Sprints",   color:"#fbbf24"},
+    {id:"email",   icon:IC.email,   label:"E-mail",    color:"#818cf8"},
+  ] : [];
 
-  const listMap = {pending,approved,em_andamento:inProgress,em_aprovacao:inReview,concluded,rejected};
-  const list = listMap[tab]||[];
-  const isDemandTab = Object.keys(listMap).includes(tab);
+  const allTabs = [...demandTabs,...settingTabs];
+  const activeTab = allTabs.find(t=>t.id===tab);
+  const list = demandTabs.find(t=>t.id===tab)?.list||[];
+  const isDemandTab = demandTabs.some(t=>t.id===tab);
+  const totalActive = pending.length+approved.length+inProgress.length+inReview.length;
 
   return(
-    <div style={{flex:1,padding:"28px 0",animation:"fadeUp .35s ease",display:"flex",flexDirection:"column",gap:0}}>
-      {/* Confirm delete modal */}
+    <div style={{flex:1,display:"flex",gap:0,minHeight:0,width:"100%"}}>
+      {/* Confirm delete */}
       {confirmDel&&(
         <div className="modal-bg" onClick={()=>setConfirm(null)}>
-          <div onClick={e=>e.stopPropagation()} style={{background:"var(--s2)",border:"1px solid rgba(239,68,68,.4)",borderRadius:20,padding:32,width:380,textAlign:"center",animation:"scaleIn .2s ease"}}>
-            <div style={{fontSize:36,marginBottom:12}}>🗑️</div>
-            <h3 style={{fontWeight:800,marginBottom:8}}>Excluir task?</h3>
-            <p style={{fontSize:13,color:"var(--t3)",marginBottom:24,lineHeight:1.6}}>"{confirmDel.title}" será excluída permanentemente.</p>
+          <div onClick={e=>e.stopPropagation()} style={{background:"var(--s2)",border:"1px solid rgba(239,68,68,.4)",borderRadius:20,padding:32,width:360,textAlign:"center",animation:"scaleIn .2s ease"}}>
+            <div style={{width:48,height:48,borderRadius:14,background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.3)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",color:"#f87171"}}>{IC.delete}</div>
+            <h3 style={{fontWeight:800,fontSize:18,marginBottom:8}}>Excluir task?</h3>
+            <p style={{fontSize:13,color:"var(--t3)",marginBottom:24,lineHeight:1.6}}>"{confirmDel.title}" será removida permanentemente e não poderá ser recuperada.</p>
             <div style={{display:"flex",gap:10}}>
-              <button className="btn btn-danger" onClick={()=>{onDelete(confirmDel.id);setConfirm(null);}} style={{flex:1,justifyContent:"center",padding:"11px"}}>Excluir</button>
-              <button className="btn btn-ghost" onClick={()=>setConfirm(null)} style={{flex:1,justifyContent:"center",padding:"11px"}}>Cancelar</button>
+              <button className="btn btn-danger" onClick={()=>{onDelete(confirmDel.id);setConfirm(null);}} style={{flex:1,justifyContent:"center",padding:"11px",fontSize:13}}>Excluir</button>
+              <button className="btn btn-ghost" onClick={()=>setConfirm(null)} style={{flex:1,justifyContent:"center",padding:"11px",fontSize:13}}>Cancelar</button>
             </div>
           </div>
         </div>
       )}
 
-      <div style={{marginBottom:20}}><h1 style={{fontSize:26,fontWeight:900,letterSpacing:"-1px",marginBottom:4}}>Painel Admin</h1><p style={{fontSize:13,color:"var(--t3)"}}>Gerencie tasks, usuários e configurações</p></div>
-
-      {/* Tabs */}
-      <div style={{display:"flex",gap:6,marginBottom:24,overflowX:"auto",paddingBottom:4,flexWrap:"wrap"}}>
-        {tabs.map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"8px 16px",borderRadius:10,border:`1px solid ${tab===t.id?t.color+"55":"var(--border)"}`,background:tab===t.id?`${t.color}10`:"var(--s1)",color:tab===t.id?t.color:"var(--t3)",fontSize:12,fontWeight:tab===t.id?700:400,cursor:"pointer",transition:"all .15s",display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
-            {t.label}
-            {t.count!==null&&<span style={{padding:"1px 7px",borderRadius:999,background:tab===t.id?`${t.color}22`:"rgba(255,255,255,.05)",fontSize:10,fontFamily:"var(--mono)"}}>{t.count}</span>}
-          </button>
-        ))}
-      </div>
-
-      {/* Content */}
-      {tab==="email"   && <EmailCfgPanel config={config.emailConfig||{}} onSave={c=>onSaveConfig({emailConfig:c})}/>}
-      {tab==="sprints" && <SprintMgrPanel overrides={overrides} onSave={o=>onSaveConfig({sprintOverrides:o})}/>}
-      {tab==="backlog" && <BacklogPanel items={backlog} onSave={onBacklog}/>}
-      {tab==="users"   && <UserMgrPanel users={users} onUpdateRole={updateRole}/>}
-
-      {isDemandTab&&(
-        list.length===0
-          ?<EmptySlate icon={STATUS[tab]?.icon||"📋"} title={`Nenhuma demanda ${tabs.find(t=>t.id===tab)?.label.toLowerCase()}`} sub=""/>
-          :<div style={{display:"flex",flexDirection:"column",gap:12}}>
-            {[...list].sort((a,b)=>new Date(b.created_at||b.createdAt)-new Date(a.created_at||a.createdAt)).map(d=>(
-              <AdminTaskRow key={d.id} demand={d} overrides={overrides} canAct={tab==="pending"}
-                canStatus={["approved","em_andamento","em_aprovacao"].includes(tab)}
-                onApprove={onApprove} onDelete={()=>setConfirm(d)}
-                onUpdateStatus={onUpdateStatus} onMoveSprint={onMoveSprint}
-                onOpen={()=>onOpen(d)}/>
+      {/* ── SIDEBAR ── */}
+      <div style={{width:240,flexShrink:0,padding:"28px 0 28px 0",display:"flex",flexDirection:"column",gap:0,borderRight:"1px solid var(--border)",background:"var(--s1)"}}>
+        {/* Header */}
+        <div style={{padding:"0 20px 20px",borderBottom:"1px solid var(--border)"}}>
+          <div style={{fontSize:11,fontWeight:700,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"1px",marginBottom:12}}>Painel Admin</div>
+          {/* Summary cards */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {[["Ativas",totalActive,"#3b82f6"],["Concluídas",concluded.length,"#8b5cf6"]].map(([l,v,c])=>(
+              <div key={l} style={{padding:"10px 12px",background:"var(--s2)",borderRadius:10,border:"1px solid var(--border)"}}>
+                <div style={{fontSize:20,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
+                <div style={{fontSize:10,color:"var(--t3)",marginTop:3,fontWeight:600}}>{l}</div>
+              </div>
             ))}
           </div>
-      )}
+        </div>
+
+        {/* Demand tabs */}
+        <div style={{padding:"16px 12px 8px",flex:1}}>
+          <div style={{fontSize:10,fontWeight:700,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"1px",marginBottom:8,paddingLeft:8}}>Tasks</div>
+          <div style={{display:"flex",flexDirection:"column",gap:2}}>
+            {demandTabs.map(t=>{
+              const active = tab===t.id;
+              return(
+                <button key={t.id} onClick={()=>setTab(t.id)}
+                  style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:10,border:"none",cursor:"pointer",transition:"all .15s",textAlign:"left",
+                    background:active?`${t.color}15`:"transparent",
+                    color:active?t.color:"var(--t3)"}}>
+                  <span style={{opacity:active?1:.7,flexShrink:0}}>{t.icon}</span>
+                  <span style={{flex:1,fontSize:13,fontWeight:active?600:400}}>{t.label}</span>
+                  {t.count>0&&<span style={{minWidth:22,height:18,borderRadius:999,background:active?`${t.color}25`:"var(--border)",fontSize:10,fontWeight:700,color:active?t.color:"var(--t3)",display:"flex",alignItems:"center",justifyContent:"center",padding:"0 6px"}}>{t.count}</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Settings tabs */}
+          {isAdmin&&(
+            <div style={{marginTop:16}}>
+              <div style={{fontSize:10,fontWeight:700,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"1px",marginBottom:8,paddingLeft:8}}>Configurações</div>
+              <div style={{display:"flex",flexDirection:"column",gap:2}}>
+                {settingTabs.map(t=>{
+                  const active = tab===t.id;
+                  return(
+                    <button key={t.id} onClick={()=>setTab(t.id)}
+                      style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:10,border:"none",cursor:"pointer",transition:"all .15s",textAlign:"left",
+                        background:active?`${t.color}15`:"transparent",
+                        color:active?t.color:"var(--t3)"}}>
+                      <span style={{opacity:active?1:.7,flexShrink:0}}>{t.icon}</span>
+                      <span style={{fontSize:13,fontWeight:active?600:400}}>{t.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── MAIN CONTENT ── */}
+      <div style={{flex:1,padding:"28px 0 28px 28px",overflowY:"auto",minWidth:0}}>
+        {/* Page header */}
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24}}>
+          <div style={{width:38,height:38,borderRadius:11,background:activeTab?`${activeTab.color}15`:"var(--s2)",border:`1px solid ${activeTab?activeTab.color+"30":"var(--border)"}`,display:"flex",alignItems:"center",justifyContent:"center",color:activeTab?.color||"var(--t2)",flexShrink:0}}>
+            {activeTab?.icon}
+          </div>
+          <div>
+            <h1 style={{fontSize:20,fontWeight:800,letterSpacing:"-.5px",lineHeight:1,marginBottom:3}}>{activeTab?.label||"Admin"}</h1>
+            {isDemandTab&&<p style={{fontSize:12,color:"var(--t3)"}}>{list.length} task(s) {activeTab?.label?.toLowerCase()}</p>}
+          </div>
+        </div>
+
+        {/* Content panels */}
+        {tab==="email"   && <EmailCfgPanel config={config.emailConfig||{}} onSave={c=>onSaveConfig({emailConfig:c})}/>}
+        {tab==="sprints" && <SprintMgrPanel overrides={overrides} onSave={o=>onSaveConfig({sprintOverrides:o})}/>}
+        {tab==="backlog" && <BacklogPanel items={backlog} onSave={onBacklog}/>}
+        {tab==="users"   && <UserMgrPanel users={users} onUpdateRole={updateRole}/>}
+
+        {isDemandTab&&(
+          list.length===0
+            ?<EmptySlate icon={<span style={{fontSize:40,opacity:.3}}>{activeTab?.icon}</span>} title={`Nenhuma task ${activeTab?.label?.toLowerCase()}`} sub=""/>
+            :<div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {[...list].sort((a,b)=>new Date(b.created_at||b.createdAt)-new Date(a.created_at||a.createdAt)).map(d=>(
+                <AdminTaskRow key={d.id} demand={d} overrides={overrides}
+                  canAct={tab==="pending"}
+                  canStatus={["approved","em_andamento","em_aprovacao"].includes(tab)}
+                  onApprove={onApprove} onDelete={()=>setConfirm(d)}
+                  onUpdateStatus={onUpdateStatus} onMoveSprint={onMoveSprint}
+                  onOpen={()=>onOpen(d)}/>
+              ))}
+            </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1487,10 +1570,11 @@ function AdminTaskRow({demand,overrides,canAct,canStatus,onApprove,onDelete,onUp
         <PrioBadge priority={demand.priority}/>
         <StatusBadge status={demand.status}/>
         <div style={{display:"flex",gap:6,flexShrink:0}}>
-          {canAct&&<button className="btn btn-ghost" onClick={()=>{setActOpen(p=>!p);setStatOpen(false);setSpOpen(false);}} style={{fontSize:11,padding:"5px 10px",background:actOpen?"rgba(99,102,241,.15)":"",borderColor:actOpen?"rgba(99,102,241,.4)":"",color:actOpen?"#818cf8":""}}>{actOpen?"✕":"Avaliar →"}</button>}
-          {canStatus&&<button className="btn btn-ghost" onClick={()=>{setStatOpen(p=>!p);setActOpen(false);setSpOpen(false);}} style={{fontSize:11,padding:"5px 10px",background:statOpen?"rgba(56,189,248,.1)":"",borderColor:statOpen?"rgba(56,189,248,.3)":"",color:statOpen?"#38bdf8":""}}>🔄 Status</button>}
-          {demand.sprint&&demand.status!=="concluida"&&<button className="btn btn-ghost" onClick={()=>{setSpOpen(p=>!p);setActOpen(false);setStatOpen(false);}} style={{fontSize:11,padding:"5px 10px",background:spOpen?"rgba(251,191,36,.1)":"",borderColor:spOpen?"rgba(251,191,36,.3)":"",color:spOpen?"#fbbf24":""}}>📅 Sprint</button>}
-          <button className="btn btn-danger" onClick={onDelete} style={{padding:"5px 8px",fontSize:13}}>🗑️</button>
+          {canAct&&<button className="btn btn-ghost" onClick={()=>{setActOpen(p=>!p);setStatOpen(false);setSpOpen(false);}} style={{fontSize:11,padding:"6px 12px",gap:6,background:actOpen?"rgba(99,102,241,.15)":"",borderColor:actOpen?"rgba(99,102,241,.4)":"",color:actOpen?"#818cf8":""}}>{IC.approve} Avaliar</button>}
+          {canStatus&&<button className="btn btn-ghost" onClick={()=>{setStatOpen(p=>!p);setActOpen(false);setSpOpen(false);}} style={{fontSize:11,padding:"6px 12px",gap:6,background:statOpen?"rgba(56,189,248,.1)":"",borderColor:statOpen?"rgba(56,189,248,.3)":"",color:statOpen?"#38bdf8":""}}>{IC.status} Status</button>}
+          {demand.sprint&&demand.status!=="concluida"&&<button className="btn btn-ghost" onClick={()=>{setSpOpen(p=>!p);setActOpen(false);setStatOpen(false);}} style={{fontSize:11,padding:"6px 12px",gap:6,background:spOpen?"rgba(251,191,36,.1)":"",borderColor:spOpen?"rgba(251,191,36,.3)":"",color:spOpen?"#fbbf24":""}}>{IC.sprint} Sprint</button>}
+          <button onClick={onOpen} className="btn btn-ghost" style={{padding:"6px 10px",fontSize:11,gap:5}}>{IC.open}</button>
+          <button className="btn btn-danger" onClick={onDelete} style={{padding:"6px 10px"}}>{IC.delete}</button>
         </div>
       </div>
 
