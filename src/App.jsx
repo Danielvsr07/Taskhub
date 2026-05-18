@@ -2120,31 +2120,33 @@ function ProfileView({user,onUpdate,demands}) {
 
   return(
     <div style={{flex:1,animation:"fadeUp .35s ease",paddingBottom:40,minWidth:0}}>
-      {/* Cover banner — contained within the view */}
-      <div style={{height:130,background:"linear-gradient(135deg,#0f2044 0%,#1a1f35 40%,#0b1a2e 100%)",borderRadius:20,position:"relative",overflow:"hidden",marginBottom:60,marginTop:28}}>
-        <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(circle at 20% 50%,rgba(59,130,246,.15) 0%,transparent 60%),radial-gradient(circle at 80% 20%,rgba(99,102,241,.12) 0%,transparent 50%)"}}/>
-        {/* Avatar overlapping banner */}
-        <div style={{position:"absolute",bottom:-48,left:28}}>
-          <div style={{position:"relative"}}>
-            <div onClick={()=>fileRef.current.click()} style={{width:96,height:96,borderRadius:"50%",background:"linear-gradient(135deg,#1e3a5f,#2d5a8e)",border:"4px solid var(--bg)",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",fontSize:34,fontWeight:800,cursor:"pointer",boxShadow:"0 8px 24px rgba(0,0,0,.5)"}}>
-              {profile?.avatar_url?<img src={profile.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:(form.name||user.name||"?").charAt(0).toUpperCase()}
+      {/* Cover banner — fully contained */}
+      <div style={{marginTop:28,marginBottom:60,position:"relative"}}>
+        <div style={{height:130,background:"linear-gradient(135deg,#0f2044 0%,#1a1f35 40%,#0b1a2e 100%)",borderRadius:20,overflow:"hidden",position:"relative"}}>
+          <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(circle at 20% 50%,rgba(59,130,246,.15) 0%,transparent 60%),radial-gradient(circle at 80% 20%,rgba(99,102,241,.12) 0%,transparent 50%)"}}/>
+          {/* Progress ring */}
+          <div style={{position:"absolute",top:14,right:20,display:"flex",alignItems:"center",gap:10,padding:"8px 16px",background:"rgba(0,0,0,.35)",borderRadius:999,backdropFilter:"blur(8px)"}}>
+            <svg width="32" height="32" viewBox="0 0 36 36">
+              <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="3"/>
+              <circle cx="18" cy="18" r="14" fill="none" stroke="#4ade80" strokeWidth="3" strokeDasharray={`${pct*.879} 87.9`} strokeLinecap="round" transform="rotate(-90 18 18)"/>
+              <text x="18" y="22" textAnchor="middle" fill="#fff" fontSize="9" fontWeight="700">{pct}%</text>
+            </svg>
+            <div>
+              <div style={{fontSize:11,fontWeight:700,color:"#fff"}}>{totalDone}/{totalAll}</div>
+              <div style={{fontSize:9,color:"rgba(255,255,255,.5)"}}>concluídas</div>
             </div>
-            <div onClick={()=>fileRef.current.click()} style={{position:"absolute",bottom:4,right:4,width:26,height:26,borderRadius:"50%",background:"var(--blue)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",border:"3px solid var(--bg)"}}>
-              {uploading?<Spin/>:<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>}
-            </div>
-            <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatar} style={{display:"none"}}/>
           </div>
         </div>
-        {/* Progress ring */}
-        <div style={{position:"absolute",top:14,right:20,display:"flex",alignItems:"center",gap:10,padding:"8px 16px",background:"rgba(0,0,0,.35)",borderRadius:999,backdropFilter:"blur(8px)"}}>
-          <svg width="32" height="32" viewBox="0 0 36 36">
-            <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="3"/>
-            <circle cx="18" cy="18" r="14" fill="none" stroke="#4ade80" strokeWidth="3" strokeDasharray={`${pct*.879} 87.9`} strokeLinecap="round" transform="rotate(-90 18 18)"/>
-            <text x="18" y="22" textAnchor="middle" fill="#fff" fontSize="9" fontWeight="700">{pct}%</text>
-          </svg>
-          <div>
-            <div style={{fontSize:11,fontWeight:700,color:"#fff"}}>{totalDone}/{totalAll}</div>
-            <div style={{fontSize:9,color:"rgba(255,255,255,.5)"}}>concluídas</div>
+        {/* Avatar sitting below banner edge */}
+        <div style={{position:"absolute",bottom:-44,left:24}}>
+          <div style={{position:"relative"}}>
+            <div onClick={()=>fileRef.current.click()} style={{width:88,height:88,borderRadius:"50%",background:"linear-gradient(135deg,#1e3a5f,#2d5a8e)",border:"4px solid var(--bg)",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,fontWeight:800,cursor:"pointer",boxShadow:"0 8px 24px rgba(0,0,0,.5)"}}>
+              {profile?.avatar_url?<img src={profile.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:(form.name||user.name||"?").charAt(0).toUpperCase()}
+            </div>
+            <div onClick={()=>fileRef.current.click()} style={{position:"absolute",bottom:2,right:2,width:24,height:24,borderRadius:"50%",background:"var(--blue)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",border:"3px solid var(--bg)"}}>
+              {uploading?<Spin/>:<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>}
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatar} style={{display:"none"}}/>
           </div>
         </div>
       </div>
