@@ -21,6 +21,12 @@ async function initSB() {
 }
 const sb = () => _sb;
 
+// Always-ready Supabase — initializes if not yet done
+async function getSB() {
+  if (_sb) return _sb;
+  return await initSB();
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // STORAGE HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -98,19 +104,26 @@ const curSprint = () => sprintNum();
 // DB LAYER
 // ─────────────────────────────────────────────────────────────────────────────
 async function dbDemands() {
-  const s = sb(); if (s) { const { data } = await s.from("demands").select("*").order("created_at",{ascending:false}); return data||[]; }
+  const s = await getSB(); if (s) { const { data } = await s.from("demands").select("*").order("created_at",{ascending:false}); return data||[]; }
   return ls.get()?.demands||[];
 }
 async function dbInsertDemand(d) {
-  const s = sb(); if (s) { await s.from("demands").insert([d]); return; }
+  const s = await getSB();
+  if (s) {
+    const { error } = await s.from("demands").insert([d]);
+    if (error) { console.error("dbInsertDemand error:", error.message); }
+    else return;
+  }
   const data = ls.get()||{demands:[]}; data.demands = [d,...data.demands]; ls.set(data);
 }
 async function dbUpdateDemand(id, patch) {
-  const s = sb(); if (s) { await s.from("demands").update(patch).eq("id",id); return; }
+  const s = await getSB();
+  if (s) { const { error } = await s.from("demands").update(patch).eq("id",id); if(error) console.error("dbUpdateDemand:",error.message); return; }
   const data = ls.get()||{demands:[]}; data.demands = data.demands.map(d=>d.id===id?{...d,...patch}:d); ls.set(data);
 }
 async function dbDeleteDemand(id) {
-  const s = sb(); if (s) { await s.from("demands").delete().eq("id",id); return; }
+  const s = await getSB();
+  if (s) { await s.from("demands").delete().eq("id",id); return; }
   const data = ls.get()||{demands:[]}; data.demands = data.demands.filter(d=>d.id!==id); ls.set(data);
 }
 async function dbProfiles() {
@@ -169,12 +182,12 @@ async function dbResetPassword(email) {
   return { tmp };
 }
 async function dbUpsertProfile(p) {
-  const s = sb();
+  const s = await getSB();
   if (s) {
-    // If password not provided in patch, don't overwrite existing password
-    const payload = p.password!==undefined ? p : {...p};
+    const payload = {...p};
     if (payload.password===undefined) delete payload.password;
-    await s.from("profiles").upsert([payload]);
+    const { error } = await s.from("profiles").upsert([payload]);
+    if (error) console.error("dbUpsertProfile:", error.message);
     return;
   }
   const data = ls.get()||{profiles:{}}; data.profiles = {...(data.profiles||{}), [p.id]:p}; ls.set(data);
@@ -203,7 +216,7 @@ async function dbNotifications(userId) {
   return (ls.get()?.notifications||[]).filter(n=>n.user_id===userId);
 }
 async function dbInsertNotif(n) {
-  const s = sb(); if (s) { await s.from("notifications").insert([n]); return; }
+  const s = await getSB(); if (s) { await s.from("notifications").insert([n]); return; }
   const data = ls.get()||{notifications:[]}; data.notifications=[n,...(data.notifications||[])]; ls.set(data);
 }
 async function dbMarkRead(userId) {
@@ -215,12 +228,12 @@ async function dbBacklog() {
   return ls.get()?.backlog||[];
 }
 async function dbUpsertBacklog(item) {
-  const s = sb(); if (s) { await s.from("backlog").upsert([item]); return; }
+  const s = await getSB(); if (s) { await s.from("backlog").upsert([item]); return; }
   const data = ls.get()||{backlog:[]}; const exists=data.backlog.find(x=>x.id===item.id);
   data.backlog = exists?data.backlog.map(x=>x.id===item.id?item:x):[...data.backlog,item]; ls.set(data);
 }
 async function dbDeleteBacklog(id) {
-  const s = sb(); if (s) { await s.from("backlog").delete().eq("id",id); return; }
+  const s = await getSB(); if (s) { await s.from("backlog").delete().eq("id",id); return; }
   const data = ls.get()||{backlog:[]}; data.backlog=data.backlog.filter(x=>x.id!==id); ls.set(data);
 }
 
