@@ -1286,24 +1286,36 @@ function QueueView({demands,overrides,onOpen}) {
 // ─────────────────────────────────────────────────────────────────────────────
 function MyTasksView({demands,onOpen}) {
   const sorted = [...demands].sort((a,b)=>new Date(b.created_at||b.createdAt)-new Date(a.created_at||a.createdAt));
-  const stats = Object.fromEntries(Object.keys(STATUS).map(k=>[k,demands.filter(d=>d.status===k).length]));
+  const [filter,setFilter] = useState("all");
+  const filtered = filter==="all" ? sorted : sorted.filter(d=>d.status===filter);
+  const stats = Object.entries(STATUS).map(([k,v])=>({key:k,meta:v,count:demands.filter(d=>d.status===k).length}));
+
   return(
     <div style={{flex:1,padding:"28px 0",animation:"fadeUp .35s ease"}}>
-      <div style={{marginBottom:24}}><h1 style={{fontSize:26,fontWeight:900,letterSpacing:"-1px",marginBottom:4}}>Minhas Tasks</h1><p style={{fontSize:13,color:"var(--t3)"}}>{sorted.length} solicitação(ões)</p></div>
-      {/* Stats row */}
-      <div style={{display:"flex",gap:10,marginBottom:28,overflowX:"auto",paddingBottom:4}}>
-        {Object.entries(STATUS).map(([k,v])=>(
-          <div key={k} style={{padding:"14px 18px",background:"var(--s2)",border:`1px solid ${v.color}30`,borderRadius:12,flexShrink:0,minWidth:110,textAlign:"center"}}>
-            <div style={{fontSize:22,marginBottom:4}}>{v.icon}</div>
-            <div style={{fontSize:24,fontWeight:900,color:v.dot}}>{stats[k]||0}</div>
-            <div style={{fontSize:11,color:"var(--t3)",marginTop:2}}>{v.label}</div>
-          </div>
+      {/* Header */}
+      <div style={{marginBottom:24,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+        <div>
+          <h1 style={{fontSize:26,fontWeight:900,letterSpacing:"-1px",marginBottom:4}}>Minhas Tasks</h1>
+          <p style={{fontSize:13,color:"var(--t3)"}}>{sorted.length} solicitação(ões) no total</p>
+        </div>
+      </div>
+
+      {/* Stats strip */}
+      <div style={{display:"flex",gap:8,marginBottom:24,overflowX:"auto",paddingBottom:4}}>
+        <button onClick={()=>setFilter("all")} style={{padding:"10px 16px",borderRadius:12,border:`1px solid ${filter==="all"?"var(--blue)":"var(--border)"}`,background:filter==="all"?"rgba(59,130,246,.1)":"var(--s2)",color:filter==="all"?"var(--blue)":"var(--t3)",fontSize:12,fontWeight:filter==="all"?700:400,cursor:"pointer",flexShrink:0,transition:"all .15s"}}>
+          Todas <span style={{opacity:.7}}>({sorted.length})</span>
+        </button>
+        {stats.filter(s=>s.count>0).map(({key,meta,count})=>(
+          <button key={key} onClick={()=>setFilter(key)} style={{padding:"10px 16px",borderRadius:12,border:`1px solid ${filter===key?meta.color:"var(--border)"}`,background:filter===key?`${meta.color}10`:"var(--s2)",color:filter===key?meta.dot:"var(--t3)",fontSize:12,fontWeight:filter===key?700:400,cursor:"pointer",flexShrink:0,transition:"all .15s",display:"flex",alignItems:"center",gap:6}}>
+            {meta.icon} {meta.label} <span style={{opacity:.7}}>({count})</span>
+          </button>
         ))}
       </div>
-      {sorted.length===0
-        ?<EmptySlate icon="📂" title="Nenhuma task enviada" sub="Clique em 'Nova Task' para começar"/>
+
+      {filtered.length===0
+        ?<EmptySlate icon="📂" title="Nenhuma task encontrada" sub="Tente outro filtro ou crie uma nova task"/>
         :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:14}}>
-          {sorted.map((d,i)=><TaskCard key={d.id} demand={d} index={i} onClick={()=>onOpen(d)}/>)}
+          {filtered.map((d,i)=><TaskCard key={d.id} demand={d} index={i} onClick={()=>onOpen(d)}/>)}
         </div>
       }
     </div>
@@ -2044,6 +2056,7 @@ function NewTaskView({user,onSubmit}) {
 // ─────────────────────────────────────────────────────────────────────────────
 function ProfileView({user,onUpdate,demands}) {
   const [profile,setProfile] = useState(null);
+  const [tab,setTab]         = useState("info");
   const [form,setForm]       = useState({name:"",job_title:"",team:"",phone:"",bio:""});
   const [prefs,setPrefs]     = useState({emailNotify:true});
   const [saving,setSaving]   = useState(false);
@@ -2053,38 +2066,39 @@ function ProfileView({user,onUpdate,demands}) {
   const [pwMsg,setPwMsg]     = useState(null);
   const [pwSaving,setPwSaving] = useState(false);
   const fileRef = useRef();
-  const f = k => e => setForm(p=>({...p,[k]:e.target.value}));
+  const f  = k => e => setForm(p=>({...p,[k]:e.target.value}));
   const fp = k => e => setPwForm(p=>({...p,[k]:e.target.value}));
   const myDemands = demands.filter(d=>d.user_id===user.id||d.user_email===user.email);
   const roles = profile?.roles||[profile?.role||user?.role||"user"];
-  const stats = Object.fromEntries(Object.keys(STATUS).map(k=>[k,myDemands.filter(d=>d.status===k).length]));
+  const stats = Object.entries(STATUS).map(([k,v])=>({key:k,meta:v,count:myDemands.filter(d=>d.status===k).length}));
+  const totalDone = myDemands.filter(d=>d.status==="concluida").length;
+  const totalAll  = myDemands.length;
+  const pct = totalAll ? Math.round((totalDone/totalAll)*100) : 0;
 
   useEffect(()=>{
-    dbProfile(user.id||user.email).then(p=>{ if(p){ setProfile(p); setForm({name:p.name||"",job_title:p.job_title||"",team:p.team||"",phone:p.phone||"",bio:p.bio||""}); setPrefs(p.prefs||{emailNotify:true}); } else { setForm({name:user.name||"",job_title:"",team:"",phone:"",bio:""}); } });
+    dbProfile(user.id||user.email).then(p=>{
+      if(p){ setProfile(p); setForm({name:p.name||"",job_title:p.job_title||"",team:p.team||"",phone:p.phone||"",bio:p.bio||""}); setPrefs(p.prefs||{emailNotify:true}); }
+      else { setForm({name:user.name||"",job_title:"",team:"",phone:"",bio:""}); }
+    });
   },[user]);
 
   async function save() {
     setSaving(true);
     const updated={id:user.id||user.email,email:user.email,name:form.name,role:user.role,job_title:form.job_title,team:form.team,phone:form.phone,bio:form.bio,prefs,avatar_url:profile?.avatar_url||null,updated_at:new Date().toISOString()};
     await dbUpsertProfile(updated); setProfile(updated); setSaving(false); setSaved(true);
-    onUpdate({...user,name:form.name}); setTimeout(()=>setSaved(false),2000);
+    onUpdate({...user,name:form.name}); setTimeout(()=>setSaved(false),2500);
   }
-
   async function changePassword() {
     setPwMsg(null); setPwSaving(true);
     if (!pwForm.current||!pwForm.newPw||!pwForm.confirm) { setPwMsg({ok:false,text:"Preencha todos os campos."}); setPwSaving(false); return; }
-    if (pwForm.newPw!==pwForm.confirm) { setPwMsg({ok:false,text:"Nova senha e confirmação não coincidem."}); setPwSaving(false); return; }
-    if (pwForm.newPw.length<6) { setPwMsg({ok:false,text:"A senha deve ter pelo menos 6 caracteres."}); setPwSaving(false); return; }
-    // Verify current password
+    if (pwForm.newPw!==pwForm.confirm) { setPwMsg({ok:false,text:"Senhas não coincidem."}); setPwSaving(false); return; }
+    if (pwForm.newPw.length<6) { setPwMsg({ok:false,text:"Mínimo 6 caracteres."}); setPwSaving(false); return; }
     const u = await dbLogin(user.email, pwForm.current);
     if (!u) { setPwMsg({ok:false,text:"Senha atual incorreta."}); setPwSaving(false); return; }
-    // Update password
     const s = sb();
-    if (s) { await s.from("profiles").update({password:pwForm.newPw,updated_at:new Date().toISOString()}).eq("email",user.email); }
-    else { const d=ls.get()||{users:[]}; const u2=d.users?.find(x=>x.email===user.email); if(u2){u2.password=pwForm.newPw;ls.set(d);} }
+    if (s) await s.from("profiles").update({password:pwForm.newPw,updated_at:new Date().toISOString()}).eq("email",user.email);
     setPwMsg({ok:true,text:"Senha alterada com sucesso!"}); setPwForm({current:"",newPw:"",confirm:""}); setPwSaving(false);
   }
-
   async function handleAvatar(e) {
     const file=e.target.files?.[0]; if(!file) return; setUploading(true);
     const url=await dbAvatar(user.id||user.email,file);
@@ -2092,113 +2106,190 @@ function ProfileView({user,onUpdate,demands}) {
     await dbUpsertProfile(updated); setProfile(updated); setUploading(false);
   }
 
-  return(
-    <div style={{flex:1,padding:"28px 0",animation:"fadeUp .35s ease"}}>
-      <div style={{marginBottom:28}}><h1 style={{fontSize:26,fontWeight:900,letterSpacing:"-1px"}}>Meu Perfil</h1></div>
-      <div style={{display:"grid",gridTemplateColumns:"280px 1fr",gap:24}}>
-        {/* Left */}
-        <div style={{display:"flex",flexDirection:"column",gap:16}}>
-          {/* Avatar card */}
-          <div style={{padding:24,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16,textAlign:"center"}}>
-            <div style={{position:"relative",display:"inline-block",marginBottom:16}}>
-              <div style={{width:88,height:88,borderRadius:"50%",background:"linear-gradient(135deg,#1e3a5f,#2d5a8e)",border:"3px solid var(--border)",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,fontWeight:700,cursor:"pointer",margin:"0 auto"}} onClick={()=>fileRef.current.click()}>
-                {profile?.avatar_url?<img src={profile.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:(form.name||user.name||"?").charAt(0).toUpperCase()}
-              </div>
-              <div onClick={()=>fileRef.current.click()} style={{position:"absolute",bottom:0,right:0,width:26,height:26,borderRadius:"50%",background:"var(--blue)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:12,border:"2px solid var(--bg)"}}>
-                {uploading?<Spin/>:"📷"}
-              </div>
-              <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatar} style={{display:"none"}}/>
-            </div>
-            <div style={{fontWeight:800,fontSize:16,marginBottom:3}}>{form.name||user.name}</div>
-            <div style={{fontSize:12,color:"var(--t3)",marginBottom:10}}>{user.email}</div>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"center"}}>
-              {roles.map(r=>{ const rm=ROLES[r]||ROLES.user; return <span key={r} style={{padding:"3px 10px",borderRadius:999,background:`${rm.color}12`,border:`1px solid ${rm.color}30`,fontSize:11,fontWeight:700,color:rm.color}}>{rm.icon} {rm.label}</span>; })}
-            </div>
-            {form.job_title&&<div style={{fontSize:12,color:"var(--t3)",marginTop:8}}>{form.job_title}</div>}
-          </div>
+  const profileTabs = [{id:"info",label:"Informações"},{id:"security",label:"Segurança"},{id:"tasks",label:`Tasks (${totalAll})`}];
 
-          {/* Stats */}
-          <div style={{padding:20,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
-            <FieldLabel>Atividade</FieldLabel>
-            {Object.entries(STATUS).map(([k,v])=>(
-              <div key={k} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid var(--border)"}}>
-                <span style={{fontSize:12,color:"var(--t3)"}}>{v.icon} {v.label}</span>
-                <span style={{fontWeight:800,fontSize:15,color:v.dot}}>{stats[k]||0}</span>
-              </div>
-            ))}
+  return(
+    <div style={{flex:1,animation:"fadeUp .35s ease",paddingBottom:40}}>
+      {/* Cover banner */}
+      <div style={{height:140,background:"linear-gradient(135deg,#0f2044 0%,#1a1f35 40%,#0b1a2e 100%)",borderRadius:"0 0 24px 24px",position:"relative",overflow:"hidden",marginBottom:64}}>
+        <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(circle at 20% 50%,rgba(59,130,246,.15) 0%,transparent 60%),radial-gradient(circle at 80% 20%,rgba(99,102,241,.12) 0%,transparent 50%)"}}/>
+        {/* Avatar overlapping banner */}
+        <div style={{position:"absolute",bottom:-52,left:32,display:"flex",alignItems:"flex-end",gap:16}}>
+          <div style={{position:"relative"}}>
+            <div onClick={()=>fileRef.current.click()} style={{width:100,height:100,borderRadius:"50%",background:"linear-gradient(135deg,#1e3a5f,#2d5a8e)",border:"4px solid var(--bg)",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,fontWeight:800,cursor:"pointer",boxShadow:"0 8px 24px rgba(0,0,0,.5)"}}>
+              {profile?.avatar_url?<img src={profile.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:(form.name||user.name||"?").charAt(0).toUpperCase()}
+            </div>
+            <div onClick={()=>fileRef.current.click()} style={{position:"absolute",bottom:4,right:4,width:28,height:28,borderRadius:"50%",background:"var(--blue)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",border:"3px solid var(--bg)",fontSize:11}}>
+              {uploading?<Spin/>:<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>}
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatar} style={{display:"none"}}/>
           </div>
         </div>
-
-        {/* Right */}
-        <div style={{display:"flex",flexDirection:"column",gap:20}}>
-          {/* Personal info */}
-          <div style={{padding:24,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
-            <div style={{fontWeight:700,fontSize:15,marginBottom:20}}>Informações Pessoais</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-              <div><FieldLabel>Nome completo</FieldLabel><input className="input" value={form.name} onChange={f("name")} placeholder="Seu nome"/></div>
-              <div><FieldLabel>Cargo / Função</FieldLabel><input className="input" value={form.job_title} onChange={f("job_title")} placeholder="Ex.: Analista de TI"/></div>
-              <div><FieldLabel>Time / Departamento</FieldLabel><input className="input" value={form.team} onChange={f("team")} placeholder="Ex.: Operações"/></div>
-              <div><FieldLabel>Telefone</FieldLabel><input className="input" value={form.phone} onChange={f("phone")} placeholder="+55 11 9xxxx-xxxx"/></div>
-              <div style={{gridColumn:"1/-1"}}><FieldLabel>Bio</FieldLabel><textarea className="input" value={form.bio} onChange={f("bio")} rows={3} placeholder="Breve descrição sobre você..." style={{resize:"vertical"}}/></div>
-            </div>
+        {/* Progress ring top right */}
+        <div style={{position:"absolute",top:16,right:24,display:"flex",alignItems:"center",gap:10,padding:"8px 16px",background:"rgba(0,0,0,.3)",borderRadius:999,backdropFilter:"blur(8px)"}}>
+          <svg width="32" height="32" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="3"/>
+            <circle cx="18" cy="18" r="14" fill="none" stroke="#4ade80" strokeWidth="3" strokeDasharray={`${pct * 0.879} 87.9`} strokeLinecap="round" transform="rotate(-90 18 18)"/>
+            <text x="18" y="22" textAnchor="middle" fill="#fff" fontSize="9" fontWeight="700">{pct}%</text>
+          </svg>
+          <div>
+            <div style={{fontSize:11,fontWeight:700,color:"#fff"}}>{totalDone}/{totalAll}</div>
+            <div style={{fontSize:9,color:"rgba(255,255,255,.5)"}}>concluídas</div>
           </div>
+        </div>
+      </div>
 
-          {/* Preferences */}
-          <div style={{padding:24,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
-            <div style={{fontWeight:700,fontSize:15,marginBottom:16}}>Preferências</div>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",background:"var(--s1)",borderRadius:10}}>
-              <span style={{fontSize:13}}>📧 Receber notificações por e-mail</span>
-              <button onClick={()=>setPrefs(p=>({...p,emailNotify:!p.emailNotify}))} style={{width:44,height:24,borderRadius:999,border:"none",background:prefs.emailNotify?"var(--blue)":"var(--border)",transition:"background .2s",position:"relative",cursor:"pointer"}}>
-                <div style={{position:"absolute",top:3,left:prefs.emailNotify?22:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 4px rgba(0,0,0,.4)"}}/>
+      {/* Name + roles row */}
+      <div style={{padding:"0 32px",marginBottom:24,display:"flex",alignItems:"flex-end",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+        <div>
+          <h1 style={{fontSize:24,fontWeight:900,letterSpacing:"-.5px",marginBottom:4}}>{form.name||user.name}</h1>
+          <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+            <span style={{fontSize:13,color:"var(--t3)"}}>{user.email}</span>
+            {form.job_title&&<><span style={{color:"var(--border)"}}>·</span><span style={{fontSize:13,color:"var(--t2)"}}>{form.job_title}</span></>}
+            {form.team&&<><span style={{color:"var(--border)"}}>·</span><span style={{fontSize:13,color:"var(--t2)"}}>{form.team}</span></>}
+          </div>
+          <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+            {roles.map(r=>{ const rm=ROLES[r]||ROLES.user; return <span key={r} style={{padding:"3px 10px",borderRadius:999,background:`${rm.color}12`,border:`1px solid ${rm.color}30`,fontSize:11,fontWeight:700,color:rm.color}}>{rm.icon} {rm.label}</span>; })}
+          </div>
+        </div>
+        {/* Stat pills */}
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {[["Total",totalAll,"var(--blue)"],["Concluídas",totalDone,"#8b5cf6"],["Pendentes",myDemands.filter(d=>d.status==="pendente").length,"#94a3b8"]].map(([l,v,c])=>(
+            <div key={l} style={{padding:"10px 16px",background:"var(--s2)",border:"1px solid var(--border)",borderRadius:12,textAlign:"center",minWidth:72}}>
+              <div style={{fontSize:22,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
+              <div style={{fontSize:10,color:"var(--t3)",marginTop:3,fontWeight:600}}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{padding:"0 32px",marginBottom:24}}>
+        <div style={{display:"flex",gap:2,background:"var(--s1)",borderRadius:12,padding:4,border:"1px solid var(--border)",width:"fit-content"}}>
+          {profileTabs.map(t=>(
+            <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"8px 20px",borderRadius:9,border:"none",fontSize:13,fontWeight:tab===t.id?700:400,cursor:"pointer",transition:"all .15s",background:tab===t.id?"var(--s2)":"transparent",color:tab===t.id?"var(--t1)":"var(--t3)",boxShadow:tab===t.id?"0 2px 8px rgba(0,0,0,.3)":"none"}}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Tab content */}
+      <div style={{padding:"0 32px"}}>
+        {/* INFO TAB */}
+        {tab==="info"&&(
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,maxWidth:900}}>
+            <div style={{gridColumn:"1/-1",padding:24,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
+              <div style={{fontWeight:700,fontSize:15,marginBottom:20,display:"flex",alignItems:"center",gap:8}}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Informações Pessoais
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+                <div><FieldLabel>Nome completo</FieldLabel><input className="input" value={form.name} onChange={f("name")} placeholder="Seu nome"/></div>
+                <div><FieldLabel>Cargo / Função</FieldLabel><input className="input" value={form.job_title} onChange={f("job_title")} placeholder="Ex.: Designer de Produto"/></div>
+                <div><FieldLabel>Time / Departamento</FieldLabel><input className="input" value={form.team} onChange={f("team")} placeholder="Ex.: Produto"/></div>
+                <div><FieldLabel>Telefone</FieldLabel><input className="input" value={form.phone} onChange={f("phone")} placeholder="+55 11 9xxxx-xxxx"/></div>
+                <div style={{gridColumn:"1/-1"}}><FieldLabel>Bio</FieldLabel><textarea className="input" value={form.bio} onChange={f("bio")} rows={3} placeholder="Breve descrição sobre você..." style={{resize:"none",lineHeight:1.7}}/></div>
+              </div>
+            </div>
+
+            <div style={{padding:20,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
+              <div style={{fontWeight:700,fontSize:15,marginBottom:16,display:"flex",alignItems:"center",gap:8}}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+                Preferências
+              </div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",background:"var(--s1)",borderRadius:10,border:"1px solid var(--border)"}}>
+                <div>
+                  <div style={{fontSize:13,fontWeight:600}}>Notificações por e-mail</div>
+                  <div style={{fontSize:11,color:"var(--t3)",marginTop:2}}>Receber atualizações de tasks</div>
+                </div>
+                <button onClick={()=>setPrefs(p=>({...p,emailNotify:!p.emailNotify}))} style={{width:48,height:26,borderRadius:999,border:"none",background:prefs.emailNotify?"var(--blue)":"var(--border2)",transition:"all .2s",position:"relative",cursor:"pointer",flexShrink:0}}>
+                  <div style={{position:"absolute",top:3,left:prefs.emailNotify?26:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 4px rgba(0,0,0,.4)"}}/>
+                </button>
+              </div>
+            </div>
+
+            <div style={{padding:20,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
+              <div style={{fontWeight:700,fontSize:15,marginBottom:16,display:"flex",alignItems:"center",gap:8}}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Atividade
+              </div>
+              {stats.map(({key,meta,count})=>(
+                <div key={key} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px solid var(--border)"}}>
+                  <div style={{width:28,height:28,borderRadius:8,background:`${meta.color}15`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>{meta.icon}</div>
+                  <span style={{flex:1,fontSize:12,color:"var(--t2)"}}>{meta.label}</span>
+                  <span style={{fontWeight:800,fontSize:16,color:meta.dot}}>{count}</span>
+                  <div style={{width:60,height:4,background:"var(--border)",borderRadius:4}}><div style={{height:"100%",background:meta.dot,width:`${totalAll?Math.round((count/totalAll)*100):0}%`,borderRadius:4,transition:"width .5s"}}/></div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{gridColumn:"1/-1"}}>
+              <button className="btn btn-primary" onClick={save} disabled={saving} style={{padding:"13px 32px",fontSize:14,borderRadius:12,justifyContent:"center"}}>
+                {saving?<><Spin/>Salvando...</>:saved?<><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>Salvo!</>:<>Salvar alterações</>}
               </button>
             </div>
           </div>
+        )}
 
-          {/* Save */}
-          <button className="btn btn-primary" onClick={save} disabled={saving} style={{padding:"13px",fontSize:14,borderRadius:12,justifyContent:"center",width:"100%"}}>
-            {saving?<><Spin/>Salvando...</>:saved?"✓ Salvo!":"Salvar alterações"}
-          </button>
-
-          {/* Change password */}
-          <div style={{padding:24,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
-            <div style={{fontWeight:700,fontSize:15,marginBottom:16}}>🔑 Alterar Senha</div>
-            <div style={{display:"flex",flexDirection:"column",gap:12}}>
-              <div><FieldLabel>Senha atual</FieldLabel><input className="input" type="password" value={pwForm.current} onChange={fp("current")} placeholder="••••••••"/></div>
-              <div><FieldLabel>Nova senha</FieldLabel><input className="input" type="password" value={pwForm.newPw} onChange={fp("newPw")} placeholder="Mínimo 6 caracteres"/></div>
-              <div><FieldLabel>Confirmar nova senha</FieldLabel><input className="input" type="password" value={pwForm.confirm} onChange={fp("confirm")} placeholder="Repita a nova senha"/></div>
+        {/* SECURITY TAB */}
+        {tab==="security"&&(
+          <div style={{maxWidth:480}}>
+            <div style={{padding:28,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
+              <div style={{fontWeight:700,fontSize:15,marginBottom:6,display:"flex",alignItems:"center",gap:8}}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Alterar Senha
+              </div>
+              <p style={{fontSize:12,color:"var(--t3)",marginBottom:20,lineHeight:1.6}}>Use uma senha forte com pelo menos 6 caracteres.</p>
+              <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                <div><FieldLabel>Senha atual</FieldLabel><input className="input" type="password" value={pwForm.current} onChange={fp("current")} placeholder="••••••••"/></div>
+                <div><FieldLabel>Nova senha</FieldLabel><input className="input" type="password" value={pwForm.newPw} onChange={fp("newPw")} placeholder="Mínimo 6 caracteres"/>
+                  {pwForm.newPw&&<div style={{marginTop:6,height:4,background:"var(--border)",borderRadius:4,overflow:"hidden"}}>
+                    <div style={{height:"100%",borderRadius:4,transition:"all .3s",width:pwForm.newPw.length<6?"33%":pwForm.newPw.length<10?"66%":"100%",background:pwForm.newPw.length<6?"#ef4444":pwForm.newPw.length<10?"#f59e0b":"#22c55e"}}/>
+                  </div>}
+                </div>
+                <div><FieldLabel>Confirmar nova senha</FieldLabel><input className="input" type="password" value={pwForm.confirm} onChange={fp("confirm")} placeholder="Repita a nova senha" style={{borderColor:pwForm.confirm&&pwForm.newPw!==pwForm.confirm?"#ef4444":""}}/></div>
+              </div>
+              {pwMsg&&<div style={{marginTop:14,padding:"10px 14px",borderRadius:9,fontSize:12,lineHeight:1.5,background:pwMsg.ok?"rgba(34,197,94,.1)":"rgba(239,68,68,.1)",border:`1px solid ${pwMsg.ok?"rgba(34,197,94,.3)":"rgba(239,68,68,.3)"}`,color:pwMsg.ok?"#4ade80":"#f87171"}}>{pwMsg.ok?"✓":""} {pwMsg.text}</div>}
+              <button className="btn btn-primary" onClick={changePassword} disabled={pwSaving} style={{marginTop:18,width:"100%",justifyContent:"center",padding:"12px"}}>
+                {pwSaving?<><Spin/>Alterando...</>:"Alterar senha"}
+              </button>
             </div>
-            {pwMsg&&<div style={{marginTop:12,padding:"9px 14px",borderRadius:8,fontSize:12,background:pwMsg.ok?"rgba(34,197,94,.1)":"rgba(239,68,68,.1)",border:`1px solid ${pwMsg.ok?"rgba(34,197,94,.3)":"rgba(239,68,68,.3)"}`,color:pwMsg.ok?"#4ade80":"#f87171"}}>{pwMsg.text}</div>}
-            <button className="btn btn-ghost" onClick={changePassword} disabled={pwSaving} style={{marginTop:14,width:"100%",justifyContent:"center",padding:"11px"}}>
-              {pwSaving?<><Spin/>Alterando...</>:"Alterar senha"}
-            </button>
           </div>
+        )}
 
-          {/* My demands */}
-          <div style={{padding:24,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
-            <div style={{fontWeight:700,fontSize:15,marginBottom:16,display:"flex",justifyContent:"space-between"}}>
-              <span>Minhas Tasks</span><span style={{fontSize:12,color:"var(--t3)",fontWeight:400}}>{myDemands.length} no total</span>
-            </div>
-            {myDemands.length===0?<div style={{fontSize:13,color:"var(--t3)"}}>Nenhuma task enviada ainda.</div>
-              :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {/* TASKS TAB */}
+        {tab==="tasks"&&(
+          <div style={{maxWidth:760}}>
+            {myDemands.length===0
+              ?<EmptySlate icon={<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{opacity:.2}}><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>} title="Nenhuma task enviada" sub="Clique em Nova Task para começar"/>
+              :<div style={{display:"flex",flexDirection:"column",gap:10}}>
                 {[...myDemands].sort((a,b)=>new Date(b.created_at||b.createdAt)-new Date(a.created_at||a.createdAt)).map(d=>{
-                  const sm=STATUS[d.status]||STATUS.pendente; const sq2=SQUAD_COLOR[d.squad]||{h:"#64748b"};
+                  const sm=STATUS[d.status]||STATUS.pendente; const sq2=SQUAD_COLOR[d.squad]||{h:"#64748b",rgb:"100,116,139"};
+                  const cur2=FLOW.indexOf(d.status); const pct2=d.status==="rejeitada"?0:Math.max(0,Math.min(100,(cur2/(FLOW.length-1))*100));
                   return(
-                    <div key={d.id} style={{padding:"11px 14px",background:"var(--s1)",borderRadius:10,border:"1px solid var(--border)"}}>
-                      <div style={{display:"flex",alignItems:"center",gap:10}}>
-                        <span style={{fontSize:15}}>{SQUAD_ICON[d.squad]}</span>
+                    <div key={d.id} style={{padding:"14px 18px",background:"var(--s2)",border:"1px solid var(--border)",borderRadius:14,overflow:"hidden",position:"relative"}}>
+                      <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${sq2.h},transparent)`}}/>
+                      <div style={{display:"flex",alignItems:"center",gap:12}}>
+                        <div style={{width:36,height:36,borderRadius:10,background:`rgba(${sq2.rgb},.12)`,border:`1px solid rgba(${sq2.rgb},.25)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{SQUAD_ICON[d.squad]}</div>
                         <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:13,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{d.title}</div>
-                          <div style={{fontSize:11,color:"var(--t3)",marginTop:2}}>{SQUAD_LABEL[d.squad]}{d.sprint&&` · Sprint ${d.sprint}`}</div>
+                          <div style={{fontSize:13,fontWeight:700,marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{d.title}</div>
+                          <div style={{fontSize:11,color:"var(--t3)"}}>{SQUAD_LABEL[d.squad]}{d.sprint&&` · Sprint ${d.sprint}`} · {fmtDate(d.created_at||d.createdAt)}</div>
                         </div>
-                        <span className="pill" style={{background:sm.color+"15",color:sm.dot,border:`1px solid ${sm.color}30`,fontSize:10}}>{sm.icon} {sm.label}</span>
+                        <StatusBadge status={d.status}/>
                       </div>
+                      {d.status!=="rejeitada"&&(
+                        <div style={{marginTop:10,height:3,background:"var(--border)",borderRadius:3,overflow:"hidden"}}>
+                          <div style={{height:"100%",background:`linear-gradient(90deg,${sq2.h},${sm.dot})`,width:`${pct2}%`,borderRadius:3,transition:"width .5s"}}/>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
             }
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -2210,7 +2301,7 @@ function ProfileView({user,onUpdate,demands}) {
 function EmptySlate({icon,title,sub}) {
   return(
     <div style={{textAlign:"center",padding:"64px 0",color:"var(--t3)"}}>
-      <div style={{fontSize:48,marginBottom:14}}>{icon}</div>
+      <div style={{display:"flex",justifyContent:"center",marginBottom:14,fontSize:typeof icon==="string"?48:undefined}}>{icon}</div>
       <div style={{fontSize:17,fontWeight:700,color:"var(--t2)",marginBottom:6}}>{title}</div>
       {sub&&<div style={{fontSize:13}}>{sub}</div>}
     </div>
