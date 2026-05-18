@@ -889,6 +889,43 @@ export default function App() {
     setNotifs(n||[]);
   }
 
+  // ── REALTIME ──
+  useEffect(()=>{
+    if (phase!=="app") return;
+    const s = sb(); if (!s) return;
+    // Subscribe to demands table changes
+    const demandsChannel = s.channel("demands-realtime")
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"demands"},payload=>{
+        setDemands(p=>{
+          if (p.find(d=>d.id===payload.new.id)) return p;
+          return [payload.new,...p];
+        });
+      })
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"demands"},payload=>{
+        setDemands(p=>p.map(d=>d.id===payload.new.id?{...d,...payload.new}:d));
+        setTaskModal(m=>m&&m.id===payload.new.id?{...m,...payload.new}:m);
+      })
+      .on("postgres_changes",{event:"DELETE",schema:"public",table:"demands"},payload=>{
+        setDemands(p=>p.filter(d=>d.id!==payload.old.id));
+      })
+      .subscribe();
+
+    // Subscribe to notifications
+    const notifsChannel = s.channel("notifs-realtime")
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"notifications",filter:`user_id=eq.${user?.id||user?.email}`},payload=>{
+        setNotifs(p=>{
+          if (p.find(n=>n.id===payload.new.id)) return p;
+          return [payload.new,...p];
+        });
+      })
+      .subscribe();
+
+    return ()=>{
+      s.removeChannel(demandsChannel);
+      s.removeChannel(notifsChannel);
+    };
+  },[phase, user]);
+
   // ── INIT ──
   useEffect(()=>{
     initSB().then(async()=>{
