@@ -584,178 +584,380 @@ function AuthScreen({onLogin}) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// COMMENTS DB
+// ─────────────────────────────────────────────────────────────────────────────
+async function dbGetComments(demandId) {
+  const s = await getSB();
+  if (s) { const {data}=await s.from("comments").select("*").eq("demand_id",demandId).order("created_at",{ascending:true}); return data||[]; }
+  return (ls.get()?.comments||[]).filter(c=>c.demand_id===demandId);
+}
+async function dbInsertComment(c) {
+  const s = await getSB();
+  if (s) { const {error}=await s.from("comments").insert([c]); if(error) console.error("comment:",error.message); return; }
+  const d=ls.get()||{comments:[]}; d.comments=[...(d.comments||[]),c]; ls.set(d);
+}
+async function dbDeleteComment(id) {
+  const s = await getSB();
+  if (s) { await s.from("comments").delete().eq("id",id); return; }
+  const d=ls.get()||{comments:[]}; d.comments=d.comments.filter(c=>c.id!==id); ls.set(d);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // TASK MODAL
 // ─────────────────────────────────────────────────────────────────────────────
-function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin}) {
+function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}) {
+  const [tab,setTab]       = useState("details");
   const [editing,setEditing] = useState(false);
-  const [form,setForm] = useState({title:demand.title,description:demand.description,team:demand.team||"",priority:demand.priority,tag:demand.tag});
+  const [form,setForm]     = useState({title:demand.title,description:demand.description,team:demand.team||"",priority:demand.priority,tag:demand.tag});
   const [saving,setSaving] = useState(false);
-  const sq = SQUAD_COLOR[demand.squad]||{h:"#64748b"};
+  const [comments,setComments] = useState([]);
+  const [loadingComments,setLoadingComments] = useState(true);
+  const [comment,setComment] = useState("");
+  const [replyTo,setReplyTo] = useState(null);
+  const [mentionSearch,setMentionSearch] = useState(null); // {query, index}
+  const [profiles,setProfiles] = useState([]);
+  const [posting,setPosting] = useState(false);
+  const commentRef = useRef();
+  const inputRef   = useRef();
+  const sq = SQUAD_COLOR[demand.squad]||{h:"#64748b",rgb:"100,116,139"};
   const sm = STATUS[demand.status]||STATUS.pendente;
   const timeline = demand.timeline||[];
   const fe = k => e => setForm(p=>({...p,[k]:e.target.value}));
 
-  async function save() {
-    setSaving(true);
-    await onEdit(demand.id, form);
-    setSaving(false); setEditing(false);
+  useEffect(()=>{
+    const handler = e=>e.key==="Escape"&&!mentionSearch&&onClose();
+    document.addEventListener("keydown",handler);
+    return()=>document.removeEventListener("keydown",handler);
+  },[mentionSearch]);
+
+  useEffect(()=>{
+    dbGetComments(demand.id).then(c=>{setComments(c);setLoadingComments(false);});
+    dbProfiles().then(setProfiles);
+    // Realtime comments
+    const s=sb();
+    if(s){
+      const ch=s.channel(`comments-${demand.id}`)
+        .on("postgres_changes",{event:"INSERT",schema:"public",table:"comments",filter:`demand_id=eq.${demand.id}`},p=>{
+          setComments(prev=>{if(prev.find(c=>c.id===p.new.id))return prev;return [...prev,p.new];});
+        })
+        .on("postgres_changes",{event:"DELETE",schema:"public",table:"comments",filter:`demand_id=eq.${demand.id}`},p=>{
+          setComments(prev=>prev.filter(c=>c.id!==p.old.id));
+        }).subscribe();
+      return()=>s.removeChannel(ch);
+    }
+  },[demand.id]);
+
+  // Handle @mention detection
+  function handleCommentInput(e) {
+    const val = e.target.value;
+    setComment(val);
+    const cursor = e.target.selectionStart;
+    const textBefore = val.slice(0,cursor);
+    const atIdx = textBefore.lastIndexOf("@");
+    if (atIdx>=0 && !textBefore.slice(atIdx+1).includes(" ")) {
+      const query = textBefore.slice(atIdx+1).toLowerCase();
+      setMentionSearch({query,atIdx});
+    } else {
+      setMentionSearch(null);
+    }
   }
 
-  useEffect(() => {
-    const handler = e => e.key==="Escape"&&onClose();
-    document.addEventListener("keydown",handler);
-    return ()=>document.removeEventListener("keydown",handler);
-  },[]);
+  function insertMention(profile) {
+    const name = profile.name||profile.email;
+    const before = comment.slice(0,mentionSearch.atIdx);
+    const after  = comment.slice(mentionSearch.atIdx+1+mentionSearch.query.length);
+    const newVal = `${before}@${name} ${after}`;
+    setComment(newVal);
+    setMentionSearch(null);
+    setTimeout(()=>inputRef.current?.focus(),0);
+  }
 
-  return (
+  const filteredProfiles = mentionSearch
+    ? profiles.filter(p=>(p.name||p.email||"").toLowerCase().includes(mentionSearch.query)).slice(0,5)
+    : [];
+
+  async function postComment() {
+    if (!comment.trim()) return;
+    setPosting(true);
+    // Extract mentions
+    const mentions = [];
+    const mentionRegex = /@([^\s@]+)/g;
+    let m;
+    while ((m=mentionRegex.exec(comment))!==null) mentions.push(m[1]);
+    const c = {
+      id:uid(), demand_id:demand.id,
+      user_id:currentUser?.id||currentUser?.email,
+      user_name:currentUser?.name||currentUser?.email,
+      user_email:currentUser?.email,
+      content:comment.trim(), mentions,
+      parent_id:replyTo?.id||null,
+      created_at:new Date().toISOString(),
+    };
+    await dbInsertComment(c);
+    setComments(p=>[...p,c]);
+    setComment(""); setReplyTo(null); setPosting(false);
+  }
+
+  function renderCommentContent(text) {
+    const parts = text.split(/(@[^\s]+)/g);
+    return parts.map((p,i)=>
+      p.startsWith("@")
+        ?<span key={i} style={{color:"#60a5fa",fontWeight:600,background:"rgba(59,130,246,.12)",padding:"0 4px",borderRadius:4}}>{p}</span>
+        :<span key={i}>{p}</span>
+    );
+  }
+
+  async function save() { setSaving(true); await onEdit(demand.id,form); setSaving(false); setEditing(false); }
+
+  const topComments    = comments.filter(c=>!c.parent_id);
+  const getReplies     = id => comments.filter(c=>c.parent_id===id);
+
+  return(
     <div className="modal-bg" onClick={onClose}>
-      <div className="modal" onClick={e=>e.stopPropagation()}>
-        {/* Header */}
-        <div style={{padding:"20px 24px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"flex-start",gap:14,flexShrink:0}}>
-          <div style={{width:42,height:42,borderRadius:11,background:`rgba(${sq.rgb},.15)`,border:`1px solid rgba(${sq.rgb},.3)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{SQUAD_ICON[demand.squad]}</div>
-          <div style={{flex:1,minWidth:0}}>
-            {editing
-              ? <input className="input" value={form.title} onChange={fe("title")} style={{fontSize:18,fontWeight:700,padding:"6px 10px"}}/>
-              : <h2 style={{fontSize:18,fontWeight:800,lineHeight:1.3,marginBottom:6}}>{demand.title}</h2>
-            }
-            <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-              <StatusBadge status={demand.status}/>
-              <PrioBadge priority={demand.priority}/>
-              {demand.tag && <span className="tag-chip" style={{background:`${TAG_COLOR[demand.tag]}15`,color:TAG_COLOR[demand.tag],border:`1px solid ${TAG_COLOR[demand.tag]}35`}}>{TAG_ICON[demand.tag]} {TAG_LABEL[demand.tag]}</span>}
-              {demand.sprint && <span style={{fontSize:11,color:"#38bdf8",fontFamily:"var(--mono)",background:"rgba(56,189,248,.1)",padding:"2px 8px",borderRadius:5}}>Sprint {demand.sprint} · {sprintRange(demand.sprint,overrides)}</span>}
+      <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:800,maxHeight:"92vh"}}>
+
+        {/* ── HEADER ── */}
+        <div style={{padding:"18px 22px",borderBottom:"1px solid var(--border)",flexShrink:0}}>
+          <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:12}}>
+            <div style={{width:40,height:40,borderRadius:11,background:`rgba(${sq.rgb},.15)`,border:`1px solid rgba(${sq.rgb},.3)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,flexShrink:0}}>{SQUAD_ICON[demand.squad]}</div>
+            <div style={{flex:1,minWidth:0}}>
+              {editing
+                ?<input className="input" value={form.title} onChange={fe("title")} style={{fontSize:17,fontWeight:700,padding:"5px 10px",marginBottom:4}}/>
+                :<h2 style={{fontSize:17,fontWeight:800,lineHeight:1.3,marginBottom:6,color:"var(--t1)"}}>{demand.title}</h2>
+              }
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+                <StatusBadge status={demand.status}/>
+                <PrioBadge priority={demand.priority}/>
+                {demand.tag&&<span className="tag-chip" style={{background:`${TAG_COLOR[demand.tag]}15`,color:TAG_COLOR[demand.tag],border:`1px solid ${TAG_COLOR[demand.tag]}30`,fontSize:10}}>{TAG_ICON[demand.tag]} {TAG_LABEL[demand.tag]}</span>}
+                {demand.sprint&&<span style={{fontSize:10,color:"#38bdf8",fontFamily:"var(--mono)",background:"rgba(56,189,248,.1)",padding:"2px 8px",borderRadius:5}}>Sprint {demand.sprint}</span>}
+                <span style={{fontSize:10,color:"var(--t3)",marginLeft:4}}>{SQUAD_LABEL[demand.squad]}</span>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:6,flexShrink:0}}>
+              {canEdit&&!editing&&<button className="btn btn-ghost" onClick={()=>setEditing(true)} style={{fontSize:11,padding:"5px 10px"}}>✏️ Editar</button>}
+              {editing&&<button className="btn btn-primary" onClick={save} disabled={saving} style={{fontSize:11,padding:"5px 12px"}}>{saving?<Spin/>:"Salvar"}</button>}
+              {editing&&<button className="btn btn-ghost" onClick={()=>setEditing(false)} style={{fontSize:11,padding:"5px 10px"}}>✕</button>}
+              <button onClick={onClose} style={{width:30,height:30,borderRadius:8,border:"1px solid var(--border)",background:"var(--s1)",color:"var(--t2)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>✕</button>
             </div>
           </div>
-          <div style={{display:"flex",gap:8,flexShrink:0}}>
-            {canEdit && !editing && <button className="btn btn-ghost" onClick={()=>setEditing(true)} style={{fontSize:12,padding:"6px 12px"}}>✏️ Editar</button>}
-            {editing && <button className="btn btn-primary" onClick={save} disabled={saving} style={{fontSize:12,padding:"6px 14px"}}>{saving?<Spin/>:"Salvar"}</button>}
-            {editing && <button className="btn btn-ghost" onClick={()=>setEditing(false)} style={{fontSize:12,padding:"6px 12px"}}>Cancelar</button>}
-            <button onClick={onClose} style={{width:32,height:32,borderRadius:8,border:"1px solid var(--border)",background:"var(--s1)",color:"var(--t2)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>✕</button>
+
+          {/* Progress bar */}
+          <ProgressFlow status={demand.status}/>
+
+          {/* Tabs */}
+          <div style={{display:"flex",gap:2,marginTop:8}}>
+            {[["details","Detalhes"],["comments",`Comentários (${comments.length})`],["history","Histórico"]].map(([id,label])=>(
+              <button key={id} onClick={()=>setTab(id)} style={{padding:"6px 14px",borderRadius:7,border:"none",fontSize:12,fontWeight:tab===id?700:400,cursor:"pointer",transition:"all .15s",background:tab===id?"var(--s2)":"transparent",color:tab===id?"var(--t1)":"var(--t3)"}}>
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Body */}
-        <div style={{overflowY:"auto",flex:1}}>
-          {/* Progress flow */}
-          <div style={{padding:"16px 24px",borderBottom:"1px solid var(--border)",background:"var(--s1)"}}>
-            <FieldLabel>Progresso da Task</FieldLabel>
-            <ProgressFlow status={demand.status}/>
-          </div>
+        {/* ── BODY ── */}
+        <div style={{flex:1,overflowY:"auto",minHeight:0}}>
 
-          <div style={{display:"grid",gridTemplateColumns:"1fr 300px",minHeight:0}}>
-            {/* Left */}
-            <div style={{padding:"20px 24px",borderRight:"1px solid var(--border)",display:"flex",flexDirection:"column",gap:20}}>
-              {/* Description */}
-              <div>
-                <FieldLabel>Descrição</FieldLabel>
-                {editing
-                  ? <textarea className="input" value={form.description} onChange={fe("description")} rows={5} style={{resize:"vertical",lineHeight:1.6}}/>
-                  : <p style={{fontSize:14,lineHeight:1.7,color:"var(--t2)"}}>{demand.description}</p>
-                }
-              </div>
-
-              {/* Edit fields */}
-              {editing && (
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-                  <div>
-                    <FieldLabel>Time</FieldLabel>
-                    <input className="input" value={form.team} onChange={fe("team")} placeholder="Ex.: Operações"/>
-                  </div>
-                  <div>
-                    <FieldLabel>Prioridade</FieldLabel>
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                      {Object.entries(PRIO_LABEL).map(([k,v])=>(
-                        <button key={k} onClick={()=>setForm(p=>({...p,priority:k}))} className="btn"
-                          style={{padding:"5px 10px",borderRadius:7,fontSize:11,fontWeight:700,border:`1px solid ${form.priority===k?PRIO_COLOR[k]:"var(--border)"}`,background:form.priority===k?`${PRIO_COLOR[k]}15`:"var(--s1)",color:form.priority===k?PRIO_COLOR[k]:"var(--t3)"}}>
-                          {v}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div style={{gridColumn:"1/-1"}}>
-                    <FieldLabel>Tipo</FieldLabel>
-                    <div style={{display:"flex",gap:8}}>
-                      {Object.entries(TAG_LABEL).map(([k,v])=>(
-                        <button key={k} onClick={()=>setForm(p=>({...p,tag:k}))} className="btn"
-                          style={{padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:600,border:`1px solid ${form.tag===k?TAG_COLOR[k]:"var(--border)"}`,background:form.tag===k?`${TAG_COLOR[k]}15`:"var(--s1)",color:form.tag===k?TAG_COLOR[k]:"var(--t3)"}}>
-                          {TAG_ICON[k]} {v}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Admin note */}
-              {demand.admin_note && (
-                <div style={{padding:14,background:"rgba(99,102,241,.07)",border:"1px solid rgba(99,102,241,.2)",borderRadius:10}}>
-                  <FieldLabel>📝 Nota do Gestor</FieldLabel>
-                  <p style={{fontSize:13,color:"#c7d2fe",lineHeight:1.6}}>{demand.admin_note}</p>
-                </div>
-              )}
-
-              {/* Files */}
-              {demand.files?.length > 0 && (
+          {/* DETAILS TAB */}
+          {tab==="details"&&(
+            <div style={{display:"grid",gridTemplateColumns:"1fr 260px"}}>
+              <div style={{padding:"20px 22px",borderRight:"1px solid var(--border)",display:"flex",flexDirection:"column",gap:18}}>
                 <div>
-                  <FieldLabel>Anexos ({demand.files.length})</FieldLabel>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-                    {demand.files.map((f,i)=>(
-                      <div key={i} style={{padding:"6px 12px",background:"var(--s1)",border:"1px solid var(--border)",borderRadius:8,fontSize:12,color:"var(--t2)"}}>📄 {f.name}</div>
+                  <FieldLabel>Descrição</FieldLabel>
+                  {editing
+                    ?<textarea className="input" value={form.description} onChange={fe("description")} rows={6} style={{resize:"vertical",lineHeight:1.7}}/>
+                    :<div style={{fontSize:14,lineHeight:1.8,color:"var(--t2)",whiteSpace:"pre-wrap",padding:"12px 14px",background:"var(--s1)",borderRadius:10,border:"1px solid var(--border)"}}>{demand.description}</div>
+                  }
+                </div>
+                {editing&&(
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                    <div><FieldLabel>Time</FieldLabel><input className="input" value={form.team} onChange={fe("team")} placeholder="Ex.: Operações"/></div>
+                    <div><FieldLabel>Prioridade</FieldLabel>
+                      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                        {Object.entries(PRIO_LABEL).map(([k,v])=>(
+                          <button key={k} onClick={()=>setForm(p=>({...p,priority:k}))} className="btn" style={{padding:"5px 9px",borderRadius:7,fontSize:11,fontWeight:700,border:`1px solid ${form.priority===k?PRIO_COLOR[k]:"var(--border)"}`,background:form.priority===k?`${PRIO_COLOR[k]}15`:"var(--s1)",color:form.priority===k?PRIO_COLOR[k]:"var(--t3)"}}>{v}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{gridColumn:"1/-1"}}><FieldLabel>Tipo</FieldLabel>
+                      <div style={{display:"flex",gap:8}}>
+                        {Object.entries(TAG_LABEL).map(([k,v])=>(
+                          <button key={k} onClick={()=>setForm(p=>({...p,tag:k}))} className="btn" style={{padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:600,border:`1px solid ${form.tag===k?TAG_COLOR[k]:"var(--border)"}`,background:form.tag===k?`${TAG_COLOR[k]}15`:"var(--s1)",color:form.tag===k?TAG_COLOR[k]:"var(--t3)"}}>{TAG_ICON[k]} {v}</button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {demand.admin_note&&(
+                  <div style={{padding:"12px 14px",background:"rgba(99,102,241,.07)",border:"1px solid rgba(99,102,241,.2)",borderRadius:10}}>
+                    <FieldLabel>Nota do Gestor</FieldLabel>
+                    <p style={{fontSize:13,color:"#c7d2fe",lineHeight:1.6,marginTop:4}}>{demand.admin_note}</p>
+                  </div>
+                )}
+                {demand.files?.length>0&&(
+                  <div>
+                    <FieldLabel>Anexos</FieldLabel>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:4}}>
+                      {demand.files.map((f,i)=><div key={i} style={{padding:"5px 12px",background:"var(--s1)",border:"1px solid var(--border)",borderRadius:7,fontSize:12,color:"var(--t2)"}}>📄 {f.name}</div>)}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* Meta sidebar */}
+              <div style={{padding:"20px 18px",background:"var(--s1)",display:"flex",flexDirection:"column",gap:14}}>
+                <div>
+                  <FieldLabel>Detalhes</FieldLabel>
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {[["👤","Solicitante",demand.user_name],["🏷️","Time",demand.team||"—"],[SQUAD_ICON[demand.squad],"Squad",SQUAD_LABEL[demand.squad]],["🕐","Criado",fmt(demand.created_at||demand.createdAt)],demand.approved_at&&["✅","Aprovado",fmt(demand.approved_at)],demand.concluded_at&&["🏁","Concluído",fmt(demand.concluded_at)]].filter(Boolean).map(([ic,lb,val])=>(
+                      <div key={lb} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:"var(--s2)",borderRadius:8,gap:8}}>
+                        <span style={{fontSize:11,color:"var(--t3)",flexShrink:0}}>{ic} {lb}</span>
+                        <span style={{fontSize:11,fontWeight:600,color:"var(--t2)",textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{val}</span>
+                      </div>
                     ))}
                   </div>
                 </div>
-              )}
-            </div>
-
-            {/* Right: meta + timeline */}
-            <div style={{padding:"20px 20px",display:"flex",flexDirection:"column",gap:16,background:"var(--s1)"}}>
-              {/* Meta */}
-              <div>
-                <FieldLabel>Detalhes</FieldLabel>
-                <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                  {[
-                    ["👤","Solicitante",demand.user_name],
-                    ["🏷️","Time",demand.team||"—"],
-                    [`${SQUAD_ICON[demand.squad]}`,"Squad",SQUAD_LABEL[demand.squad]],
-                    ["🕐","Criado em",fmt(demand.created_at||demand.createdAt)],
-                    demand.approved_at&&["✅","Aprovado em",fmt(demand.approved_at)],
-                    demand.concluded_at&&["🏁","Concluído em",fmt(demand.concluded_at)],
-                  ].filter(Boolean).map(([ic,lb,val])=>(
-                    <div key={lb} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:"var(--s2)",borderRadius:8}}>
-                      <span style={{fontSize:12,color:"var(--t3)"}}>{ic} {lb}</span>
-                      <span style={{fontSize:12,fontWeight:600,color:"var(--t2)",textAlign:"right",maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{val}</span>
-                    </div>
-                  ))}
-                </div>
+                <div style={{padding:"5px 10px",background:"var(--s2)",borderRadius:7,fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)",textAlign:"center"}}>ID: {demand.id}</div>
               </div>
+            </div>
+          )}
 
-              {/* Timeline */}
-              <div style={{flex:1}}>
-                <FieldLabel>Histórico</FieldLabel>
-                {timeline.length===0
-                  ? <div style={{fontSize:12,color:"var(--t3)",padding:"12px 0"}}>Sem atualizações ainda.</div>
-                  : <div style={{display:"flex",flexDirection:"column",gap:0,position:"relative"}}>
-                      <div style={{position:"absolute",left:13,top:14,bottom:14,width:2,background:"var(--border)"}}/>
-                      {timeline.map((t,i)=>{
-                        const s = STATUS[t.status]||{icon:"📌",dot:"var(--t3)",label:t.status||"Atualização"};
-                        return(
-                          <div key={i} style={{display:"flex",gap:10,padding:"8px 0",position:"relative",zIndex:1}}>
-                            <div style={{width:28,height:28,borderRadius:"50%",background:`${s.dot}18`,border:`2px solid ${s.dot}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,flexShrink:0}}>{s.icon}</div>
-                            <div style={{flex:1,paddingTop:4}}>
-                              <div style={{fontSize:12,fontWeight:700,color:s.dot}}>{s.label||t.status}</div>
-                              {t.note&&t.note!==s.label&&<div style={{fontSize:11,color:"var(--t3)",marginTop:2,lineHeight:1.4}}>{t.note}</div>}
-                              <div style={{fontSize:10,color:"var(--t3)",marginTop:3,fontFamily:"var(--mono)"}}>{fmt(t.at)}</div>
-                            </div>
-                          </div>
-                        );
-                      })}
+          {/* COMMENTS TAB */}
+          {tab==="comments"&&(
+            <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+              <div ref={commentRef} style={{flex:1,overflowY:"auto",padding:"16px 22px",display:"flex",flexDirection:"column",gap:16,minHeight:0}}>
+                {loadingComments
+                  ?<div style={{textAlign:"center",padding:24,color:"var(--t3)",fontSize:13}}><Spin/></div>
+                  :topComments.length===0
+                    ?<div style={{textAlign:"center",padding:"32px 0",color:"var(--t3)"}}>
+                      <div style={{fontSize:32,marginBottom:8}}>💬</div>
+                      <div style={{fontSize:13,fontWeight:600,color:"var(--t2)"}}>Nenhum comentário ainda</div>
+                      <div style={{fontSize:12,marginTop:4}}>Seja o primeiro a comentar!</div>
                     </div>
+                    :topComments.map(c=>(
+                      <CommentItem key={c.id} comment={c} replies={getReplies(c.id)} onReply={setReplyTo} onDelete={async(id)=>{await dbDeleteComment(id);setComments(p=>p.filter(x=>x.id!==id));}} currentUserId={currentUser?.id||currentUser?.email} renderContent={renderCommentContent}/>
+                    ))
                 }
               </div>
 
-              {/* ID */}
-              <div style={{padding:"6px 10px",background:"var(--s2)",borderRadius:8,fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)",textAlign:"center"}}>ID: {demand.id}</div>
+              {/* Comment input */}
+              <div style={{padding:"14px 22px",borderTop:"1px solid var(--border)",background:"var(--s2)",flexShrink:0}}>
+                {replyTo&&(
+                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",background:"rgba(59,130,246,.08)",border:"1px solid rgba(59,130,246,.2)",borderRadius:8,marginBottom:10,fontSize:12,color:"#60a5fa"}}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                    Respondendo a <strong>{replyTo.user_name}</strong>
+                    <button onClick={()=>setReplyTo(null)} style={{marginLeft:"auto",background:"none",border:"none",color:"#60a5fa",cursor:"pointer",fontSize:14}}>✕</button>
+                  </div>
+                )}
+                <div style={{position:"relative"}}>
+                  <div style={{display:"flex",gap:10,alignItems:"flex-end"}}>
+                    <Avatar name={currentUser?.name} url={currentUser?.avatar_url} size={32} radius={8}/>
+                    <div style={{flex:1,position:"relative"}}>
+                      <textarea ref={inputRef} value={comment} onChange={handleCommentInput} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&!mentionSearch){e.preventDefault();postComment();}}} rows={2} placeholder="Escreva um comentário... Use @ para mencionar alguém" style={{width:"100%",padding:"10px 14px",background:"var(--s1)",border:"1.5px solid var(--border)",borderRadius:10,color:"var(--t1)",fontSize:13,outline:"none",resize:"none",lineHeight:1.6,fontFamily:"var(--font)",transition:"border-color .15s"}} onFocus={e=>e.target.style.borderColor="var(--blue)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+                      {/* Mention suggestions */}
+                      {mentionSearch&&filteredProfiles.length>0&&(
+                        <div style={{position:"absolute",bottom:"100%",left:0,right:0,marginBottom:4,background:"var(--s2)",border:"1px solid var(--border2)",borderRadius:10,boxShadow:"0 8px 24px rgba(0,0,0,.5)",overflow:"hidden",zIndex:50}}>
+                          {filteredProfiles.map(p=>(
+                            <button key={p.id} onClick={()=>insertMention(p)} style={{width:"100%",padding:"9px 14px",background:"transparent",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:10,textAlign:"left",transition:"background .1s"}} onMouseOver={e=>e.currentTarget.style.background="var(--s3)"} onMouseOut={e=>e.currentTarget.style.background="transparent"}>
+                              <Avatar name={p.name} url={p.avatar_url} size={28} radius={7}/>
+                              <div>
+                                <div style={{fontSize:13,fontWeight:600,color:"var(--t1)"}}>{p.name}</div>
+                                <div style={{fontSize:10,color:"var(--t3)"}}>{p.email}</div>
+                              </div>
+                              {ROLES[p.role]&&<span style={{marginLeft:"auto",fontSize:10,padding:"2px 7px",borderRadius:999,background:`${ROLES[p.role].color}12`,color:ROLES[p.role].color}}>{ROLES[p.role].icon}</span>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <button className="btn btn-primary" onClick={postComment} disabled={!comment.trim()||posting} style={{padding:"9px 16px",borderRadius:9,flexShrink:0,opacity:!comment.trim()||posting?.5:1}}>
+                      {posting?<Spin/>:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>}
+                    </button>
+                  </div>
+                  <div style={{marginTop:6,fontSize:10,color:"var(--t3)"}}>Enter para enviar · Shift+Enter para quebrar linha · @ para mencionar</div>
+                </div>
+              </div>
             </div>
+          )}
+
+          {/* HISTORY TAB */}
+          {tab==="history"&&(
+            <div style={{padding:"20px 22px"}}>
+              {timeline.length===0
+                ?<EmptySlate icon="📋" title="Sem histórico" sub="As atualizações da task aparecerão aqui"/>
+                :<div style={{display:"flex",flexDirection:"column",gap:0,position:"relative",paddingLeft:16}}>
+                  <div style={{position:"absolute",left:13,top:0,bottom:0,width:2,background:"linear-gradient(to bottom,var(--blue),var(--border))"}}/>
+                  {timeline.map((t,i)=>{
+                    const s=STATUS[t.status]||{icon:"📌",dot:"var(--t3)",label:t.status||"Atualização",color:"#64748b"};
+                    return(
+                      <div key={i} style={{display:"flex",gap:14,padding:"12px 0",position:"relative",zIndex:1}}>
+                        <div style={{width:26,height:26,borderRadius:"50%",background:`${s.dot}18`,border:`2px solid ${s.dot}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,flexShrink:0,marginLeft:-13,zIndex:2}}>{s.icon}</div>
+                        <div style={{flex:1,padding:"10px 14px",background:"var(--s2)",border:`1px solid ${s.color}22`,borderRadius:10,marginTop:0}}>
+                          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:t.note&&t.note!==s.label?6:0}}>
+                            <span style={{fontSize:12,fontWeight:700,color:s.dot}}>{s.label||t.status}</span>
+                            <span style={{fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)",marginLeft:"auto"}}>{fmt(t.at)}</span>
+                          </div>
+                          {t.note&&t.note!==s.label&&<div style={{fontSize:12,color:"var(--t2)",lineHeight:1.5}}>{t.note}</div>}
+                          {t.sprint&&<div style={{fontSize:10,color:"#38bdf8",marginTop:4,fontFamily:"var(--mono)"}}>Sprint {t.sprint} · {sprintRange(t.sprint,overrides)}</div>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              }
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMMENT ITEM
+// ─────────────────────────────────────────────────────────────────────────────
+function CommentItem({comment,replies=[],onReply,onDelete,currentUserId,renderContent}) {
+  const [showReplies,setShowReplies] = useState(true);
+  const isOwn = comment.user_id===currentUserId||comment.user_email===currentUserId;
+  return(
+    <div style={{animation:"fadeUp .2s ease"}}>
+      <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+        <Avatar name={comment.user_name} size={32} radius={8}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{padding:"10px 14px",background:"var(--s2)",border:"1px solid var(--border)",borderRadius:"4px 12px 12px 12px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+              <span style={{fontSize:12,fontWeight:700,color:"var(--t1)"}}>{comment.user_name}</span>
+              <span style={{fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)"}}>{fmt(comment.created_at)}</span>
+            </div>
+            <div style={{fontSize:13,lineHeight:1.7,color:"var(--t2)",wordBreak:"break-word"}}>{renderContent(comment.content)}</div>
           </div>
+          <div style={{display:"flex",gap:10,marginTop:6,paddingLeft:2}}>
+            <button onClick={()=>onReply(comment)} style={{background:"none",border:"none",fontSize:11,color:"var(--t3)",cursor:"pointer",padding:"2px 4px",borderRadius:4,display:"flex",alignItems:"center",gap:4,transition:"color .15s"}} onMouseOver={e=>e.currentTarget.style.color="var(--blue)"} onMouseOut={e=>e.currentTarget.style.color="var(--t3)"}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg> Responder
+            </button>
+            {replies.length>0&&<button onClick={()=>setShowReplies(p=>!p)} style={{background:"none",border:"none",fontSize:11,color:"var(--blue)",cursor:"pointer",padding:"2px 4px"}}>{showReplies?"▲":"▼"} {replies.length} resposta(s)</button>}
+            {isOwn&&<button onClick={()=>onDelete(comment.id)} style={{background:"none",border:"none",fontSize:11,color:"var(--t3)",cursor:"pointer",padding:"2px 4px",marginLeft:"auto",transition:"color .15s"}} onMouseOver={e=>e.currentTarget.style.color="#f87171"} onMouseOut={e=>e.currentTarget.style.color="var(--t3)"}>Excluir</button>}
+          </div>
+          {/* Replies */}
+          {showReplies&&replies.length>0&&(
+            <div style={{marginTop:8,paddingLeft:16,borderLeft:"2px solid var(--border)",display:"flex",flexDirection:"column",gap:10}}>
+              {replies.map(r=>(
+                <div key={r.id} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                  <Avatar name={r.user_name} size={26} radius={7}/>
+                  <div style={{flex:1}}>
+                    <div style={{padding:"8px 12px",background:"var(--s1)",border:"1px solid var(--border)",borderRadius:"4px 10px 10px 10px"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                        <span style={{fontSize:11,fontWeight:700,color:"var(--t1)"}}>{r.user_name}</span>
+                        <span style={{fontSize:9,color:"var(--t3)",fontFamily:"var(--mono)"}}>{fmt(r.created_at)}</span>
+                      </div>
+                      <div style={{fontSize:12,lineHeight:1.6,color:"var(--t2)"}}>{renderContent(r.content)}</div>
+                    </div>
+                    {(r.user_id===currentUserId||r.user_email===currentUserId)&&(
+                      <button onClick={()=>onDelete(r.id)} style={{background:"none",border:"none",fontSize:10,color:"var(--t3)",cursor:"pointer",marginTop:4,padding:"2px 4px",transition:"color .15s"}} onMouseOver={e=>e.currentTarget.style.color="#f87171"} onMouseOut={e=>e.currentTarget.style.color="var(--t3)"}>Excluir</button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1064,6 +1266,7 @@ export default function App() {
           canEdit={taskModal.status==="pendente"&&(taskModal.user_id===user?.id||taskModal.user_email===user?.email)}
           onEdit={handleEditDemand}
           isAdmin={isAdmin}
+          currentUser={user}
         />
       )}
 
