@@ -319,212 +319,64 @@ const G = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&family=JetBrains+Mono:wght@400;500&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#050810;
-  --s1:#090e1a;
-  --s2:#0e1525;
-  --s3:#131d30;
-  --s4:#182238;
-  --border:#1e3050;
-  --border2:#263d5e;
-  --t1:#eef2ff;
-  --t2:#94afd4;
-  --t3:#4e6a8a;
-  --blue:#4f8ef7;
-  --blue2:#3b82f6;
-  --indigo:#818cf8;
-  --green:#34d399;
-  --font:'Inter',system-ui,sans-serif;
-  --mono:'JetBrains Mono',monospace;
-  --r:14px;--rs:9px;--rx:20px;
-  --nav-h:64px;
+  --bg:#03060f;--s1:#070d1c;--s2:#0a1220;--s3:#0f1a2e;--s4:#152038;
+  --border:#1a2d48;--border2:#243d62;
+  --t1:#e8f0ff;--t2:#7a9cc4;--t3:#3d5a7a;
+  --blue:#4f8ef7;--blue2:#3b82f6;--indigo:#818cf8;--green:#10b981;
+  --font:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;
+  --r:14px;--rs:9px;--rx:18px;--nav-h:60px;
 }
 body{background:var(--bg);color:var(--t1);font-family:var(--font);min-height:100vh;overflow-x:hidden;line-height:1.5}
-::selection{background:rgba(79,142,247,.3);color:#fff}
+::selection{background:rgba(79,142,247,.28);color:#fff}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
 ::-webkit-scrollbar-thumb:hover{background:var(--t3)}
 input,textarea,select,button{font-family:var(--font)}
-a{color:var(--blue)}
-
-/* ── Animations ── */
-@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+a{color:var(--blue);text-decoration:none}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-@keyframes slideRight{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}
-@keyframes scaleIn{from{opacity:0;transform:scale(.94) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
-@keyframes glow{0%,100%{box-shadow:0 0 16px rgba(79,142,247,.25)}50%{box-shadow:0 0 32px rgba(79,142,247,.55)}}
-@keyframes shimmer{0%{opacity:.4}50%{opacity:.9}100%{opacity:.4}}
-
-/* ── Cards ── */
-.card{
-  background:var(--s2);
-  border:1px solid var(--border);
-  border-radius:var(--r);
-  transition:border-color .2s,transform .22s,box-shadow .22s;
-}
-.card:hover{
-  border-color:var(--border2);
-  transform:translateY(-3px);
-  box-shadow:0 12px 40px rgba(0,0,0,.5),0 0 0 1px var(--border2);
-}
-
-/* ── Buttons ── */
-.btn{
-  cursor:pointer;border:none;
-  font-family:var(--font);
-  display:inline-flex;align-items:center;gap:7px;
-  font-weight:600;transition:all .15s;
-  white-space:nowrap;line-height:1;
-}
-.btn-primary{
-  background:linear-gradient(135deg,var(--blue2) 0%,var(--indigo) 100%);
-  color:#fff;padding:10px 20px;border-radius:var(--rs);font-size:14px;
-  box-shadow:0 4px 20px rgba(79,142,247,.3);
-}
-.btn-primary:hover{
-  transform:translateY(-1px);
-  box-shadow:0 6px 24px rgba(79,142,247,.45);
-  filter:brightness(1.08);
-}
-.btn-primary:active{transform:translateY(0);filter:brightness(.96)}
-.btn-ghost{
-  background:transparent;
-  border:1px solid var(--border2);
-  color:var(--t2);padding:8px 16px;
-  border-radius:var(--rs);font-size:13px;
-}
-.btn-ghost:hover{background:var(--s3);border-color:var(--t3);color:var(--t1)}
-.btn-danger{
-  background:rgba(239,68,68,.08);
-  border:1px solid rgba(239,68,68,.25);
-  color:#f87171;padding:7px 14px;
-  border-radius:var(--rs);font-size:12px;
-}
-.btn-danger:hover{background:rgba(239,68,68,.16);border-color:rgba(239,68,68,.4)}
-
-/* ── Inputs ── */
-.input{
-  width:100%;padding:11px 14px;
-  background:var(--s1);
-  border:1.5px solid var(--border);
-  border-radius:var(--rs);
-  color:var(--t1);font-size:14px;
-  outline:none;
-  transition:border-color .15s,box-shadow .15s;
-}
-.input:focus{
-  border-color:var(--blue);
-  box-shadow:0 0 0 3px rgba(79,142,247,.12);
-  background:var(--s2);
-}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+@keyframes slideRight{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:translateX(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.92) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(79,142,247,.2)}50%{box-shadow:0 0 40px rgba(79,142,247,.5)}}
+.card{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);transition:border-color .22s,transform .22s cubic-bezier(.34,1.56,.64,1),box-shadow .22s}
+.card:hover{border-color:var(--border2);transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,0,0,.55)}
+.btn{cursor:pointer;border:none;font-family:var(--font);display:inline-flex;align-items:center;gap:7px;font-weight:600;transition:all .16s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;line-height:1}
+.btn-primary{background:linear-gradient(135deg,#3b82f6 0%,#6366f1 100%);color:#fff;padding:10px 20px;border-radius:var(--rs);font-size:14px;box-shadow:0 4px 20px rgba(99,102,241,.35)}
+.btn-primary:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 8px 28px rgba(99,102,241,.5);filter:brightness(1.1)}
+.btn-primary:active{transform:scale(.97)}
+.btn-ghost{background:rgba(255,255,255,.04);border:1px solid var(--border2);color:var(--t2);padding:8px 16px;border-radius:var(--rs);font-size:13px}
+.btn-ghost:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15);color:var(--t1);transform:translateY(-1px)}
+.btn-danger{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#f87171;padding:7px 14px;border-radius:var(--rs);font-size:12px}
+.btn-danger:hover{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.35);transform:translateY(-1px)}
+.input{width:100%;padding:11px 14px;background:rgba(7,13,28,.8);border:1.5px solid var(--border);border-radius:var(--rs);color:var(--t1);font-size:14px;outline:none;transition:border-color .15s,box-shadow .15s,background .15s}
+.input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(79,142,247,.14);background:rgba(10,18,32,.9)}
 .input::placeholder{color:var(--t3)}
-
-/* ── Pills / badges ── */
-.pill{
-  display:inline-flex;align-items:center;gap:5px;
-  padding:3px 10px;border-radius:999px;
-  font-size:11px;font-weight:700;line-height:1;
-}
-
-/* ── Nav ── */
-.nav-link{
-  padding:8px 14px;border-radius:var(--rs);
-  font-size:13px;font-weight:500;
-  cursor:pointer;border:none;background:transparent;
-  color:var(--t3);transition:all .15s;
-  display:flex;align-items:center;gap:7px;
-  position:relative;
-}
-.nav-link:hover{background:rgba(255,255,255,.05);color:var(--t2)}
-.nav-link.active{background:rgba(79,142,247,.12);color:var(--blue);font-weight:600;}
-.nav-link.active svg{color:var(--blue)!important}
-
-/* ── Sidebar ── */
-.sidebar-link{
-  display:flex;align-items:center;gap:11px;
-  padding:9px 12px;border-radius:var(--rs);
-  cursor:pointer;border:none;background:transparent;
-  color:var(--t3);font-size:13px;font-weight:500;
-  width:100%;text-align:left;transition:all .15s;
-}
-.sidebar-link:hover{background:var(--s3);color:var(--t2)}
-.sidebar-link.active{
-  background:linear-gradient(135deg,rgba(79,142,247,.14),rgba(129,140,248,.1));
-  color:var(--blue);border:1px solid rgba(79,142,247,.2);
-  font-weight:600;
-}
-.sidebar-link.active svg{color:var(--blue)!important}
-
-/* ── Modal ── */
-.modal-bg{
-  position:fixed;inset:0;
-  background:rgba(0,0,0,.82);
-  backdrop-filter:blur(8px);
-  z-index:500;
-  display:flex;align-items:center;justify-content:center;
-  padding:20px;
-  animation:fadeIn .18s ease;
-}
-.modal{
-  background:var(--s2);
-  border:1px solid var(--border2);
-  border-radius:var(--rx);
-  width:100%;max-width:860px;
-  max-height:92vh;
-  overflow:hidden;
-  display:flex;flex-direction:column;
-  animation:scaleIn .2s ease;
-  box-shadow:0 32px 80px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.04);
-}
-
-/* ── Tag chip ── */
-.tag-chip{
-  display:inline-flex;align-items:center;gap:4px;
-  padding:2px 9px;border-radius:6px;
-  font-size:11px;font-weight:700;
-}
-
-/* ── Icon buttons ── */
-.icon-btn{
-  width:36px;height:36px;border-radius:9px;
-  border:1px solid var(--border);
-  background:var(--s1);
-  color:var(--t2);
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;transition:all .15s;
-}
-.icon-btn:hover{background:var(--s3);border-color:var(--border2);color:var(--t1)}
-.icon-btn.active{background:rgba(79,142,247,.12);border-color:rgba(79,142,247,.35);color:var(--blue)}
-
-/* ── Squad cards on hover ── */
-.squad-card{
-  padding:18px 20px;border-radius:16px;
-  border:1.5px solid var(--border);
-  background:var(--s2);
-  cursor:pointer;transition:all .22s;text-align:left;
-}
-.squad-card:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,.4)}
-.squad-card.active{box-shadow:0 8px 28px rgba(0,0,0,.4)}
-
-/* ── Task cards ── */
-.task-card{
-  background:var(--s2);
-  border:1px solid var(--border);
-  border-radius:16px;
-  overflow:hidden;cursor:pointer;
-  transition:all .22s;
-}
-.task-card:hover{
-  border-color:var(--border2);
-  transform:translateY(-3px);
-  box-shadow:0 12px 40px rgba(0,0,0,.45);
-}
-
-/* ── Tooltip-like helper ── */
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;line-height:1}
+.nav-link{padding:7px 14px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--t3);transition:all .15s;display:flex;align-items:center;gap:7px}
+.nav-link:hover{background:rgba(255,255,255,.06);color:var(--t2);transform:translateY(-1px)}
+.nav-link.active{background:linear-gradient(135deg,rgba(79,142,247,.18),rgba(99,102,241,.12));color:var(--blue);font-weight:700;border:1px solid rgba(79,142,247,.25);box-shadow:0 2px 10px rgba(79,142,247,.15)}
+.sidebar-link{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--rs);cursor:pointer;border:none;background:transparent;color:var(--t3);font-size:13px;font-weight:500;width:100%;text-align:left;transition:all .15s}
+.sidebar-link:hover{background:rgba(255,255,255,.05);color:var(--t2);transform:translateX(2px)}
+.sidebar-link.active{background:linear-gradient(135deg,rgba(79,142,247,.16),rgba(99,102,241,.1));color:var(--blue);border:1px solid rgba(79,142,247,.22);font-weight:700;box-shadow:0 2px 12px rgba(79,142,247,.12)}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .18s ease}
+.modal{background:linear-gradient(160deg,var(--s2) 0%,var(--s3) 100%);border:1px solid rgba(255,255,255,.07);border-radius:var(--rx);width:100%;max-width:860px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;animation:scaleIn .22s cubic-bezier(.34,1.56,.64,1);box-shadow:0 40px 100px rgba(0,0,0,.9)}
+.tag-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:700}
+.icon-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--t2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
+.icon-btn:hover{background:rgba(255,255,255,.08);border-color:var(--border2);color:var(--t1);transform:translateY(-1px)}
+.icon-btn.active{background:rgba(79,142,247,.15);border-color:rgba(79,142,247,.35);color:var(--blue)}
+.squad-card{padding:20px;border-radius:16px;border:1.5px solid var(--border);background:linear-gradient(160deg,var(--s2),var(--s3));cursor:pointer;transition:all .22s cubic-bezier(.34,1.56,.64,1);text-align:left;position:relative;overflow:hidden}
+.squad-card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.5)}
+.squad-card.active{box-shadow:0 12px 36px rgba(0,0,0,.45)}
+.task-card{background:linear-gradient(160deg,var(--s2) 0%,var(--s3) 100%);border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;transition:all .22s cubic-bezier(.34,1.56,.64,1);position:relative}
+.task-card:hover{border-color:var(--border2);transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,0,0,.55)}
+.sprint-header{background:linear-gradient(135deg,var(--s2),var(--s3));border:1px solid var(--border);border-radius:14px;transition:all .2s}
+.sprint-header:hover{border-color:var(--border2)}
 .hint{font-size:11px;color:var(--t3);line-height:1.5}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent)}
 `;
 
 
@@ -535,14 +387,18 @@ const Spin = () => <div style={{width:16,height:16,border:"2px solid rgba(255,25
 
 function Toast({msg,type}) {
   const isOk = type !== "error";
+  const isWarn = type === "warn";
   return (
-    <div style={{position:"fixed",top:24,right:24,zIndex:9999,padding:"14px 20px",borderRadius:12,fontSize:13,fontWeight:600,
-      animation:"slideRight .3s ease",display:"flex",alignItems:"center",gap:10,
-      background:isOk?"rgba(34,197,94,.12)":"rgba(239,68,68,.12)",
-      border:`1px solid ${isOk?"rgba(34,197,94,.35)":"rgba(239,68,68,.35)"}`,
-      color:isOk?"#4ade80":"#f87171",boxShadow:"0 8px 32px rgba(0,0,0,.5)",
-      backdropFilter:"blur(12px)",maxWidth:400}}>
-      <span style={{fontSize:16}}>{isOk?"✓":"✕"}</span>{msg}
+    <div style={{position:"fixed",top:20,right:20,zIndex:9999,padding:"14px 18px",borderRadius:14,fontSize:13,fontWeight:600,
+      animation:"slideRight .3s cubic-bezier(.34,1.56,.64,1)",display:"flex",alignItems:"center",gap:10,
+      background:isOk&&!isWarn?"rgba(16,185,129,.1)":isWarn?"rgba(245,158,11,.1)":"rgba(239,68,68,.1)",
+      border:`1px solid ${isOk&&!isWarn?"rgba(16,185,129,.3)":isWarn?"rgba(245,158,11,.3)":"rgba(239,68,68,.3)"}`,
+      color:isOk&&!isWarn?"#34d399":isWarn?"#fbbf24":"#f87171",
+      boxShadow:"0 8px 32px rgba(0,0,0,.6)",
+      backdropFilter:"blur(16px)",maxWidth:400,zIndex:9999}}>
+      <div style={{width:20,height:20,borderRadius:6,background:"currentColor",opacity:.15,position:"absolute",left:14}}/>
+      <span style={{fontSize:15,position:"relative"}}>{isOk&&!isWarn?"✓":isWarn?"⚠":"✕"}</span>
+      <span style={{position:"relative"}}>{msg}</span>
     </div>
   );
 }
@@ -1441,72 +1297,72 @@ export default function App() {
       )}
 
       {/* NAVBAR */}
-      <nav style={{height:62,display:"flex",alignItems:"center",padding:"0 28px",gap:12,background:"rgba(6,9,18,.95)",borderBottom:"1px solid var(--border)",backdropFilter:"blur(20px)",position:"sticky",top:0,zIndex:200,flexShrink:0}}>
+      <nav style={{height:60,display:"flex",alignItems:"center",padding:"0 24px",gap:10,
+        background:"rgba(3,6,15,.88)",
+        borderBottom:"1px solid rgba(255,255,255,.06)",
+        backdropFilter:"blur(24px)",
+        WebkitBackdropFilter:"blur(24px)",
+        position:"sticky",top:0,zIndex:200,flexShrink:0,
+        boxShadow:"0 1px 0 rgba(255,255,255,.04),0 4px 24px rgba(0,0,0,.4)"}}>
         {/* Logo */}
-        <div style={{display:"flex",alignItems:"center",gap:10,marginRight:8}}>
-          <div style={{width:34,height:34,borderRadius:10,background:"linear-gradient(135deg,#3b82f6,#6366f1)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 0 16px rgba(99,102,241,.35)"}}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginRight:4,flexShrink:0}}>
+          <div style={{width:34,height:34,borderRadius:10,background:"linear-gradient(135deg,#3b82f6,#6366f1)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 0 20px rgba(99,102,241,.4)",animation:"glow 3s infinite"}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
           </div>
-          <div>
-            <div style={{fontWeight:900,fontSize:15,letterSpacing:"-1px",lineHeight:1}}>TaskHUB</div>
-            <div style={{fontSize:9,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"1px"}}>{ROLES[user?.role]?.label||"Plataforma"}</div>
+          <div style={{lineHeight:1}}>
+            <div style={{fontWeight:900,fontSize:15,letterSpacing:"-1px",color:"var(--t1)"}}>TaskHUB</div>
+            <div style={{fontSize:9,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"1.2px",marginTop:2}}>{ROLES[user?.role]?.label||"Plataforma"}</div>
           </div>
         </div>
-
-        {/* Nav links — regular items */}
-        <div style={{display:"flex",gap:1,background:"var(--s1)",borderRadius:10,padding:3,border:"1px solid var(--border)"}}>
+        <div style={{width:1,height:28,background:"var(--border)",flexShrink:0}}/>
+        {/* Nav links */}
+        <div style={{display:"flex",gap:2,flex:1}}>
           {navItems.filter(v=>v.id!=="new").map(v=>{
             const active=view===v.id;
             return(
-              <button key={v.id} onClick={()=>setView(v.id)} className="nav-link"
-                style={{background:active?"var(--s2)":"transparent",color:active?"var(--t1)":"var(--t3)",fontWeight:active?700:400,boxShadow:active?"0 2px 8px rgba(0,0,0,.3)":"none",borderRadius:8,fontSize:13,padding:"8px 14px",display:"flex",alignItems:"center",gap:6}}>
-                <span style={{color:active?"var(--blue)":"var(--t3)",display:"flex"}}>{NAV_ICONS[v.icon]||v.icon}</span>
+              <button key={v.id} onClick={()=>setView(v.id)} className={`nav-link${active?" active":""}`} style={{fontSize:13}}>
+                <span style={{display:"flex",alignItems:"center",color:active?"var(--blue)":"var(--t3)",transition:"color .15s"}}>{NAV_ICONS[v.icon]||v.icon}</span>
                 {v.label}
-                {v.id==="admin"&&pendingCount>0&&<span style={{minWidth:18,height:18,borderRadius:999,background:"#ef4444",fontSize:9,fontWeight:800,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",padding:"0 5px"}}>{pendingCount}</span>}
+                {v.id==="admin"&&pendingCount>0&&<span style={{minWidth:18,height:18,borderRadius:999,background:"#ef4444",fontSize:9,fontWeight:800,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",padding:"0 5px",boxShadow:"0 0 8px rgba(239,68,68,.5)"}}>{pendingCount}</span>}
               </button>
             );
           })}
         </div>
-
-        {/* Nova Task — standalone highlighted button */}
-        <button onClick={()=>setView("new")}
-          style={{display:"flex",alignItems:"center",gap:8,padding:"9px 18px",borderRadius:10,border:"none",cursor:"pointer",
-            background:view==="new"?"linear-gradient(135deg,#22c55e,#16a34a)":"linear-gradient(135deg,#3b82f6,#6366f1)",
-            color:"#fff",fontSize:13,fontWeight:700,boxShadow:view==="new"?"0 4px 16px rgba(34,197,94,.35)":"0 4px 16px rgba(99,102,241,.3)",
-            transition:"all .15s",flexShrink:0}}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        {/* Nova Task CTA */}
+        <button onClick={()=>setView("new")} className="btn btn-primary"
+          style={{padding:"9px 18px",fontSize:13,borderRadius:10,flexShrink:0,
+            background:view==="new"?"linear-gradient(135deg,#10b981,#059669)":"linear-gradient(135deg,#3b82f6,#6366f1)",
+            boxShadow:view==="new"?"0 4px 20px rgba(16,185,129,.4)":"0 4px 20px rgba(99,102,241,.35)"}}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nova Task
         </button>
-
-        <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
-          {/* Bell */}
+        {/* Right */}
+        <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
           <div style={{position:"relative"}}>
-            <button onClick={()=>setShowNotif(p=>!p)} style={{width:36,height:36,borderRadius:9,border:`1px solid ${showNotif?"rgba(59,130,246,.4)":"var(--border)"}`,background:showNotif?"rgba(59,130,246,.1)":"var(--s1)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"all .15s",position:"relative"}}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-              {unread>0&&<span style={{position:"absolute",top:-5,right:-5,minWidth:18,height:18,borderRadius:999,background:"#ef4444",fontSize:9,fontWeight:800,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid var(--bg)",padding:"0 4px"}}>{unread}</span>}
+            <button onClick={()=>setShowNotif(p=>!p)} className={`icon-btn${showNotif?" active":""}`}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              {unread>0&&<span style={{position:"absolute",top:-4,right:-4,minWidth:16,height:16,borderRadius:999,background:"#ef4444",fontSize:8,fontWeight:900,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid var(--bg)",padding:"0 3px",boxShadow:"0 0 8px rgba(239,68,68,.5)"}}>{unread}</span>}
             </button>
             {showNotif&&<NotifDropdown notifs={notifs} onMarkRead={async()=>{await dbMarkRead(user?.id||user?.email);setNotifs(p=>p.map(n=>({...n,read:true})));}} onClose={()=>setShowNotif(false)} onOpen={d=>{setTaskModal(demands.find(x=>x.id===d.demand_id)||null);setShowNotif(false);}}/>}
           </div>
-
-          {/* User */}
-          <button onClick={()=>setView("profile")} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px 6px 6px",border:`1px solid ${view==="profile"?"rgba(59,130,246,.4)":"var(--border)"}`,borderRadius:10,background:view==="profile"?"rgba(59,130,246,.08)":"var(--s1)",cursor:"pointer",transition:"all .15s"}}>
+          <button onClick={()=>setView("profile")} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 12px 5px 5px",border:`1px solid ${view==="profile"?"rgba(79,142,247,.4)":"var(--border)"}`,borderRadius:10,background:view==="profile"?"rgba(79,142,247,.08)":"rgba(255,255,255,.03)",cursor:"pointer",transition:"all .15s"}}
+            onMouseOver={e=>{e.currentTarget.style.background="rgba(255,255,255,.07)"}} onMouseOut={e=>{e.currentTarget.style.background=view==="profile"?"rgba(79,142,247,.08)":"rgba(255,255,255,.03)"}}>
             <Avatar name={user?.name} url={user?.avatar_url} size={28} radius={7}/>
             <div style={{textAlign:"left"}}>
-              <div style={{fontSize:12,fontWeight:600,color:"var(--t1)",lineHeight:1}}>{user?.name?.split(" ")[0]}</div>
-              <div style={{fontSize:10,color:"var(--t3)",lineHeight:1,marginTop:2}}>{ROLES[user?.role]?.icon} {ROLES[user?.role]?.label}</div>
+              <div style={{fontSize:12,fontWeight:700,color:"var(--t1)",lineHeight:1}}>{user?.name?.split(" ")[0]}</div>
+              <div style={{fontSize:9,color:"var(--t3)",lineHeight:1,marginTop:2,textTransform:"uppercase",letterSpacing:".5px"}}>{ROLES[user?.role]?.label}</div>
             </div>
           </button>
-
-          <button onClick={handleLogout} title="Sair" style={{width:36,height:36,borderRadius:9,border:"1px solid var(--border)",background:"var(--s1)",color:"var(--t3)",fontSize:15,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"all .15s"}}
+          <button onClick={handleLogout} className="icon-btn" title="Sair"
             onMouseOver={e=>{e.currentTarget.style.background="rgba(239,68,68,.1)";e.currentTarget.style.color="#f87171";e.currentTarget.style.borderColor="rgba(239,68,68,.3)"}}
-            onMouseOut={e=>{e.currentTarget.style.background="var(--s1)";e.currentTarget.style.color="var(--t3)";e.currentTarget.style.borderColor="var(--border)"}}>
-            ↩
+            onMouseOut={e=>{e.currentTarget.style.background="rgba(255,255,255,.03)";e.currentTarget.style.color="var(--t2)";e.currentTarget.style.borderColor="var(--border)"}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           </button>
         </div>
       </nav>
 
-      {/* MAIN */}
-      <main style={{flex:1,display:"flex",maxWidth:1400,width:"100%",margin:"0 auto",padding:"0 24px",minHeight:0,overflow:view==="admin"?"hidden":"visible"}}>
+            {/* MAIN */}
+      <main style={{flex:1,display:"flex",maxWidth:1400,width:"100%",margin:"0 auto",padding:"0 28px",minHeight:0,overflow:view==="admin"?"hidden":"visible"}}>
         {view==="queue"     && <QueueView demands={demands} overrides={overrides} onOpen={d=>setTaskModal(d)}/>}
         {view==="new"       && <NewTaskView user={user} onSubmit={handleNewDemand}/>}
         {view==="my"        && <MyTasksView demands={demands.filter(d=>d.user_id===user?.id||d.user_email===user?.email)} onOpen={d=>setTaskModal(d)}/>}
