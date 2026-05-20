@@ -47,7 +47,11 @@ const session = {
 // ─────────────────────────────────────────────────────────────────────────────
 const SQUADS = ["industria","reparadores","inovacao"];
 const SQUAD_LABEL = { industria:"Indústria", reparadores:"Reparadores", inovacao:"Inovação" };
-const SQUAD_ICON  = { industria:"<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg>", reparadores:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>", inovacao:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>" };
+const SQUAD_ICON  = {
+  industria:   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg>,
+  reparadores: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>,
+  inovacao:    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>,
+};
 const SQUAD_COLOR = {
   industria:   { h:"#00c9a7", rgb:"0,201,167" },
   reparadores: { h:"#f7971e", rgb:"247,151,30" },
@@ -58,25 +62,25 @@ const PRIO_COLOR = { critica:"#ef4444", alta:"#f97316", media:"#eab308", baixa:"
 const PRIO_ORDER = { critica:0, alta:1, media:2, baixa:3 };
 const TAG_LABEL  = { nova_demanda:"Nova Demanda", bug:"Correção de Bug" };
 const TAG_COLOR  = { nova_demanda:"#38bdf8", bug:"#f472b6" };
-const TAG_ICON   = { nova_demanda:"✦", bug:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="4" r="2"/><rect x="8" y="6" width="8" height="10" rx="4"/><path d="m19 7-3 2M5 7l3 2m11 5-3-1M5 12l3-1m11 5-3-2M5 17l3-2"/></svg>" };
+const TAG_ICON   = { nova_demanda:"✦", bug:"⬡" };
 
 const STATUS = {
   pendente:    { label:"Pendente",       icon:"⏳", color:"#64748b", dot:"#94a3b8", order:0 },
   aprovada:    { label:"Aprovada",       icon:"✅", color:"#22c55e", dot:"#4ade80", order:1 },
-  em_andamento:{ label:"Em Andamento",   icon:"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>", color:"#3b82f6", dot:"#60a5fa", order:2 },
-  em_aprovacao:{ label:"Em Aprovação",   icon:"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>", color:"#f59e0b", dot:"#fbbf24", order:3 },
-  concluida:   { label:"Concluída",      icon:"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>", color:"#8b5cf6", dot:"#a78bfa", order:4 },
+  em_andamento:{ label:"Em Andamento",   icon:"↻", color:"#3b82f6", dot:"#60a5fa", order:2 },
+  em_aprovacao:{ label:"Em Aprovação",   icon:"◎", color:"#f59e0b", dot:"#fbbf24", order:3 },
+  concluida:   { label:"Concluída",      icon:"✓", color:"#8b5cf6", dot:"#a78bfa", order:4 },
   rejeitada:   { label:"Rejeitada",      icon:"❌", color:"#ef4444", dot:"#f87171", order:5 },
 };
 const FLOW = ["pendente","aprovada","em_andamento","em_aprovacao","concluida"];
 
 const ROLES = {
-  admin:     { label:"Admin",      icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>", color:"#818cf8" },
+  admin:     { label:"Admin",      icon:"◈", color:"#818cf8" },
   moderador: { label:"Moderador",  icon:"⚖", color:"#f472b6" },
-  reparador: { label:"Reparador",  icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>", color:"#f7971e" },
-  industria: { label:"Indústria",  icon:"<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg>", color:"#00c9a7" },
-  inovacao:  { label:"Inovação",   icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>", color:"#a78bfa" },
-  user:      { label:"Usuário",    icon:"<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>", color:"#38bdf8" },
+  reparador: { label:"Reparador",  icon:"⚙", color:"#f7971e" },
+  industria: { label:"Indústria",  icon:"▦", color:"#00c9a7" },
+  inovacao:  { label:"Inovação",   icon:"◎", color:"#a78bfa" },
+  user:      { label:"Usuário",    icon:"○", color:"#38bdf8" },
 };
 const ADMIN_EMAILS = ["daniel.cunha@oficinabrasil.com.br"];
 
@@ -934,7 +938,7 @@ function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}
                 :<div style={{display:"flex",flexDirection:"column",gap:0,position:"relative",paddingLeft:14}}>
                   <div style={{position:"absolute",left:10,top:0,bottom:0,width:1.5,background:"var(--border)"}}/>
                   {timeline.map((t,i)=>{
-                    const s=STATUS[t.status]||{icon:"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17z"/></svg>",dot:"var(--t3)",label:t.status||"Atualização",color:"#64748b"};
+                    const s=STATUS[t.status]||{icon:"◌",dot:"var(--t3)",label:t.status||"Atualização",color:"#64748b"};
                     return(
                       <div key={i} style={{display:"flex",gap:10,padding:"8px 0",position:"relative",zIndex:1}}>
                         <div style={{width:22,height:22,borderRadius:"50%",background:`${s.dot}18`,border:`2px solid ${s.dot}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,flexShrink:0,marginLeft:-11}}>{s.icon}</div>
@@ -1093,12 +1097,14 @@ function TaskCard({demand,index,onClick,overrides={}}) {
 // NAV ICONS (flat SVG)
 // ─────────────────────────────────────────────────────────────────────────────
 const NAV_ICONS = {
-  "<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
-  "⚖": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
-  "<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg>": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg>,
-  "✚":  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-  "<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>,
-  "<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+  "shield":  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  "scale":   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 3 12 3 8 3"/><line x1="12" y1="3" x2="12" y2="15"/><path d="M3 9l4 9 4-9"/><path d="M13 9l4 9 4-9"/></svg>,
+  "list":    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg>,
+  "plus":    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  "folder":  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>,
+  "chart":   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+  "✚":       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  "⚖":      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 3 12 3 8 3"/><line x1="12" y1="3" x2="12" y2="15"/><path d="M3 9l4 9 4-9"/><path d="M13 9l4 9 4-9"/></svg>,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1299,10 +1305,10 @@ export default function App() {
 
   // Nav items
   const navItems = isAdmin
-    ? [{id:"admin",label:"Admin",icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>"},{id:"queue",label:"Filas",icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg>"},{id:"new",label:"Nova Task",icon:"✚"},{id:"my",label:"Minhas Tasks",icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>"},{id:"analytics",label:"Visão Geral",icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>"}]
+    ? [{id:"admin",label:"Admin",icon:"shield"},{id:"queue",label:"Filas",icon:"list"},{id:"new",label:"Nova Task",icon:"✚"},{id:"my",label:"Minhas Tasks",icon:"folder"},{id:"analytics",label:"Visão Geral",icon:"chart"}]
     : isMod
-    ? [{id:"admin",label:"Painel",icon:"⚖"},{id:"queue",label:"Filas",icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg>"},{id:"new",label:"Nova Task",icon:"✚"},{id:"my",label:"Minhas Tasks",icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>"}]
-    : [{id:"queue",label:"Filas",icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg>"},{id:"new",label:"Nova Task",icon:"✚"},{id:"my",label:"Minhas Tasks",icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>"}];
+    ? [{id:"admin",label:"Painel",icon:"⚖"},{id:"queue",label:"Filas",icon:"list"},{id:"new",label:"Nova Task",icon:"✚"},{id:"my",label:"Minhas Tasks",icon:"folder"}]
+    : [{id:"queue",label:"Filas",icon:"list"},{id:"new",label:"Nova Task",icon:"✚"},{id:"my",label:"Minhas Tasks",icon:"folder"}];
 
   const pendingCount = demands.filter(d=>d.status==="pendente").length;
   const unread = notifs.filter(n=>!n.read).length;
@@ -1434,7 +1440,7 @@ function NotifDropdown({notifs,onMarkRead,onClose,onOpen}) {
         {notifs.length===0
           ?<div style={{padding:"32px 18px",textAlign:"center",color:"var(--t3)",fontSize:13}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.888 17.888 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg> Nenhuma notificação</div>
           :notifs.map(n=>{
-            const sm=STATUS[n.type]||{icon:"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17z"/></svg>",dot:"var(--t3)",label:n.type};
+            const sm=STATUS[n.type]||{icon:"◌",dot:"var(--t3)",label:n.type};
             return(
               <div key={n.id} onClick={()=>onOpen(n)} style={{padding:"12px 18px",borderBottom:"1px solid var(--border)",background:n.read?"transparent":`${sm.color||sm.dot}08`,cursor:"pointer",transition:"background .15s"}}
                 onMouseOver={e=>e.currentTarget.style.background="var(--s3)"} onMouseOut={e=>e.currentTarget.style.background=n.read?"transparent":`${sm.color||sm.dot}08`}>
@@ -1522,7 +1528,7 @@ function QueueView({demands,overrides,onOpen}) {
 
       {/* Content */}
       {demands.length===0
-        ?<EmptySlate icon="<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 13V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h8"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/><path d="M16 19h6M19 16v6"/></svg>" title="Nenhuma demanda ainda" sub="Quando usuários enviarem tasks, elas aparecerão aqui organizadas por sprint."/>
+        ?<EmptySlate icon="📭" title="Nenhuma demanda ainda" sub="Quando usuários enviarem tasks, elas aparecerão aqui organizadas por sprint."/>
         :<div style={{display:"flex",flexDirection:"column",gap:28}}>
           {/* Sprint sections */}
           {sprints.map(sp=>{
@@ -1652,7 +1658,7 @@ function MyTasksView({demands,onOpen}) {
       </div>
 
       {filtered.length===0
-        ?<EmptySlate icon="<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>" title="Nenhuma task encontrada" sub="Tente outro filtro ou crie sua primeira task."/>
+        ?<EmptySlate icon="📂" title="Nenhuma task encontrada" sub="Tente outro filtro ou crie sua primeira task."/>
         :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:14}}>
           {filtered.map((d,i)=><TaskCard key={d.id} demand={d} index={i} onClick={()=>onOpen(d)}/>)}
         </div>
@@ -2040,7 +2046,7 @@ function UserMgrPanel({users,onUpdateRole}) {
         );})}
       </div>
 
-      {filtered.length===0?<EmptySlate icon="<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>" title="Nenhum usuário" sub=""/>
+      {filtered.length===0?<EmptySlate icon="◌" title="Nenhum usuário" sub=""
         :<div style={{display:"flex",flexDirection:"column",gap:10}}>
           {filtered.map((u,i)=>{
             const roles = u.roles||[u.role||"user"];
@@ -2400,7 +2406,7 @@ function BacklogPanel({items=[],onSave}) {
     <div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
         <div style={{display:"flex",gap:8}}>
-          {[["all","Todos",list.length],["account","<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg> Contas",list.filter(i=>i.type==="account").length],["request","<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg> Solicitações",list.filter(i=>i.type==="request").length]].map(([v,l,c])=>(
+          {[["all","Todos",list.length],["account","Contas",list.filter(i=>i.type==="account").length],["request","Solicitações",list.filter(i=>i.type==="request").length]].map(([v,l,c])=>(
             <button key={v} onClick={()=>setFilter(v)} style={{padding:"7px 14px",border:`1px solid ${filter===v?"#34d399":"var(--border)"}`,borderRadius:9,background:filter===v?"rgba(52,211,153,.1)":"var(--s1)",color:filter===v?"#34d399":"var(--t3)",fontSize:12,fontWeight:filter===v?700:400,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
               {l}<span style={{fontSize:10,opacity:.7}}>{c}</span>
             </button>
@@ -2414,7 +2420,7 @@ function BacklogPanel({items=[],onSave}) {
 
       {adding&&(
         <div style={{padding:22,background:"var(--s2)",border:`1px solid ${adding==="account"?"rgba(52,211,153,.3)":"rgba(56,189,248,.3)"}`,borderRadius:14,marginBottom:20,animation:"fadeUp .2s ease"}}>
-          <div style={{fontSize:14,fontWeight:700,marginBottom:16,color:adding==="account"?"#34d399":"#38bdf8"}}>{editId?"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar":"+"} {adding==="account"?"Conta / Senha":"Solicitação"}</div>
+          <div style={{fontSize:14,fontWeight:700,marginBottom:16,color:adding==="account"?"#34d399":"#38bdf8"}}>{editId?"Editar":"+"} {adding==="account"?"Conta / Senha":"Solicitação"}</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
             <div style={{gridColumn:"1/-1"}}><FieldLabel>Título</FieldLabel><input className="input" value={form.title} onChange={f("title")} placeholder={adding==="account"?"Ex.: AWS Console":"Ex.: Renovar SSL"}/></div>
             {adding==="account"&&<><div><FieldLabel>Login</FieldLabel><input className="input" value={form.login} onChange={f("login")} placeholder="usuario@empresa.com"/></div><div><FieldLabel>Senha</FieldLabel><input className="input" value={form.password} onChange={f("password")} placeholder="••••••"/></div></>}
@@ -2428,14 +2434,14 @@ function BacklogPanel({items=[],onSave}) {
         </div>
       )}
 
-      {displayed.length===0?<EmptySlate icon="<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>" title="Backlog vazio" sub='Clique em "+ Conta" ou "+ Solicitação"'/>
+      {displayed.length===0?<EmptySlate icon="◌" title="Backlog vazio" sub='Clique em "+ Conta" ou "+ Solicitação"'/>
         :<div style={{display:"flex",flexDirection:"column",gap:10}}>
           {displayed.map((item,i)=>{
             const isAcc=item.type==="account"; const ac=isAcc?"#34d399":"#38bdf8"; const sc=REQ_STATUS_COLORS[item.status]||"#94a3b8";
             return(
               <div key={item.id} style={{padding:"14px 18px",background:"var(--s2)",border:"1px solid var(--border)",borderRadius:12,animation:`fadeUp .2s ease ${i*.03}s both`}}>
                 <div style={{display:"flex",alignItems:"center",gap:12}}>
-                  <div style={{width:34,height:34,borderRadius:9,background:`${ac}12`,border:`1px solid ${ac}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>{isAcc?"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>":"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg>"}</div>
+                  <div style={{width:34,height:34,borderRadius:9,background:`${ac}12`,border:`1px solid ${ac}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>{isAcc?<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>:<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg>}</div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontWeight:600,fontSize:14,marginBottom:2}}>{item.title}</div>
                     <div style={{fontSize:11,color:"var(--t3)"}}>{isAcc&&item.login?`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${item.login}`:!isAcc?<span style={{color:sc}}>● {item.status}</span>:""}</div>
@@ -2445,7 +2451,7 @@ function BacklogPanel({items=[],onSave}) {
                   </select>}
                   <div style={{display:"flex",gap:6}}>
                     <button onClick={()=>startEdit(item)} style={{width:30,height:30,borderRadius:7,border:"1px solid var(--border)",background:"transparent",color:"var(--t3)",cursor:"pointer",fontSize:13}} onMouseOver={e=>e.currentTarget.style.color="#38bdf8"} onMouseOut={e=>e.currentTarget.style.color="var(--t3)"}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                    {isAcc&&<button onClick={()=>setReveal(p=>({...p,[item.id]:!p[item.id]}))} style={{width:30,height:30,borderRadius:7,border:"1px solid var(--border)",background:"transparent",color:"var(--t3)",cursor:"pointer",fontSize:13}}>{reveal[item.id]?"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>":"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>"}</button>}
+                    {isAcc&&<button onClick={()=>setReveal(p=>({...p,[item.id]:!p[item.id]}))} style={{width:30,height:30,borderRadius:7,border:"1px solid var(--border)",background:"transparent",color:"var(--t3)",cursor:"pointer",fontSize:13}}>{reveal[item.id]?<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button>}
                     <button onClick={()=>remove(item.id)} className="btn btn-danger" style={{width:30,height:30,padding:0,justifyContent:"center",fontSize:13}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
                   </div>
                 </div>
