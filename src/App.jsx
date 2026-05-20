@@ -47,7 +47,7 @@ const session = {
 // ─────────────────────────────────────────────────────────────────────────────
 const SQUADS = ["industria","reparadores","inovacao"];
 const SQUAD_LABEL = { industria:"Indústria", reparadores:"Reparadores", inovacao:"Inovação" };
-const SQUAD_ICON  = { industria:"🏭", reparadores:"🔧", inovacao:"💡" };
+const SQUAD_ICON  = { industria:"<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg>", reparadores:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>", inovacao:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>" };
 const SQUAD_COLOR = {
   industria:   { h:"#00c9a7", rgb:"0,201,167" },
   reparadores: { h:"#f7971e", rgb:"247,151,30" },
@@ -58,25 +58,25 @@ const PRIO_COLOR = { critica:"#ef4444", alta:"#f97316", media:"#eab308", baixa:"
 const PRIO_ORDER = { critica:0, alta:1, media:2, baixa:3 };
 const TAG_LABEL  = { nova_demanda:"Nova Demanda", bug:"Correção de Bug" };
 const TAG_COLOR  = { nova_demanda:"#38bdf8", bug:"#f472b6" };
-const TAG_ICON   = { nova_demanda:"✦", bug:"🐛" };
+const TAG_ICON   = { nova_demanda:"✦", bug:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="4" r="2"/><rect x="8" y="6" width="8" height="10" rx="4"/><path d="m19 7-3 2M5 7l3 2m11 5-3-1M5 12l3-1m11 5-3-2M5 17l3-2"/></svg>" };
 
 const STATUS = {
   pendente:    { label:"Pendente",       icon:"⏳", color:"#64748b", dot:"#94a3b8", order:0 },
   aprovada:    { label:"Aprovada",       icon:"✅", color:"#22c55e", dot:"#4ade80", order:1 },
-  em_andamento:{ label:"Em Andamento",   icon:"🔄", color:"#3b82f6", dot:"#60a5fa", order:2 },
-  em_aprovacao:{ label:"Em Aprovação",   icon:"🔍", color:"#f59e0b", dot:"#fbbf24", order:3 },
-  concluida:   { label:"Concluída",      icon:"🏁", color:"#8b5cf6", dot:"#a78bfa", order:4 },
+  em_andamento:{ label:"Em Andamento",   icon:"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>", color:"#3b82f6", dot:"#60a5fa", order:2 },
+  em_aprovacao:{ label:"Em Aprovação",   icon:"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>", color:"#f59e0b", dot:"#fbbf24", order:3 },
+  concluida:   { label:"Concluída",      icon:"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>", color:"#8b5cf6", dot:"#a78bfa", order:4 },
   rejeitada:   { label:"Rejeitada",      icon:"❌", color:"#ef4444", dot:"#f87171", order:5 },
 };
 const FLOW = ["pendente","aprovada","em_andamento","em_aprovacao","concluida"];
 
 const ROLES = {
-  admin:     { label:"Admin",      icon:"🛡️", color:"#818cf8" },
-  moderador: { label:"Moderador",  icon:"⚖️", color:"#f472b6" },
-  reparador: { label:"Reparador",  icon:"🔧", color:"#f7971e" },
-  industria: { label:"Indústria",  icon:"🏭", color:"#00c9a7" },
-  inovacao:  { label:"Inovação",   icon:"💡", color:"#a78bfa" },
-  user:      { label:"Usuário",    icon:"👤", color:"#38bdf8" },
+  admin:     { label:"Admin",      icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>", color:"#818cf8" },
+  moderador: { label:"Moderador",  icon:"⚖", color:"#f472b6" },
+  reparador: { label:"Reparador",  icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>", color:"#f7971e" },
+  industria: { label:"Indústria",  icon:"<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg>", color:"#00c9a7" },
+  inovacao:  { label:"Inovação",   icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>", color:"#a78bfa" },
+  user:      { label:"Usuário",    icon:"<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>", color:"#38bdf8" },
 };
 const ADMIN_EMAILS = ["daniel.cunha@oficinabrasil.com.br"];
 
@@ -95,7 +95,7 @@ function sprintDates(n, overrides = {}) {
 function sprintRange(n, overrides = {}) {
   const { start, end, custom } = sprintDates(n, overrides);
   const o = { day:"2-digit", month:"short" };
-  return `${start.toLocaleDateString("pt-BR",o)} – ${end.toLocaleDateString("pt-BR",o)}${custom?" 📌":""}`;
+  return `${start.toLocaleDateString("pt-BR",o)} – ${end.toLocaleDateString("pt-BR",o)}${custom?" <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17z"/></svg>":""}`;
 }
 function toISO(d) { return d.toISOString().slice(0, 10); }
 const curSprint = () => sprintNum();
@@ -228,6 +228,42 @@ async function dbInsertNotif(n) {
   const s = await getSB(); if (s) { await s.from("notifications").insert([n]); return; }
   const data = ls.get()||{notifications:[]}; data.notifications=[n,...(data.notifications||[])]; ls.set(data);
 }
+
+// ── Power Automate webhook ──
+async function triggerPowerAutomate(webhookUrl, payload) {
+  if (!webhookUrl) return;
+  try {
+    await fetch(webhookUrl, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload),
+      mode:"no-cors"
+    });
+  } catch(e) { console.warn("Power Automate webhook error:", e.message); }
+}
+
+async function notifyPowerAutomate(demand, event, adminNote="") {
+  const s = await getSB();
+  if (!s) return;
+  const { data: cfg } = await s.from("config").select("*").eq("id",1).single();
+  const webhookUrl = cfg?.email_config?.powerAutomateUrl;
+  if (!webhookUrl) return;
+  const sm = STATUS[demand.status]||STATUS.pendente;
+  await triggerPowerAutomate(webhookUrl, {
+    event,
+    demand_id: demand.id,
+    demand_title: demand.title,
+    demand_squad: SQUAD_LABEL[demand.squad]||demand.squad,
+    demand_status: sm.label,
+    demand_priority: PRIO_LABEL[demand.priority]||demand.priority,
+    user_email: demand.user_email,
+    user_name: demand.user_name,
+    admin_note: adminNote,
+    sprint: demand.sprint ? `Sprint ${demand.sprint}` : "Não atribuída",
+    updated_at: new Date().toISOString(),
+    app_url: window.location.origin,
+  });
+}
 async function dbMarkRead(userId) {
   const s = sb(); if (s) { await s.from("notifications").update({read:true}).eq("user_id",userId); return; }
   const data = ls.get()||{notifications:[]}; data.notifications=(data.notifications||[]).map(n=>n.user_id===userId?{...n,read:true}:n); ls.set(data);
@@ -292,13 +328,13 @@ h2{font-size:20px;font-weight:700;margin:0 0 8px;color:#f0f4ff}
 <h2>${title}</h2>
 <p class="desc">${description}</p>
 <div class="info-grid">
-  <div class="info-item"><div class="info-label">👤 Solicitante</div><div class="info-value">${toName}</div></div>
-  <div class="info-item"><div class="info-label">🏭 Squad</div><div class="info-value">${squadLabel}</div></div>
-  ${sprint ? `<div class="info-item"><div class="info-label">📅 Sprint</div><div class="info-value">Sprint ${sprint}</div></div>` : ""}
-  ${sr ? `<div class="info-item"><div class="info-label">📆 Período</div><div class="info-value">${sr}</div></div>` : ""}
-  <div class="info-item"><div class="info-label">🕐 Data/Hora</div><div class="info-value">${dateTime}</div></div>
+  <div class="info-item"><div class="info-label"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Solicitante</div><div class="info-value">${toName}</div></div>
+  <div class="info-item"><div class="info-label"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg> Squad</div><div class="info-value">${squadLabel}</div></div>
+  ${sprint ? `<div class="info-item"><div class="info-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Sprint</div><div class="info-value">Sprint ${sprint}</div></div>` : ""}
+  ${sr ? `<div class="info-item"><div class="info-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Período</div><div class="info-value">${sr}</div></div>` : ""}
+  <div class="info-item"><div class="info-label"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Data/Hora</div><div class="info-value">${dateTime}</div></div>
 </div>
-${adminNote ? `<div class="note"><div class="note-label">📝 Nota do Gestor</div><div class="note-text">${adminNote}</div></div>` : ""}
+${adminNote ? `<div class="note"><div class="note-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Nota do Gestor</div><div class="note-text">${adminNote}</div></div>` : ""}
 </div>
 <div class="footer">TaskHUB — Plataforma de Gestão de Demandas<br/>Este e-mail foi enviado automaticamente.</div>
 </div></div></body></html>`;
@@ -754,7 +790,7 @@ function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}
               </div>
             </div>
             <div style={{display:"flex",gap:6,flexShrink:0}}>
-              {canEdit&&!editing&&<button className="btn btn-ghost" onClick={()=>setEditing(true)} style={{fontSize:11,padding:"5px 10px"}}>✏️ Editar</button>}
+              {canEdit&&!editing&&<button className="btn btn-ghost" onClick={()=>setEditing(true)} style={{fontSize:11,padding:"5px 10px"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar</button>}
               {editing&&<button className="btn btn-primary" onClick={save} disabled={saving} style={{fontSize:11,padding:"5px 12px"}}>{saving?<Spin/>:"Salvar"}</button>}
               {editing&&<button className="btn btn-ghost" onClick={()=>setEditing(false)} style={{fontSize:11,padding:"5px 10px"}}>✕</button>}
               <button onClick={onClose} style={{width:30,height:30,borderRadius:8,border:"1px solid var(--border)",background:"var(--s1)",color:"var(--t2)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>✕</button>
@@ -898,7 +934,7 @@ function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}
                 :<div style={{display:"flex",flexDirection:"column",gap:0,position:"relative",paddingLeft:14}}>
                   <div style={{position:"absolute",left:10,top:0,bottom:0,width:1.5,background:"var(--border)"}}/>
                   {timeline.map((t,i)=>{
-                    const s=STATUS[t.status]||{icon:"📌",dot:"var(--t3)",label:t.status||"Atualização",color:"#64748b"};
+                    const s=STATUS[t.status]||{icon:"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17z"/></svg>",dot:"var(--t3)",label:t.status||"Atualização",color:"#64748b"};
                     return(
                       <div key={i} style={{display:"flex",gap:10,padding:"8px 0",position:"relative",zIndex:1}}>
                         <div style={{width:22,height:22,borderRadius:"50%",background:`${s.dot}18`,border:`2px solid ${s.dot}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,flexShrink:0,marginLeft:-11}}>{s.icon}</div>
@@ -1007,8 +1043,8 @@ function TaskCard({demand,index,onClick,overrides={}}) {
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontWeight:700,fontSize:14,lineHeight:1.3,marginBottom:4,color:"var(--t1)"}}>{demand.title}</div>
             <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-              <span style={{fontSize:11,color:"var(--t3)"}}>👤 {demand.user_name}</span>
-              {demand.team&&<span style={{fontSize:11,color:"var(--t3)"}}>· 🏷️ {demand.team}</span>}
+              <span style={{fontSize:11,color:"var(--t3)"}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> {demand.user_name}</span>
+              {demand.team&&<span style={{fontSize:11,color:"var(--t3)"}}>· <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> {demand.team}</span>}
               {demand.sprint&&<span style={{fontSize:10,color:"#38bdf8",fontFamily:"var(--mono)"}}>Sprint {demand.sprint}</span>}
             </div>
           </div>
@@ -1057,12 +1093,12 @@ function TaskCard({demand,index,onClick,overrides={}}) {
 // NAV ICONS (flat SVG)
 // ─────────────────────────────────────────────────────────────────────────────
 const NAV_ICONS = {
-  "🛡️": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
-  "⚖️": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
-  "📋": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg>,
+  "<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  "⚖": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+  "<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg>": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg>,
   "✚":  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-  "📂": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>,
-  "📊": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+  "<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>,
+  "<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1204,6 +1240,7 @@ export default function App() {
     setDemands(p=>p.map(d=>d.id===demandId?{...d,...patch}:d));
     const updated = {...demand,...patch};
     const r = await notify(updated,status,{note:adminNote});
+    await notifyPowerAutomate(updated, status==="aprovada"?"task_approved":"task_rejected", adminNote);
     showToast(`Demanda ${STATUS[status]?.label}!${r.ok?" E-mail enviado ✓":` (Email: ${r.reason})`}`,r.ok?"success":"error");
   }
 
@@ -1217,6 +1254,7 @@ export default function App() {
     setDemands(p=>p.map(d=>d.id===demandId?{...d,...patch}:d));
     const updated = {...demand,...patch};
     const r = await notify(updated,newStatus,{note});
+    await notifyPowerAutomate(updated, "status_updated", note);
     showToast(`Status: ${STATUS[newStatus]?.label}!${r.ok?" E-mail enviado ✓":""}`);
     if(taskModal?.id===demandId) setTaskModal({...taskModal,...patch});
   }
@@ -1231,6 +1269,7 @@ export default function App() {
     setDemands(p=>p.map(d=>d.id===demandId?{...d,...patch}:d));
     const updated = {...demand,...patch};
     const r = await notify(updated,demand.status,{note:`Sprint atualizada: Sprint ${newSprint} (${sr})`});
+    await notifyPowerAutomate(updated, "sprint_updated");
     showToast(`Movida para Sprint ${newSprint}!${r.ok?" E-mail enviado ✓":""}`);
   }
 
@@ -1260,10 +1299,10 @@ export default function App() {
 
   // Nav items
   const navItems = isAdmin
-    ? [{id:"admin",label:"Admin",icon:"🛡️"},{id:"queue",label:"Filas",icon:"📋"},{id:"new",label:"Nova Task",icon:"✚"},{id:"my",label:"Minhas Tasks",icon:"📂"},{id:"analytics",label:"Visão Geral",icon:"📊"}]
+    ? [{id:"admin",label:"Admin",icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>"},{id:"queue",label:"Filas",icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg>"},{id:"new",label:"Nova Task",icon:"✚"},{id:"my",label:"Minhas Tasks",icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>"},{id:"analytics",label:"Visão Geral",icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>"}]
     : isMod
-    ? [{id:"admin",label:"Painel",icon:"⚖️"},{id:"queue",label:"Filas",icon:"📋"},{id:"new",label:"Nova Task",icon:"✚"},{id:"my",label:"Minhas Tasks",icon:"📂"}]
-    : [{id:"queue",label:"Filas",icon:"📋"},{id:"new",label:"Nova Task",icon:"✚"},{id:"my",label:"Minhas Tasks",icon:"📂"}];
+    ? [{id:"admin",label:"Painel",icon:"⚖"},{id:"queue",label:"Filas",icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg>"},{id:"new",label:"Nova Task",icon:"✚"},{id:"my",label:"Minhas Tasks",icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>"}]
+    : [{id:"queue",label:"Filas",icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg>"},{id:"new",label:"Nova Task",icon:"✚"},{id:"my",label:"Minhas Tasks",icon:"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>"}];
 
   const pendingCount = demands.filter(d=>d.status==="pendente").length;
   const unread = notifs.filter(n=>!n.read).length;
@@ -1388,14 +1427,14 @@ function NotifDropdown({notifs,onMarkRead,onClose,onOpen}) {
   return(
     <div className="notif-drop" style={{position:"absolute",top:44,right:0,width:360,background:"var(--s2)",border:"1px solid var(--border2)",borderRadius:16,boxShadow:"0 16px 48px rgba(0,0,0,.6)",zIndex:999,overflow:"hidden",animation:"scaleIn .15s ease"}}>
       <div style={{padding:"14px 18px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{fontWeight:700,fontSize:14}}>🔔 Notificações {unread>0&&<span style={{marginLeft:6,padding:"2px 8px",borderRadius:999,background:"rgba(239,68,68,.15)",border:"1px solid rgba(239,68,68,.3)",fontSize:11,color:"#f87171"}}>{unread}</span>}</div>
+        <div style={{fontWeight:700,fontSize:14}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Notificações {unread>0&&<span style={{marginLeft:6,padding:"2px 8px",borderRadius:999,background:"rgba(239,68,68,.15)",border:"1px solid rgba(239,68,68,.3)",fontSize:11,color:"#f87171"}}>{unread}</span>}</div>
         {unread>0&&<button onClick={onMarkRead} style={{background:"none",border:"none",color:"var(--blue)",fontSize:11,cursor:"pointer",fontWeight:600}}>Marcar como lidas</button>}
       </div>
       <div style={{maxHeight:380,overflowY:"auto"}}>
         {notifs.length===0
-          ?<div style={{padding:"32px 18px",textAlign:"center",color:"var(--t3)",fontSize:13}}>🔕 Nenhuma notificação</div>
+          ?<div style={{padding:"32px 18px",textAlign:"center",color:"var(--t3)",fontSize:13}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.888 17.888 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg> Nenhuma notificação</div>
           :notifs.map(n=>{
-            const sm=STATUS[n.type]||{icon:"📌",dot:"var(--t3)",label:n.type};
+            const sm=STATUS[n.type]||{icon:"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17z"/></svg>",dot:"var(--t3)",label:n.type};
             return(
               <div key={n.id} onClick={()=>onOpen(n)} style={{padding:"12px 18px",borderBottom:"1px solid var(--border)",background:n.read?"transparent":`${sm.color||sm.dot}08`,cursor:"pointer",transition:"background .15s"}}
                 onMouseOver={e=>e.currentTarget.style.background="var(--s3)"} onMouseOut={e=>e.currentTarget.style.background=n.read?"transparent":`${sm.color||sm.dot}08`}>
@@ -1483,7 +1522,7 @@ function QueueView({demands,overrides,onOpen}) {
 
       {/* Content */}
       {demands.length===0
-        ?<EmptySlate icon="📭" title="Nenhuma demanda ainda" sub="Quando usuários enviarem tasks, elas aparecerão aqui organizadas por sprint."/>
+        ?<EmptySlate icon="<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 13V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h8"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/><path d="M16 19h6M19 16v6"/></svg>" title="Nenhuma demanda ainda" sub="Quando usuários enviarem tasks, elas aparecerão aqui organizadas por sprint."/>
         :<div style={{display:"flex",flexDirection:"column",gap:28}}>
           {/* Sprint sections */}
           {sprints.map(sp=>{
@@ -1514,7 +1553,7 @@ function QueueView({demands,overrides,onOpen}) {
                         color:isCur?"#3ecf8e":isPast?"var(--t3)":"#5b8dee"}}>
                         {isCur?"● Em andamento":isPast?"✓ Concluída":"◎ Futura"}
                       </span>
-                      {overrides[sp]&&<span style={{fontSize:10,color:"#f59e0b",fontWeight:600}}>📌 editada</span>}
+                      {overrides[sp]&&<span style={{fontSize:10,color:"#f59e0b",fontWeight:600}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17z"/></svg> editada</span>}
                     </div>
                     <div style={{fontSize:12,color:"var(--t3)",fontFamily:"var(--mono)",marginBottom:isCur||isPast?6:0}}>
                       {sprintRange(sp,overrides)} · <strong style={{color:"var(--t2)"}}>{spDemands.length}</strong> task(s)
@@ -1613,7 +1652,7 @@ function MyTasksView({demands,onOpen}) {
       </div>
 
       {filtered.length===0
-        ?<EmptySlate icon="📂" title="Nenhuma task encontrada" sub="Tente outro filtro ou crie sua primeira task."/>
+        ?<EmptySlate icon="<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>" title="Nenhuma task encontrada" sub="Tente outro filtro ou crie sua primeira task."/>
         :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:14}}>
           {filtered.map((d,i)=><TaskCard key={d.id} demand={d} index={i} onClick={()=>onOpen(d)}/>)}
         </div>
@@ -1874,8 +1913,8 @@ function AdminTaskRow({demand,overrides,canAct,canStatus,onApprove,onDelete,onUp
         <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={onOpen}>
           <div style={{fontWeight:700,fontSize:14,marginBottom:3}}>{demand.title}</div>
           <div style={{display:"flex",gap:10,fontSize:11,color:"var(--t3)",flexWrap:"wrap"}}>
-            <span>👤 {demand.user_name}</span>
-            {demand.team&&<span>🏷️ {demand.team}</span>}
+            <span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> {demand.user_name}</span>
+            {demand.team&&<span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> {demand.team}</span>}
             <span style={{color:sq.h}}>● {SQUAD_LABEL[demand.squad]}</span>
             {demand.sprint&&<span style={{color:"#38bdf8",fontFamily:"var(--mono)"}}>Sprint {demand.sprint}</span>}
           </div>
@@ -2001,7 +2040,7 @@ function UserMgrPanel({users,onUpdateRole}) {
         );})}
       </div>
 
-      {filtered.length===0?<EmptySlate icon="👥" title="Nenhum usuário" sub=""/>
+      {filtered.length===0?<EmptySlate icon="<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>" title="Nenhum usuário" sub=""/>
         :<div style={{display:"flex",flexDirection:"column",gap:10}}>
           {filtered.map((u,i)=>{
             const roles = u.roles||[u.role||"user"];
@@ -2012,7 +2051,7 @@ function UserMgrPanel({users,onUpdateRole}) {
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontWeight:700,fontSize:14,marginBottom:3,display:"flex",alignItems:"center",gap:8}}>
                     {u.name||"Sem nome"}
-                    {isProtected&&<span style={{fontSize:10,padding:"2px 8px",borderRadius:999,background:"rgba(99,102,241,.15)",border:"1px solid rgba(99,102,241,.3)",color:"#818cf8"}}>🔒 protegido</span>}
+                    {isProtected&&<span style={{fontSize:10,padding:"2px 8px",borderRadius:999,background:"rgba(99,102,241,.15)",border:"1px solid rgba(99,102,241,.3)",color:"#818cf8"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> protegido</span>}
                   </div>
                   <div style={{fontSize:12,color:"var(--t3)"}}>{u.email}</div>
                   {u.job_title&&<div style={{fontSize:11,color:"var(--t3)",marginTop:2}}>{u.job_title}</div>}
@@ -2021,7 +2060,7 @@ function UserMgrPanel({users,onUpdateRole}) {
                 {/* Current roles */}
                 <div style={{display:"flex",gap:6,flexWrap:"wrap",maxWidth:280}}>
                   {isProtected
-                    ? <div style={{padding:"5px 12px",borderRadius:999,background:"rgba(99,102,241,.15)",border:"1px solid rgba(99,102,241,.3)",color:"#818cf8",fontSize:12,fontWeight:700}}>🛡️ Admin</div>
+                    ? <div style={{padding:"5px 12px",borderRadius:999,background:"rgba(99,102,241,.15)",border:"1px solid rgba(99,102,241,.3)",color:"#818cf8",fontSize:12,fontWeight:700}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Admin</div>
                     : allRoles.map(r=>{ const rm=ROLES[r]; const active=roles.includes(r); return(
                         <button key={r} onClick={()=>toggleRole(u,r)} disabled={saving[u.id]}
                           style={{padding:"5px 10px",borderRadius:8,border:`1px solid ${active?rm.color+"55":"var(--border)"}`,background:active?`${rm.color}12`:"var(--s1)",color:active?rm.color:"var(--t3)",fontSize:11,fontWeight:active?700:400,cursor:"pointer",transition:"all .15s",opacity:saving[u.id]?.6:1}}>
@@ -2044,34 +2083,56 @@ function UserMgrPanel({users,onUpdateRole}) {
 // EMAIL CONFIG (Resend)
 // ─────────────────────────────────────────────────────────────────────────────
 function EmailCfgPanel({config,onSave}) {
-  const [form,setForm] = useState({resendKey:config.resendKey||"",fromEmail:config.fromEmail||""});
+  const [form,setForm] = useState({
+    resendKey:config.resendKey||"",
+    fromEmail:config.fromEmail||"",
+    powerAutomateUrl:config.powerAutomateUrl||""
+  });
   const [testing,setTesting]  = useState(false);
   const [testResult,setTestResult] = useState(null);
+  const [testPA,setTestPA] = useState(false);
+  const [testPAResult,setTestPAResult] = useState(null);
   const f = k => e => setForm(p=>({...p,[k]:e.target.value}));
 
   async function testEmail() {
     setTesting(true); setTestResult(null);
-    const r = await sendResend({apiKey:form.resendKey,from:form.fromEmail,to:form.fromEmail,subject:"[TaskHUB] Teste de e-mail",html:"<p>✅ E-mail de teste enviado com sucesso pelo TaskHUB!</p>"});
+    const r = await sendResend({apiKey:form.resendKey,from:form.fromEmail,to:form.fromEmail,subject:"[TaskHUB] Teste de e-mail",html:"<p>E-mail de teste enviado com sucesso pelo TaskHUB!</p>"});
     setTestResult(r); setTesting(false);
   }
 
+  async function testPowerAutomate() {
+    setTestPA(true); setTestPAResult(null);
+    try {
+      await triggerPowerAutomate(form.powerAutomateUrl, {
+        event:"test",
+        demand_title:"Task de Teste",
+        demand_squad:"Indústria",
+        demand_status:"Aprovada",
+        demand_priority:"Média",
+        user_email:"teste@oficinabrasil.com.br",
+        user_name:"Usuário Teste",
+        admin_note:"Teste de conexão com Power Automate",
+        sprint:"Sprint 36",
+        updated_at:new Date().toISOString(),
+        app_url:window.location.origin,
+      });
+      setTestPAResult({ok:true});
+    } catch(e) { setTestPAResult({ok:false,reason:e.message}); }
+    setTestPA(false);
+  }
+
   return(
-    <div style={{maxWidth:600}}>
+    <div style={{maxWidth:600,display:"flex",flexDirection:"column",gap:16}}>
+      {/* Resend */}
       <div style={{padding:28,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
-        <div style={{fontSize:17,fontWeight:800,marginBottom:6}}>📧 Configuração de E-mail</div>
-        <p style={{fontSize:13,color:"var(--t3)",marginBottom:24,lineHeight:1.7}}>
-          O TaskHUB usa <a href="https://resend.com" target="_blank" rel="noreferrer" style={{color:"var(--blue)"}}>Resend</a> para envio de e-mails. Crie uma conta gratuita (100 e-mails/dia), verifique seu domínio e cole as credenciais abaixo.
-        </p>
-
-        <div style={{padding:16,background:"rgba(59,130,246,.07)",border:"1px solid rgba(59,130,246,.2)",borderRadius:10,marginBottom:24,fontSize:12,color:"#93c5fd",lineHeight:1.7}}>
-          <strong style={{color:"#60a5fa"}}>Passo a passo:</strong><br/>
-          1. Acesse <a href="https://resend.com" target="_blank" rel="noreferrer">resend.com</a> → criar conta grátis<br/>
-          2. Vá em <strong>API Keys</strong> → criar nova chave → copie<br/>
-          3. Vá em <strong>Domains</strong> → adicione e verifique seu domínio (ou use <code>onboarding@resend.dev</code> para testes)<br/>
-          4. Cole abaixo e clique em "Testar"
+        <div style={{fontSize:16,fontWeight:800,marginBottom:6,display:"flex",alignItems:"center",gap:8}}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Configuração de E-mail (Resend)
         </div>
-
-        <div style={{display:"flex",flexDirection:"column",gap:16,marginBottom:20}}>
+        <p style={{fontSize:13,color:"var(--t3)",marginBottom:20,lineHeight:1.7}}>
+          O TaskHUB usa <a href="https://resend.com" target="_blank" rel="noreferrer">Resend</a> para envio de e-mails. Crie uma conta gratuita (100 e-mails/dia), verifique seu domínio e cole as credenciais abaixo.
+        </p>
+        <div style={{display:"flex",flexDirection:"column",gap:14,marginBottom:20}}>
           <div>
             <FieldLabel>Resend API Key</FieldLabel>
             <input className="input" value={form.resendKey} onChange={f("resendKey")} placeholder="re_xxxxxxxxxxxxxxxxxxxx" type="password"/>
@@ -2079,20 +2140,59 @@ function EmailCfgPanel({config,onSave}) {
           <div>
             <FieldLabel>E-mail remetente (From)</FieldLabel>
             <input className="input" value={form.fromEmail} onChange={f("fromEmail")} placeholder="noreply@seudominio.com"/>
-            <div style={{fontSize:11,color:"var(--t3)",marginTop:5}}>Para testes sem domínio verificado use: <code style={{color:"#60a5fa"}}>onboarding@resend.dev</code></div>
+            <div style={{fontSize:11,color:"var(--t3)",marginTop:5}}>Para testes use: <code style={{color:"var(--blue)"}}>onboarding@resend.dev</code></div>
+          </div>
+        </div>
+        {testResult&&(
+          <div style={{marginBottom:14,padding:"10px 14px",borderRadius:8,fontSize:12,background:testResult.ok?"rgba(62,207,142,.1)":"rgba(239,68,68,.1)",border:`1px solid ${testResult.ok?"rgba(62,207,142,.3)":"rgba(239,68,68,.3)"}`,color:testResult.ok?"#3ecf8e":"#f87171"}}>
+            {testResult.ok?`Enviado! ID: ${testResult.id}`:`Erro: ${testResult.reason}`}
+          </div>
+        )}
+        <div style={{display:"flex",gap:10}}>
+          <button className="btn btn-primary" onClick={()=>onSave(form)} style={{flex:1,justifyContent:"center",padding:"11px"}}>Salvar tudo</button>
+          <button className="btn btn-ghost" onClick={testEmail} disabled={!form.resendKey||!form.fromEmail||testing} style={{padding:"11px 20px"}}>
+            {testing?<><Spin/>Testando...</>:"Testar e-mail"}
+          </button>
+        </div>
+      </div>
+
+      {/* Power Automate */}
+      <div style={{padding:28,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
+        <div style={{fontSize:16,fontWeight:800,marginBottom:6,display:"flex",alignItems:"center",gap:8}}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Power Automate (Microsoft)
+        </div>
+        <p style={{fontSize:13,color:"var(--t3)",marginBottom:16,lineHeight:1.7}}>
+          Conecte ao Power Automate para enviar notificações via Outlook/Teams quando tasks forem aprovadas, rejeitadas ou atualizadas.
+        </p>
+
+        <div style={{padding:14,background:"rgba(91,141,238,.07)",border:"1px solid rgba(91,141,238,.2)",borderRadius:10,marginBottom:18,fontSize:12,color:"#93c5fd",lineHeight:1.8}}>
+          <strong style={{color:"#60a5fa",display:"block",marginBottom:4}}>Como configurar:</strong>
+          1. Acesse <a href="https://make.powerautomate.com" target="_blank" rel="noreferrer" style={{color:"#60a5fa"}}>make.powerautomate.com</a><br/>
+          2. Criar → <strong>Flow automatizado</strong> → gatilho: <strong>"Quando uma solicitação HTTP é recebida"</strong><br/>
+          3. Adicione uma ação <strong>Enviar e-mail (Outlook)</strong> ou <strong>Publicar mensagem (Teams)</strong><br/>
+          4. Salve → copie a URL gerada e cole abaixo<br/>
+          5. Use as variáveis: <code style={{background:"rgba(0,0,0,.2)",padding:"1px 5px",borderRadius:3}}>triggerBody()?['user_email']</code>, <code style={{background:"rgba(0,0,0,.2)",padding:"1px 5px",borderRadius:3}}>triggerBody()?['demand_title']</code>, <code style={{background:"rgba(0,0,0,.2)",padding:"1px 5px",borderRadius:3}}>triggerBody()?['demand_status']</code>
+        </div>
+
+        <div style={{marginBottom:16}}>
+          <FieldLabel>URL do Webhook (HTTP POST)</FieldLabel>
+          <input className="input" value={form.powerAutomateUrl} onChange={f("powerAutomateUrl")} placeholder="https://prod-xx.westus.logic.azure.com/workflows/..."/>
+          <div style={{fontSize:11,color:"var(--t3)",marginTop:5}}>
+            Eventos enviados: <code style={{color:"#93c5fd"}}>task_approved</code> · <code style={{color:"#93c5fd"}}>task_rejected</code> · <code style={{color:"#93c5fd"}}>status_updated</code> · <code style={{color:"#93c5fd"}}>sprint_updated</code>
           </div>
         </div>
 
-        {testResult&&(
-          <div style={{marginBottom:16,padding:"10px 14px",borderRadius:8,fontSize:12,background:testResult.ok?"rgba(34,197,94,.1)":"rgba(239,68,68,.1)",border:`1px solid ${testResult.ok?"rgba(34,197,94,.3)":"rgba(239,68,68,.3)"}`,color:testResult.ok?"#4ade80":"#f87171"}}>
-            {testResult.ok?`✓ E-mail enviado com sucesso! ID: ${testResult.id}`:`✕ Erro: ${testResult.reason}`}
+        {testPAResult&&(
+          <div style={{marginBottom:14,padding:"10px 14px",borderRadius:8,fontSize:12,background:testPAResult.ok?"rgba(62,207,142,.1)":"rgba(239,68,68,.1)",border:`1px solid ${testPAResult.ok?"rgba(62,207,142,.3)":"rgba(239,68,68,.3)"}`,color:testPAResult.ok?"#3ecf8e":"#f87171"}}>
+            {testPAResult.ok?"Webhook disparado com sucesso! Verifique o Power Automate.":(`Erro: ${testPAResult.reason}`)}
           </div>
         )}
 
         <div style={{display:"flex",gap:10}}>
-          <button className="btn btn-primary" onClick={()=>onSave(form)} style={{flex:1,justifyContent:"center",padding:"11px"}}>Salvar configurações</button>
-          <button className="btn btn-ghost" onClick={testEmail} disabled={!form.resendKey||!form.fromEmail||testing} style={{padding:"11px 20px",opacity:!form.resendKey||!form.fromEmail||testing?.6:1}}>
-            {testing?<><Spin/>Testando...</>:"Testar envio"}
+          <button className="btn btn-primary" onClick={()=>onSave(form)} style={{flex:1,justifyContent:"center",padding:"11px"}}>Salvar tudo</button>
+          <button className="btn btn-ghost" onClick={testPowerAutomate} disabled={!form.powerAutomateUrl||testPA} style={{padding:"11px 20px"}}>
+            {testPA?<><Spin/>Testando...</>:"Testar webhook"}
           </button>
         </div>
       </div>
@@ -2100,45 +2200,171 @@ function EmailCfgPanel({config,onSave}) {
   );
 }
 
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SPRINT MANAGER
 // ─────────────────────────────────────────────────────────────────────────────
 function SprintMgrPanel({overrides={},onSave}) {
   const cur = curSprint();
-  const nums = Array.from({length:10},(_,i)=>cur+i);
-  function def(n) { const d=sprintDates(n,{}); return {start:toISO(d.start),end:toISO(d.end)}; }
-  const [local,setLocal] = useState(()=>{ const o={}; nums.forEach(n=>{o[n]=overrides[n]?{start:overrides[n].start,end:overrides[n].end}:def(n);}); return o; });
+  const nums = Array.from({length:12},(_,i)=>cur+i);
+
+  function def(n,baseOverrides={}) {
+    const d = sprintDates(n, baseOverrides);
+    return {start:toISO(d.start), end:toISO(d.end)};
+  }
+
+  const [local,setLocal] = useState(()=>{
+    const o={};
+    nums.forEach(n=>{
+      o[n] = overrides[n] ? {start:overrides[n].start,end:overrides[n].end} : def(n,overrides);
+    });
+    return o;
+  });
+
+  // When a sprint's END date changes, cascade all subsequent sprints
+  function handleEndChange(n, newEnd) {
+    setLocal(prev => {
+      const next = {...prev, [n]:{...prev[n], end:newEnd}};
+      // Cascade: each subsequent sprint starts the day after previous ends
+      for (let i = nums.indexOf(n)+1; i < nums.length; i++) {
+        const prevN = nums[i-1];
+        const prevEnd = new Date(next[prevN].end);
+        const sprintLen = 14; // default sprint length in days
+        const newStart = new Date(prevEnd);
+        newStart.setDate(newStart.getDate()+1);
+        const newEndD = new Date(newStart);
+        newEndD.setDate(newEndD.getDate()+sprintLen-1);
+        next[nums[i]] = {
+          start: toISO(newStart),
+          end: toISO(newEndD),
+        };
+      }
+      return next;
+    });
+  }
+
+  // When a sprint's START date changes, adjust its end and cascade
+  function handleStartChange(n, newStart) {
+    setLocal(prev => {
+      const next = {...prev};
+      const prevEnd = new Date(prev[n].end);
+      const prevStart = new Date(prev[n].start);
+      const duration = Math.round((prevEnd - prevStart)/(1000*60*60*24));
+      const ns = new Date(newStart);
+      const ne = new Date(ns);
+      ne.setDate(ne.getDate() + duration);
+      next[n] = {start:newStart, end:toISO(ne)};
+      // Cascade subsequent sprints
+      for (let i = nums.indexOf(n)+1; i < nums.length; i++) {
+        const prevN = nums[i-1];
+        const pe = new Date(next[prevN].end);
+        const ss = new Date(pe); ss.setDate(ss.getDate()+1);
+        const se = new Date(ss); se.setDate(se.getDate()+13);
+        next[nums[i]] = {start:toISO(ss), end:toISO(se)};
+      }
+      return next;
+    });
+  }
 
   function save() {
-    const r={}; nums.forEach(n=>{ const d=def(n); if(local[n].start!==d.start||local[n].end!==d.end) r[n]={start:local[n].start,end:local[n].end}; });
+    const r={};
+    nums.forEach(n=>{
+      const d=def(n,{});
+      if(local[n].start!==d.start||local[n].end!==d.end) r[n]={start:local[n].start,end:local[n].end};
+    });
     onSave(r);
   }
-  const hasChanges = nums.some(n=>{ const d=def(n); return local[n]?.start!==d.start||local[n]?.end!==d.end; });
+
+  function resetAll() {
+    const o={};
+    nums.forEach(n=>{ o[n]=def(n,{}); });
+    setLocal(o);
+  }
+
+  const hasChanges = nums.some(n=>{ const d=def(n,{}); return local[n]?.start!==d.start||local[n]?.end!==d.end; });
+  const editedCount = nums.filter(n=>{ const d=def(n,{}); return local[n]?.start!==d.start||local[n]?.end!==d.end; }).length;
 
   return(
-    <div style={{maxWidth:720}}>
+    <div style={{maxWidth:760}}>
       <div style={{padding:28,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
-        <div style={{fontSize:17,fontWeight:800,marginBottom:6}}>📅 Gerenciar Sprints</div>
-        <p style={{fontSize:13,color:"var(--t3)",marginBottom:6}}>Edite as datas para feriados e exceções. Sprints editadas aparecem com 📌.</p>
-        <div style={{padding:"8px 12px",background:"rgba(251,191,36,.07)",border:"1px solid rgba(251,191,36,.2)",borderRadius:8,fontSize:11,color:"#fde68a",marginBottom:20}}>⚠ Alterar datas não move demandas já aprovadas.</div>
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          <div style={{display:"grid",gridTemplateColumns:"80px 1fr 1fr 80px 40px",gap:10,padding:"6px 10px",fontSize:10,fontWeight:700,color:"var(--t3)",textTransform:"uppercase",letterSpacing:".5px"}}>
-            <span>Sprint</span><span>Início</span><span>Fim</span><span>Status</span><span></span>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+          <div style={{fontSize:16,fontWeight:800,display:"flex",alignItems:"center",gap:8}}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Gerenciar Sprints
           </div>
-          {nums.map(n=>{ const d=def(n); const edited=local[n]?.start!==d.start||local[n]?.end!==d.end; const isCur=n===cur; return(
-            <div key={n} style={{display:"grid",gridTemplateColumns:"80px 1fr 1fr 80px 40px",gap:10,padding:"12px 10px",background:isCur?"rgba(59,130,246,.04)":"var(--s1)",border:`1px solid ${edited?"rgba(251,191,36,.3)":isCur?"rgba(59,130,246,.2)":"var(--border)"}`,borderRadius:10,alignItems:"center"}}>
-              <div style={{fontFamily:"var(--mono)",fontWeight:800,fontSize:12,color:isCur?"#60a5fa":"var(--t2)"}}>#{n}{isCur&&<div style={{fontSize:8,color:"#4ade80"}}>atual</div>}</div>
-              <input type="date" value={local[n]?.start||""} onChange={e=>setLocal(p=>({...p,[n]:{...p[n],start:e.target.value}}))} style={{padding:"7px 10px",background:"var(--s2)",border:`1px solid ${edited?"rgba(251,191,36,.4)":"var(--border)"}`,borderRadius:7,color:"var(--t1)",fontSize:12,outline:"none",width:"100%"}}/>
-              <input type="date" value={local[n]?.end||""} onChange={e=>setLocal(p=>({...p,[n]:{...p[n],end:e.target.value}}))} style={{padding:"7px 10px",background:"var(--s2)",border:`1px solid ${edited?"rgba(251,191,36,.4)":"var(--border)"}`,borderRadius:7,color:"var(--t1)",fontSize:12,outline:"none",width:"100%"}}/>
-              <div style={{fontSize:11,fontWeight:600,color:edited?"#fbbf24":"var(--t3)"}}>{edited?"📌 editada":"padrão"}</div>
-              <button onClick={()=>setLocal(p=>({...p,[n]:def(n)}))} title="Resetar" style={{width:32,height:32,borderRadius:7,border:"1px solid var(--border)",background:"transparent",color:"var(--t3)",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}
-                onMouseOver={e=>e.currentTarget.style.color="#f87171"} onMouseOut={e=>e.currentTarget.style.color="var(--t3)"}>↺</button>
-            </div>
-          );})}
+          {hasChanges&&<button className="btn btn-ghost" onClick={resetAll} style={{fontSize:11,padding:"5px 12px",color:"#f87171",borderColor:"rgba(239,68,68,.3)"}}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
+            Resetar tudo
+          </button>}
         </div>
-        <button className="btn btn-primary" onClick={save} disabled={!hasChanges} style={{marginTop:20,padding:"11px 24px",opacity:hasChanges?1:.5,justifyContent:"center"}}>
-          {hasChanges?"💾 Salvar alterações":"Sem alterações"}
-        </button>
+        <p style={{fontSize:13,color:"var(--t3)",marginBottom:8,lineHeight:1.6}}>
+          Alterar a data de fim de uma sprint <strong style={{color:"var(--t2)"}}>recalcula automaticamente</strong> todas as sprints seguintes.
+        </p>
+        <div style={{padding:"8px 12px",background:"rgba(245,158,11,.07)",border:"1px solid rgba(245,158,11,.2)",borderRadius:8,fontSize:11,color:"#fde68a",marginBottom:20,display:"flex",alignItems:"center",gap:7}}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Alterar datas não move demandas já aprovadas. {editedCount>0&&<strong style={{color:"#fbbf24"}}>{editedCount} sprint(s) editada(s)</strong>}
+        </div>
+
+        {/* Header */}
+        <div style={{display:"grid",gridTemplateColumns:"72px 1fr 1fr 90px 36px",gap:10,padding:"6px 10px",fontSize:10,fontWeight:700,color:"var(--t3)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>
+          <span>Sprint</span><span>Início</span><span>Fim</span><span>Status</span><span></span>
+        </div>
+
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          {nums.map(n=>{
+            const d=def(n,{});
+            const edited=local[n]?.start!==d.start||local[n]?.end!==d.end;
+            const isCur=n===cur;
+            const isFuture=n>cur;
+            return(
+              <div key={n} style={{display:"grid",gridTemplateColumns:"72px 1fr 1fr 90px 36px",gap:10,padding:"10px 10px",
+                background:isCur?"rgba(91,141,238,.05)":edited?"rgba(245,158,11,.04)":"var(--s1)",
+                border:`1px solid ${edited?"rgba(245,158,11,.35)":isCur?"rgba(91,141,238,.25)":"var(--border)"}`,
+                borderRadius:10,alignItems:"center",
+                transition:"border-color .2s,background .2s"}}>
+                {/* Sprint number */}
+                <div>
+                  <div style={{fontFamily:"var(--mono)",fontWeight:800,fontSize:13,color:isCur?"var(--blue)":edited?"#fbbf24":"var(--t2)"}}>
+                    #{n}
+                  </div>
+                  <div style={{fontSize:9,fontWeight:600,marginTop:1,color:isCur?"#3ecf8e":isFuture?"var(--t3)":"var(--t3)"}}>
+                    {isCur?"atual":isFuture?"futura":"passada"}
+                  </div>
+                </div>
+                {/* Start date */}
+                <input type="date" value={local[n]?.start||""} onChange={e=>handleStartChange(n,e.target.value)}
+                  style={{padding:"7px 10px",background:"var(--s2)",border:`1px solid ${edited?"rgba(245,158,11,.3)":"var(--border)"}`,borderRadius:7,color:"var(--t1)",fontSize:12,outline:"none",width:"100%",cursor:"pointer"}}/>
+                {/* End date */}
+                <input type="date" value={local[n]?.end||""} onChange={e=>handleEndChange(n,e.target.value)}
+                  style={{padding:"7px 10px",background:"var(--s2)",border:`1px solid ${edited?"rgba(245,158,11,.3)":"var(--border)"}`,borderRadius:7,color:"var(--t1)",fontSize:12,outline:"none",width:"100%",cursor:"pointer"}}/>
+                {/* Status badge */}
+                <div style={{fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:999,textAlign:"center",
+                  background:edited?"rgba(245,158,11,.12)":isCur?"rgba(91,141,238,.1)":"transparent",
+                  color:edited?"#fbbf24":isCur?"var(--blue)":"var(--t3)",
+                  border:`1px solid ${edited?"rgba(245,158,11,.25)":isCur?"rgba(91,141,238,.2)":"transparent"}`}}>
+                  {edited?"editada":isCur?"atual":"padrão"}
+                </div>
+                {/* Reset button */}
+                <button onClick={()=>setLocal(p=>({...p,[n]:def(n,{})}))} title="Resetar sprint"
+                  style={{width:32,height:32,borderRadius:7,border:"1px solid var(--border)",background:"transparent",color:"var(--t3)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}
+                  onMouseOver={e=>{e.currentTarget.style.color="#f87171";e.currentTarget.style.borderColor="rgba(239,68,68,.3)";}}
+                  onMouseOut={e=>{e.currentTarget.style.color="var(--t3)";e.currentTarget.style.borderColor="var(--border)";}}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{display:"flex",gap:10,marginTop:20,alignItems:"center"}}>
+          <button className="btn btn-primary" onClick={save} disabled={!hasChanges}
+            style={{padding:"11px 24px",opacity:hasChanges?1:.4,justifyContent:"center",flex:1}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            {hasChanges?`Salvar (${editedCount} alteração${editedCount>1?"ões":""})` :"Sem alterações"}
+          </button>
+          {hasChanges&&<div style={{fontSize:11,color:"var(--t3)"}}>As datas subsequentes foram recalculadas automaticamente.</div>}
+        </div>
       </div>
     </div>
   );
@@ -2174,7 +2400,7 @@ function BacklogPanel({items=[],onSave}) {
     <div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
         <div style={{display:"flex",gap:8}}>
-          {[["all","Todos",list.length],["account","🔑 Contas",list.filter(i=>i.type==="account").length],["request","📋 Solicitações",list.filter(i=>i.type==="request").length]].map(([v,l,c])=>(
+          {[["all","Todos",list.length],["account","<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg> Contas",list.filter(i=>i.type==="account").length],["request","<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg> Solicitações",list.filter(i=>i.type==="request").length]].map(([v,l,c])=>(
             <button key={v} onClick={()=>setFilter(v)} style={{padding:"7px 14px",border:`1px solid ${filter===v?"#34d399":"var(--border)"}`,borderRadius:9,background:filter===v?"rgba(52,211,153,.1)":"var(--s1)",color:filter===v?"#34d399":"var(--t3)",fontSize:12,fontWeight:filter===v?700:400,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
               {l}<span style={{fontSize:10,opacity:.7}}>{c}</span>
             </button>
@@ -2188,7 +2414,7 @@ function BacklogPanel({items=[],onSave}) {
 
       {adding&&(
         <div style={{padding:22,background:"var(--s2)",border:`1px solid ${adding==="account"?"rgba(52,211,153,.3)":"rgba(56,189,248,.3)"}`,borderRadius:14,marginBottom:20,animation:"fadeUp .2s ease"}}>
-          <div style={{fontSize:14,fontWeight:700,marginBottom:16,color:adding==="account"?"#34d399":"#38bdf8"}}>{editId?"✏️ Editar":"+"} {adding==="account"?"Conta / Senha":"Solicitação"}</div>
+          <div style={{fontSize:14,fontWeight:700,marginBottom:16,color:adding==="account"?"#34d399":"#38bdf8"}}>{editId?"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar":"+"} {adding==="account"?"Conta / Senha":"Solicitação"}</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
             <div style={{gridColumn:"1/-1"}}><FieldLabel>Título</FieldLabel><input className="input" value={form.title} onChange={f("title")} placeholder={adding==="account"?"Ex.: AWS Console":"Ex.: Renovar SSL"}/></div>
             {adding==="account"&&<><div><FieldLabel>Login</FieldLabel><input className="input" value={form.login} onChange={f("login")} placeholder="usuario@empresa.com"/></div><div><FieldLabel>Senha</FieldLabel><input className="input" value={form.password} onChange={f("password")} placeholder="••••••"/></div></>}
@@ -2202,25 +2428,25 @@ function BacklogPanel({items=[],onSave}) {
         </div>
       )}
 
-      {displayed.length===0?<EmptySlate icon="📦" title="Backlog vazio" sub='Clique em "+ Conta" ou "+ Solicitação"'/>
+      {displayed.length===0?<EmptySlate icon="<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>" title="Backlog vazio" sub='Clique em "+ Conta" ou "+ Solicitação"'/>
         :<div style={{display:"flex",flexDirection:"column",gap:10}}>
           {displayed.map((item,i)=>{
             const isAcc=item.type==="account"; const ac=isAcc?"#34d399":"#38bdf8"; const sc=REQ_STATUS_COLORS[item.status]||"#94a3b8";
             return(
               <div key={item.id} style={{padding:"14px 18px",background:"var(--s2)",border:"1px solid var(--border)",borderRadius:12,animation:`fadeUp .2s ease ${i*.03}s both`}}>
                 <div style={{display:"flex",alignItems:"center",gap:12}}>
-                  <div style={{width:34,height:34,borderRadius:9,background:`${ac}12`,border:`1px solid ${ac}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>{isAcc?"🔑":"📋"}</div>
+                  <div style={{width:34,height:34,borderRadius:9,background:`${ac}12`,border:`1px solid ${ac}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>{isAcc?"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>":"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg>"}</div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontWeight:600,fontSize:14,marginBottom:2}}>{item.title}</div>
-                    <div style={{fontSize:11,color:"var(--t3)"}}>{isAcc&&item.login?`👤 ${item.login}`:!isAcc?<span style={{color:sc}}>● {item.status}</span>:""}</div>
+                    <div style={{fontSize:11,color:"var(--t3)"}}>{isAcc&&item.login?`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${item.login}`:!isAcc?<span style={{color:sc}}>● {item.status}</span>:""}</div>
                   </div>
                   {!isAcc&&<select value={item.status} onChange={e=>updStatus(item.id,e.target.value)} onClick={e=>e.stopPropagation()} style={{padding:"4px 8px",border:`1px solid ${sc}44`,borderRadius:7,background:`${sc}10`,color:sc,fontSize:11,fontWeight:700,outline:"none",cursor:"pointer"}}>
                     {["pendente","em andamento","concluído","cancelado"].map(s=><option key={s} value={s} style={{background:"var(--bg)",color:"var(--t1)"}}>{s}</option>)}
                   </select>}
                   <div style={{display:"flex",gap:6}}>
-                    <button onClick={()=>startEdit(item)} style={{width:30,height:30,borderRadius:7,border:"1px solid var(--border)",background:"transparent",color:"var(--t3)",cursor:"pointer",fontSize:13}} onMouseOver={e=>e.currentTarget.style.color="#38bdf8"} onMouseOut={e=>e.currentTarget.style.color="var(--t3)"}>✏️</button>
-                    {isAcc&&<button onClick={()=>setReveal(p=>({...p,[item.id]:!p[item.id]}))} style={{width:30,height:30,borderRadius:7,border:"1px solid var(--border)",background:"transparent",color:"var(--t3)",cursor:"pointer",fontSize:13}}>{reveal[item.id]?"🙈":"👁"}</button>}
-                    <button onClick={()=>remove(item.id)} className="btn btn-danger" style={{width:30,height:30,padding:0,justifyContent:"center",fontSize:13}}>🗑</button>
+                    <button onClick={()=>startEdit(item)} style={{width:30,height:30,borderRadius:7,border:"1px solid var(--border)",background:"transparent",color:"var(--t3)",cursor:"pointer",fontSize:13}} onMouseOver={e=>e.currentTarget.style.color="#38bdf8"} onMouseOut={e=>e.currentTarget.style.color="var(--t3)"}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                    {isAcc&&<button onClick={()=>setReveal(p=>({...p,[item.id]:!p[item.id]}))} style={{width:30,height:30,borderRadius:7,border:"1px solid var(--border)",background:"transparent",color:"var(--t3)",cursor:"pointer",fontSize:13}}>{reveal[item.id]?"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>":"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>"}</button>}
+                    <button onClick={()=>remove(item.id)} className="btn btn-danger" style={{width:30,height:30,padding:0,justifyContent:"center",fontSize:13}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
                   </div>
                 </div>
                 {isAcc&&reveal[item.id]&&<div style={{marginTop:10,display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -2428,7 +2654,7 @@ function NewTaskView({user,onSubmit}) {
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginTop:6}}>
               {Object.entries(PRIO_LABEL).map(([k,v])=>{
                 const sel=form.priority===k; const c=PRIO_COLOR[k];
-                const dot=k==="critica"?"🔴":k==="alta"?"🟠":k==="media"?"🟡":"🟢";
+                const dot=k==="critica"?"<span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#ef4444",flexShrink:0,verticalAlign:"middle"}}/>":k==="alta"?"<span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#f97316",flexShrink:0,verticalAlign:"middle"}}/>":k==="media"?"<span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#eab308",flexShrink:0,verticalAlign:"middle"}}/>":"<span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#22c55e",flexShrink:0,verticalAlign:"middle"}}/>";
                 return(
                   <button key={k} onClick={()=>setForm(p=>({...p,priority:k}))}
                     style={{padding:"9px 8px",border:`1px solid ${sel?c+"60":"var(--border)"}`,borderRadius:9,
