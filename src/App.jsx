@@ -743,160 +743,149 @@ function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}
 
           {/* Progress bar */}
           <ProgressFlow status={demand.status}/>
-
-          {/* Tabs */}
-          <div style={{display:"flex",gap:2,marginTop:8}}>
-            {[["details","Detalhes"],["comments",`Comentários (${comments.length})`],["history","Histórico"]].map(([id,label])=>(
-              <button key={id} onClick={()=>setTab(id)} style={{padding:"6px 14px",borderRadius:7,border:"none",fontSize:12,fontWeight:tab===id?700:400,cursor:"pointer",transition:"all .15s",background:tab===id?"var(--s2)":"transparent",color:tab===id?"var(--t1)":"var(--t3)"}}>
-                {label}
-              </button>
-            ))}
-          </div>
         </div>
 
-        {/* ── BODY ── */}
-        <div style={{flex:1,overflowY:"auto",minHeight:0}}>
+        {/* ── BODY: unified layout ── */}
+        <div style={{flex:1,overflowY:"auto",minHeight:0,display:"grid",gridTemplateColumns:"1fr 300px"}}>
 
-          {/* DETAILS TAB */}
-          {tab==="details"&&(
-            <div style={{display:"grid",gridTemplateColumns:"1fr 260px"}}>
-              <div style={{padding:"20px 22px",borderRight:"1px solid var(--border)",display:"flex",flexDirection:"column",gap:18}}>
-                <div>
-                  <FieldLabel>Descrição</FieldLabel>
-                  {editing
-                    ?<textarea className="input" value={form.description} onChange={fe("description")} rows={6} style={{resize:"vertical",lineHeight:1.7}}/>
-                    :<div style={{fontSize:14,lineHeight:1.8,color:"var(--t2)",whiteSpace:"pre-wrap",padding:"12px 14px",background:"var(--s1)",borderRadius:10,border:"1px solid var(--border)"}}>{demand.description}</div>
-                  }
-                </div>
-                {editing&&(
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                    <div><FieldLabel>Time</FieldLabel><input className="input" value={form.team} onChange={fe("team")} placeholder="Ex.: Operações"/></div>
-                    <div><FieldLabel>Prioridade</FieldLabel>
-                      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                        {Object.entries(PRIO_LABEL).map(([k,v])=>(
-                          <button key={k} onClick={()=>setForm(p=>({...p,priority:k}))} className="btn" style={{padding:"5px 9px",borderRadius:7,fontSize:11,fontWeight:700,border:`1px solid ${form.priority===k?PRIO_COLOR[k]:"var(--border)"}`,background:form.priority===k?`${PRIO_COLOR[k]}15`:"var(--s1)",color:form.priority===k?PRIO_COLOR[k]:"var(--t3)"}}>{v}</button>
-                        ))}
-                      </div>
-                    </div>
-                    <div style={{gridColumn:"1/-1"}}><FieldLabel>Tipo</FieldLabel>
-                      <div style={{display:"flex",gap:8}}>
-                        {Object.entries(TAG_LABEL).map(([k,v])=>(
-                          <button key={k} onClick={()=>setForm(p=>({...p,tag:k}))} className="btn" style={{padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:600,border:`1px solid ${form.tag===k?TAG_COLOR[k]:"var(--border)"}`,background:form.tag===k?`${TAG_COLOR[k]}15`:"var(--s1)",color:form.tag===k?TAG_COLOR[k]:"var(--t3)"}}>{TAG_ICON[k]} {v}</button>
-                        ))}
-                      </div>
+          {/* LEFT: description + comments */}
+          <div style={{display:"flex",flexDirection:"column",borderRight:"1px solid var(--border)"}}>
+            {/* Description */}
+            <div style={{padding:"20px 22px",borderBottom:"1px solid var(--border)"}}>
+              <FieldLabel>Descrição</FieldLabel>
+              {editing
+                ?<textarea className="input" value={form.description} onChange={fe("description")} rows={5} style={{resize:"vertical",lineHeight:1.7,marginTop:6}}/>
+                :<div style={{fontSize:14,lineHeight:1.85,color:"var(--t2)",whiteSpace:"pre-wrap",padding:"12px 14px",background:"var(--s1)",borderRadius:10,border:"1px solid var(--border)",marginTop:6}}>{demand.description}</div>
+              }
+              {editing&&(
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginTop:14}}>
+                  <div><FieldLabel>Time</FieldLabel><input className="input" value={form.team} onChange={fe("team")} placeholder="Ex.: Operações"/></div>
+                  <div><FieldLabel>Prioridade</FieldLabel>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>
+                      {Object.entries(PRIO_LABEL).map(([k,v])=>(
+                        <button key={k} onClick={()=>setForm(p=>({...p,priority:k}))} className="btn" style={{padding:"5px 9px",borderRadius:7,fontSize:11,fontWeight:700,border:`1px solid ${form.priority===k?PRIO_COLOR[k]:"var(--border)"}`,background:form.priority===k?`${PRIO_COLOR[k]}15`:"var(--s1)",color:form.priority===k?PRIO_COLOR[k]:"var(--t3)"}}>{v}</button>
+                      ))}
                     </div>
                   </div>
-                )}
-                {demand.admin_note&&(
-                  <div style={{padding:"12px 14px",background:"rgba(99,102,241,.07)",border:"1px solid rgba(99,102,241,.2)",borderRadius:10}}>
-                    <FieldLabel>Nota do Gestor</FieldLabel>
-                    <p style={{fontSize:13,color:"#c7d2fe",lineHeight:1.6,marginTop:4}}>{demand.admin_note}</p>
-                  </div>
-                )}
-                {demand.files?.length>0&&(
-                  <div>
-                    <FieldLabel>Anexos</FieldLabel>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:4}}>
-                      {demand.files.map((f,i)=><div key={i} style={{padding:"5px 12px",background:"var(--s1)",border:"1px solid var(--border)",borderRadius:7,fontSize:12,color:"var(--t2)"}}>📄 {f.name}</div>)}
+                  <div style={{gridColumn:"1/-1"}}><FieldLabel>Tipo</FieldLabel>
+                    <div style={{display:"flex",gap:8,marginTop:6}}>
+                      {Object.entries(TAG_LABEL).map(([k,v])=>(
+                        <button key={k} onClick={()=>setForm(p=>({...p,tag:k}))} className="btn" style={{padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:600,border:`1px solid ${form.tag===k?TAG_COLOR[k]:"var(--border)"}`,background:form.tag===k?`${TAG_COLOR[k]}15`:"var(--s1)",color:form.tag===k?TAG_COLOR[k]:"var(--t3)"}}>{TAG_ICON[k]} {v}</button>
+                      ))}
                     </div>
-                  </div>
-                )}
-              </div>
-              {/* Meta sidebar */}
-              <div style={{padding:"20px 18px",background:"var(--s1)",display:"flex",flexDirection:"column",gap:14}}>
-                <div>
-                  <FieldLabel>Detalhes</FieldLabel>
-                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                    {[["👤","Solicitante",demand.user_name],["🏷️","Time",demand.team||"—"],[SQUAD_ICON[demand.squad],"Squad",SQUAD_LABEL[demand.squad]],["🕐","Criado",fmt(demand.created_at||demand.createdAt)],demand.approved_at&&["✅","Aprovado",fmt(demand.approved_at)],demand.concluded_at&&["🏁","Concluído",fmt(demand.concluded_at)]].filter(Boolean).map(([ic,lb,val])=>(
-                      <div key={lb} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:"var(--s2)",borderRadius:8,gap:8}}>
-                        <span style={{fontSize:11,color:"var(--t3)",flexShrink:0}}>{ic} {lb}</span>
-                        <span style={{fontSize:11,fontWeight:600,color:"var(--t2)",textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{val}</span>
-                      </div>
-                    ))}
                   </div>
                 </div>
-                <div style={{padding:"5px 10px",background:"var(--s2)",borderRadius:7,fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)",textAlign:"center"}}>ID: {demand.id}</div>
-              </div>
+              )}
+              {demand.admin_note&&(
+                <div style={{marginTop:14,padding:"12px 14px",background:"rgba(99,102,241,.07)",border:"1px solid rgba(99,102,241,.2)",borderRadius:10}}>
+                  <FieldLabel>Nota do Gestor</FieldLabel>
+                  <p style={{fontSize:13,color:"#c7d2fe",lineHeight:1.6,marginTop:4}}>{demand.admin_note}</p>
+                </div>
+              )}
             </div>
-          )}
 
-          {/* COMMENTS TAB */}
-          {tab==="comments"&&(
-            <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-              <div ref={commentRef} style={{flex:1,overflowY:"auto",padding:"16px 22px",display:"flex",flexDirection:"column",gap:16,minHeight:0}}>
+            {/* Comments section — inline below description */}
+            <div style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
+              <div style={{padding:"12px 22px 8px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",gap:8}}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{color:"var(--t3)"}}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span style={{fontSize:12,fontWeight:700,color:"var(--t2)"}}>Comentários</span>
+                <span style={{fontSize:11,color:"var(--t3)",background:"var(--border)",padding:"1px 7px",borderRadius:999,fontFamily:"var(--mono)"}}>{comments.length}</span>
+              </div>
+              <div ref={commentRef} style={{flex:1,overflowY:"auto",padding:"14px 22px",display:"flex",flexDirection:"column",gap:14,minHeight:120,maxHeight:280}}>
                 {loadingComments
-                  ?<div style={{textAlign:"center",padding:24,color:"var(--t3)",fontSize:13}}><Spin/></div>
+                  ?<div style={{textAlign:"center",padding:16,color:"var(--t3)"}}><Spin/></div>
                   :topComments.length===0
-                    ?<div style={{textAlign:"center",padding:"32px 0",color:"var(--t3)"}}>
-                      <div style={{fontSize:32,marginBottom:8}}>💬</div>
-                      <div style={{fontSize:13,fontWeight:600,color:"var(--t2)"}}>Nenhum comentário ainda</div>
-                      <div style={{fontSize:12,marginTop:4}}>Seja o primeiro a comentar!</div>
-                    </div>
+                    ?<div style={{textAlign:"center",padding:"20px 0",color:"var(--t3)"}}>
+                        <div style={{fontSize:11}}>Nenhum comentário ainda. Seja o primeiro!</div>
+                      </div>
                     :topComments.map(c=>(
-                      <CommentItem key={c.id} comment={c} replies={getReplies(c.id)} onReply={setReplyTo} onDelete={async(id)=>{await dbDeleteComment(id);setComments(p=>p.filter(x=>x.id!==id));}} currentUserId={currentUser?.id||currentUser?.email} renderContent={renderCommentContent}/>
-                    ))
+                        <CommentItem key={c.id} comment={c} replies={getReplies(c.id)} onReply={setReplyTo} onDelete={async(id)=>{await dbDeleteComment(id);setComments(p=>p.filter(x=>x.id!==id));}} currentUserId={currentUser?.id||currentUser?.email} renderContent={renderCommentContent}/>
+                      ))
                 }
               </div>
-
               {/* Comment input */}
-              <div style={{padding:"14px 22px",borderTop:"1px solid var(--border)",background:"var(--s2)",flexShrink:0}}>
+              <div style={{padding:"12px 22px",borderTop:"1px solid var(--border)",background:"var(--s2)",flexShrink:0}}>
                 {replyTo&&(
-                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",background:"rgba(59,130,246,.08)",border:"1px solid rgba(59,130,246,.2)",borderRadius:8,marginBottom:10,fontSize:12,color:"#60a5fa"}}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"5px 10px",background:"rgba(59,130,246,.08)",border:"1px solid rgba(59,130,246,.2)",borderRadius:8,marginBottom:8,fontSize:11,color:"#60a5fa"}}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
                     Respondendo a <strong>{replyTo.user_name}</strong>
-                    <button onClick={()=>setReplyTo(null)} style={{marginLeft:"auto",background:"none",border:"none",color:"#60a5fa",cursor:"pointer",fontSize:14}}>✕</button>
+                    <button onClick={()=>setReplyTo(null)} style={{marginLeft:"auto",background:"none",border:"none",color:"#60a5fa",cursor:"pointer",fontSize:13}}>✕</button>
                   </div>
                 )}
                 <div style={{position:"relative"}}>
-                  <div style={{display:"flex",gap:10,alignItems:"flex-end"}}>
-                    <Avatar name={currentUser?.name} url={currentUser?.avatar_url} size={32} radius={8}/>
+                  <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
+                    <Avatar name={currentUser?.name} url={currentUser?.avatar_url} size={28} radius={7}/>
                     <div style={{flex:1,position:"relative"}}>
-                      <textarea ref={inputRef} value={comment} onChange={handleCommentInput} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&!mentionSearch){e.preventDefault();postComment();}}} rows={2} placeholder="Escreva um comentário... Use @ para mencionar alguém" style={{width:"100%",padding:"10px 14px",background:"var(--s1)",border:"1.5px solid var(--border)",borderRadius:10,color:"var(--t1)",fontSize:13,outline:"none",resize:"none",lineHeight:1.6,fontFamily:"var(--font)",transition:"border-color .15s"}} onFocus={e=>e.target.style.borderColor="var(--blue)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
-                      {/* Mention suggestions */}
+                      <textarea ref={inputRef} value={comment} onChange={handleCommentInput}
+                        onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&!mentionSearch){e.preventDefault();postComment();}}}
+                        rows={2} placeholder="Comentar... @ para mencionar"
+                        style={{width:"100%",padding:"9px 12px",background:"var(--s1)",border:"1.5px solid var(--border)",borderRadius:9,color:"var(--t1)",fontSize:12,outline:"none",resize:"none",lineHeight:1.6,fontFamily:"var(--font)",transition:"border-color .15s"}}
+                        onFocus={e=>e.target.style.borderColor="var(--blue)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
                       {mentionSearch&&filteredProfiles.length>0&&(
                         <div style={{position:"absolute",bottom:"100%",left:0,right:0,marginBottom:4,background:"var(--s2)",border:"1px solid var(--border2)",borderRadius:10,boxShadow:"0 8px 24px rgba(0,0,0,.5)",overflow:"hidden",zIndex:50}}>
                           {filteredProfiles.map(p=>(
-                            <button key={p.id} onClick={()=>insertMention(p)} style={{width:"100%",padding:"9px 14px",background:"transparent",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:10,textAlign:"left",transition:"background .1s"}} onMouseOver={e=>e.currentTarget.style.background="var(--s3)"} onMouseOut={e=>e.currentTarget.style.background="transparent"}>
-                              <Avatar name={p.name} url={p.avatar_url} size={28} radius={7}/>
+                            <button key={p.id} onClick={()=>insertMention(p)} style={{width:"100%",padding:"8px 12px",background:"transparent",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:8,textAlign:"left",transition:"background .1s"}} onMouseOver={e=>e.currentTarget.style.background="var(--s3)"} onMouseOut={e=>e.currentTarget.style.background="transparent"}>
+                              <Avatar name={p.name} url={p.avatar_url} size={24} radius={6}/>
                               <div>
-                                <div style={{fontSize:13,fontWeight:600,color:"var(--t1)"}}>{p.name}</div>
-                                <div style={{fontSize:10,color:"var(--t3)"}}>{p.email}</div>
+                                <div style={{fontSize:12,fontWeight:600,color:"var(--t1)"}}>{p.name}</div>
+                                <div style={{fontSize:9,color:"var(--t3)"}}>{p.email}</div>
                               </div>
-                              {ROLES[p.role]&&<span style={{marginLeft:"auto",fontSize:10,padding:"2px 7px",borderRadius:999,background:`${ROLES[p.role].color}12`,color:ROLES[p.role].color}}>{ROLES[p.role].icon}</span>}
                             </button>
                           ))}
                         </div>
                       )}
                     </div>
-                    <button className="btn btn-primary" onClick={postComment} disabled={!comment.trim()||posting} style={{padding:"9px 16px",borderRadius:9,flexShrink:0,opacity:!comment.trim()||posting?.5:1}}>
-                      {posting?<Spin/>:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>}
+                    <button className="btn btn-primary" onClick={postComment} disabled={!comment.trim()||posting} style={{padding:"8px 12px",borderRadius:8,flexShrink:0,opacity:!comment.trim()||posting?.5:1}}>
+                      {posting?<Spin/>:<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>}
                     </button>
                   </div>
-                  <div style={{marginTop:6,fontSize:10,color:"var(--t3)"}}>Enter para enviar · Shift+Enter para quebrar linha · @ para mencionar</div>
+                  <div style={{marginTop:4,fontSize:9,color:"var(--t3)"}}>Enter · Shift+Enter nova linha · @ menção</div>
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
-          {/* HISTORY TAB */}
-          {tab==="history"&&(
-            <div style={{padding:"20px 22px"}}>
+          {/* RIGHT: meta + history */}
+          <div style={{display:"flex",flexDirection:"column",background:"var(--s1)",overflowY:"auto"}}>
+            {/* Meta */}
+            <div style={{padding:"20px 18px",borderBottom:"1px solid var(--border)"}}>
+              <FieldLabel>Detalhes</FieldLabel>
+              <div style={{display:"flex",flexDirection:"column",gap:5,marginTop:6}}>
+                {[
+                  [<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,"Solicitante",demand.user_name],
+                  [<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8l-2 4h12z"/></svg>,"Time",demand.team||"—"],
+                  [SQUAD_ICON[demand.squad],"Squad",SQUAD_LABEL[demand.squad]],
+                  [<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,"Criado",fmt(demand.created_at||demand.createdAt)],
+                  demand.approved_at&&[<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>,"Aprovado",fmt(demand.approved_at)],
+                  demand.concluded_at&&[<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,"Concluído",fmt(demand.concluded_at)],
+                ].filter(Boolean).map(([ic,lb,val])=>(
+                  <div key={lb} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:"var(--s2)",borderRadius:8,gap:8}}>
+                    <span style={{fontSize:11,color:"var(--t3)",flexShrink:0,display:"flex",alignItems:"center",gap:5}}>{ic} {lb}</span>
+                    <span style={{fontSize:11,fontWeight:600,color:"var(--t2)",textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:120}}>{val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Timeline history */}
+            <div style={{padding:"16px 18px",flex:1}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{color:"var(--t3)"}}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                <FieldLabel>Histórico</FieldLabel>
+              </div>
               {timeline.length===0
-                ?<EmptySlate icon="📋" title="Sem histórico" sub="As atualizações da task aparecerão aqui"/>
-                :<div style={{display:"flex",flexDirection:"column",gap:0,position:"relative",paddingLeft:16}}>
-                  <div style={{position:"absolute",left:13,top:0,bottom:0,width:2,background:"linear-gradient(to bottom,var(--blue),var(--border))"}}/>
+                ?<div style={{fontSize:11,color:"var(--t3)",padding:"8px 0"}}>Sem atualizações ainda.</div>
+                :<div style={{display:"flex",flexDirection:"column",gap:0,position:"relative",paddingLeft:14}}>
+                  <div style={{position:"absolute",left:10,top:0,bottom:0,width:1.5,background:"var(--border)"}}/>
                   {timeline.map((t,i)=>{
                     const s=STATUS[t.status]||{icon:"📌",dot:"var(--t3)",label:t.status||"Atualização",color:"#64748b"};
                     return(
-                      <div key={i} style={{display:"flex",gap:14,padding:"12px 0",position:"relative",zIndex:1}}>
-                        <div style={{width:26,height:26,borderRadius:"50%",background:`${s.dot}18`,border:`2px solid ${s.dot}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,flexShrink:0,marginLeft:-13,zIndex:2}}>{s.icon}</div>
-                        <div style={{flex:1,padding:"10px 14px",background:"var(--s2)",border:`1px solid ${s.color}22`,borderRadius:10,marginTop:0}}>
-                          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:t.note&&t.note!==s.label?6:0}}>
-                            <span style={{fontSize:12,fontWeight:700,color:s.dot}}>{s.label||t.status}</span>
-                            <span style={{fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)",marginLeft:"auto"}}>{fmt(t.at)}</span>
-                          </div>
-                          {t.note&&t.note!==s.label&&<div style={{fontSize:12,color:"var(--t2)",lineHeight:1.5}}>{t.note}</div>}
-                          {t.sprint&&<div style={{fontSize:10,color:"#38bdf8",marginTop:4,fontFamily:"var(--mono)"}}>Sprint {t.sprint} · {sprintRange(t.sprint,overrides)}</div>}
+                      <div key={i} style={{display:"flex",gap:10,padding:"8px 0",position:"relative",zIndex:1}}>
+                        <div style={{width:22,height:22,borderRadius:"50%",background:`${s.dot}18`,border:`2px solid ${s.dot}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,flexShrink:0,marginLeft:-11}}>{s.icon}</div>
+                        <div style={{flex:1,paddingTop:2}}>
+                          <div style={{fontSize:11,fontWeight:700,color:s.dot}}>{s.label||t.status}</div>
+                          {t.note&&t.note!==s.label&&<div style={{fontSize:10,color:"var(--t3)",marginTop:1,lineHeight:1.5}}>{t.note}</div>}
+                          <div style={{fontSize:9,color:"var(--t3)",marginTop:2,fontFamily:"var(--mono)"}}>{fmt(t.at)}</div>
                         </div>
                       </div>
                     );
@@ -904,7 +893,12 @@ function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}
                 </div>
               }
             </div>
-          )}
+
+            {/* ID */}
+            <div style={{padding:"8px 18px 14px"}}>
+              <div style={{padding:"5px 10px",background:"var(--s2)",borderRadius:7,fontSize:9,color:"var(--t3)",fontFamily:"var(--mono)",textAlign:"center"}}>ID: {demand.id}</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1232,9 +1226,14 @@ export default function App() {
   }
 
   // Nav items
-  const navItems = isAdmin
-    ? [{id:"admin",label:"Admin",icon:"🛡️"},{id:"queue",label:"Filas",icon:"📋"},{id:"new",label:"Nova Task",icon:"✚"},{id:"my",label:"Minhas Tasks",icon:"📂"},{id:"analytics",label:"Visão Geral",icon:"📊"}]
-    : isMod
+const NAV_ICONS = {
+  "🛡️": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  "⚖️": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+  "📋": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg>,
+  "✚":  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  "📂": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>,
+  "📊": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+};
     ? [{id:"admin",label:"Painel",icon:"⚖️"},{id:"queue",label:"Filas",icon:"📋"},{id:"new",label:"Nova Task",icon:"✚"},{id:"my",label:"Minhas Tasks",icon:"📂"}]
     : [{id:"queue",label:"Filas",icon:"📋"},{id:"new",label:"Nova Task",icon:"✚"},{id:"my",label:"Minhas Tasks",icon:"📂"}];
 
@@ -1271,35 +1270,48 @@ export default function App() {
       )}
 
       {/* NAVBAR */}
-      <nav style={{height:62,display:"flex",alignItems:"center",padding:"0 28px",gap:16,background:"rgba(6,9,18,.92)",borderBottom:"1px solid var(--border)",backdropFilter:"blur(16px)",position:"sticky",top:0,zIndex:200,flexShrink:0}}>
+      <nav style={{height:62,display:"flex",alignItems:"center",padding:"0 28px",gap:12,background:"rgba(6,9,18,.95)",borderBottom:"1px solid var(--border)",backdropFilter:"blur(20px)",position:"sticky",top:0,zIndex:200,flexShrink:0}}>
         {/* Logo */}
-        <div style={{display:"flex",alignItems:"center",gap:10,marginRight:12}}>
-          <div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#3b82f6,#6366f1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,boxShadow:"0 0 16px rgba(99,102,241,.3)"}}>⚡</div>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginRight:8}}>
+          <div style={{width:34,height:34,borderRadius:10,background:"linear-gradient(135deg,#3b82f6,#6366f1)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 0 16px rgba(99,102,241,.35)"}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </div>
           <div>
             <div style={{fontWeight:900,fontSize:15,letterSpacing:"-1px",lineHeight:1}}>TaskHUB</div>
             <div style={{fontSize:9,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"1px"}}>{ROLES[user?.role]?.label||"Plataforma"}</div>
           </div>
         </div>
 
-        {/* Nav */}
-        <div style={{display:"flex",gap:2,background:"var(--s1)",borderRadius:10,padding:3,border:"1px solid var(--border)"}}>
-          {navItems.map(v=>{
+        {/* Nav links — regular items */}
+        <div style={{display:"flex",gap:1,background:"var(--s1)",borderRadius:10,padding:3,border:"1px solid var(--border)"}}>
+          {navItems.filter(v=>v.id!=="new").map(v=>{
             const active=view===v.id;
             return(
               <button key={v.id} onClick={()=>setView(v.id)} className="nav-link"
-                style={{background:active?"var(--s2)":"transparent",color:active?"var(--t1)":"var(--t3)",fontWeight:active?700:400,boxShadow:active?"0 2px 8px rgba(0,0,0,.3)":"none",borderRadius:8,fontSize:13}}>
-                <span>{v.icon}</span>{v.label}
+                style={{background:active?"var(--s2)":"transparent",color:active?"var(--t1)":"var(--t3)",fontWeight:active?700:400,boxShadow:active?"0 2px 8px rgba(0,0,0,.3)":"none",borderRadius:8,fontSize:13,padding:"8px 14px",display:"flex",alignItems:"center",gap:6}}>
+                <span style={{color:active?"var(--blue)":"var(--t3)",display:"flex"}}>{NAV_ICONS[v.icon]||v.icon}</span>
+                {v.label}
                 {v.id==="admin"&&pendingCount>0&&<span style={{minWidth:18,height:18,borderRadius:999,background:"#ef4444",fontSize:9,fontWeight:800,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",padding:"0 5px"}}>{pendingCount}</span>}
               </button>
             );
           })}
         </div>
 
+        {/* Nova Task — standalone highlighted button */}
+        <button onClick={()=>setView("new")}
+          style={{display:"flex",alignItems:"center",gap:8,padding:"9px 18px",borderRadius:10,border:"none",cursor:"pointer",
+            background:view==="new"?"linear-gradient(135deg,#22c55e,#16a34a)":"linear-gradient(135deg,#3b82f6,#6366f1)",
+            color:"#fff",fontSize:13,fontWeight:700,boxShadow:view==="new"?"0 4px 16px rgba(34,197,94,.35)":"0 4px 16px rgba(99,102,241,.3)",
+            transition:"all .15s",flexShrink:0}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nova Task
+        </button>
+
         <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
           {/* Bell */}
           <div style={{position:"relative"}}>
-            <button onClick={()=>setShowNotif(p=>!p)} style={{width:36,height:36,borderRadius:9,border:`1px solid ${showNotif?"rgba(59,130,246,.4)":"var(--border)"}`,background:showNotif?"rgba(59,130,246,.1)":"var(--s1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,cursor:"pointer",transition:"all .15s",position:"relative"}}>
-              🔔
+            <button onClick={()=>setShowNotif(p=>!p)} style={{width:36,height:36,borderRadius:9,border:`1px solid ${showNotif?"rgba(59,130,246,.4)":"var(--border)"}`,background:showNotif?"rgba(59,130,246,.1)":"var(--s1)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"all .15s",position:"relative"}}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
               {unread>0&&<span style={{position:"absolute",top:-5,right:-5,minWidth:18,height:18,borderRadius:999,background:"#ef4444",fontSize:9,fontWeight:800,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid var(--bg)",padding:"0 4px"}}>{unread}</span>}
             </button>
             {showNotif&&<NotifDropdown notifs={notifs} onMarkRead={async()=>{await dbMarkRead(user?.id||user?.email);setNotifs(p=>p.map(n=>({...n,read:true})));}} onClose={()=>setShowNotif(false)} onOpen={d=>{setTaskModal(demands.find(x=>x.id===d.demand_id)||null);setShowNotif(false);}}/>}
