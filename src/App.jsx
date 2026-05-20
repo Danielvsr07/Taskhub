@@ -319,10 +319,10 @@ const G = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&family=JetBrains+Mono:wght@400;500&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#03060f;--s1:#070d1c;--s2:#0a1220;--s3:#0f1a2e;--s4:#152038;
-  --border:#1a2d48;--border2:#243d62;
-  --t1:#e8f0ff;--t2:#7a9cc4;--t3:#3d5a7a;
-  --blue:#4f8ef7;--blue2:#3b82f6;--indigo:#818cf8;--green:#10b981;
+  --bg:#111318;--s1:#16191f;--s2:#1c2028;--s3:#22262f;--s4:#282d38;
+  --border:#2a2f3a;--border2:#363c4a;
+  --t1:#eceef2;--t2:#8990a0;--t3:#52586a;
+  --blue:#5b8dee;--blue2:#4b7fe8;--indigo:#7c83f5;--green:#3ecf8e;
   --font:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;
   --r:14px;--rs:9px;--rx:18px;--nav-h:60px;
 }
@@ -342,6 +342,7 @@ a{color:var(--blue);text-decoration:none}
 @keyframes slideRight{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:translateX(0)}}
 @keyframes scaleIn{from{opacity:0;transform:scale(.92) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
 @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(79,142,247,.2)}50%{box-shadow:0 0 40px rgba(79,142,247,.5)}}
+@keyframes shimmer{0%{opacity:.5}50%{opacity:.9}100%{opacity:.5}}
 .card{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);transition:border-color .22s,transform .22s cubic-bezier(.34,1.56,.64,1),box-shadow .22s}
 .card:hover{border-color:var(--border2);transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,0,0,.55)}
 .btn{cursor:pointer;border:none;font-family:var(--font);display:inline-flex;align-items:center;gap:7px;font-weight:600;transition:all .16s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;line-height:1}
@@ -352,8 +353,8 @@ a{color:var(--blue);text-decoration:none}
 .btn-ghost:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15);color:var(--t1);transform:translateY(-1px)}
 .btn-danger{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#f87171;padding:7px 14px;border-radius:var(--rs);font-size:12px}
 .btn-danger:hover{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.35);transform:translateY(-1px)}
-.input{width:100%;padding:11px 14px;background:rgba(7,13,28,.8);border:1.5px solid var(--border);border-radius:var(--rs);color:var(--t1);font-size:14px;outline:none;transition:border-color .15s,box-shadow .15s,background .15s}
-.input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(79,142,247,.14);background:rgba(10,18,32,.9)}
+.input{width:100%;padding:11px 14px;background:rgba(22,25,31,.8);border:1.5px solid var(--border);border-radius:var(--rs);color:var(--t1);font-size:14px;outline:none;transition:border-color .15s,box-shadow .15s,background .15s}
+.input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(79,142,247,.14);background:rgba(28,32,40,.9)}
 .input::placeholder{color:var(--t3)}
 .pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;line-height:1}
 .nav-link{padding:7px 14px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--t3);transition:all .15s;display:flex;align-items:center;gap:7px}
@@ -1298,7 +1299,7 @@ export default function App() {
 
       {/* NAVBAR */}
       <nav style={{height:60,display:"flex",alignItems:"center",padding:"0 24px",gap:10,
-        background:"rgba(3,6,15,.88)",
+        background:"rgba(17,19,24,.92)",
         borderBottom:"1px solid rgba(255,255,255,.06)",
         backdropFilter:"blur(24px)",
         WebkitBackdropFilter:"blur(24px)",
@@ -1427,49 +1428,64 @@ function QueueView({demands,overrides,onOpen}) {
   const pending  = sq.filter(d=>d.status==="pendente");
   const rejected = sq.filter(d=>d.status==="rejeitada");
   const sprints  = [...new Set(inSprint.map(d=>d.sprint))].sort((a,b)=>a-b);
+  const sqColor  = SQUAD_COLOR[squad];
+  const totalAll = demands.length;
 
   return(
-    <div style={{flex:1,padding:"28px 0",animation:"fadeUp .35s ease"}}>
-      {/* Page header */}
-      <div style={{marginBottom:24,display:"flex",alignItems:"flex-end",gap:16}}>
+    <div style={{flex:1,padding:"24px 0",animation:"fadeUp .35s ease"}}>
+
+      {/* Header with sprint badge */}
+      <div style={{marginBottom:24,display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
         <div>
-          <h1 style={{fontSize:26,fontWeight:900,letterSpacing:"-1px",marginBottom:4}}>Filas por Sprint</h1>
-          <p style={{fontSize:13,color:"var(--t3)"}}>Sprint atual: <strong style={{color:SQUAD_COLOR[squad].h}}>Sprint {cur}</strong> · {sprintRange(cur,overrides)}</p>
+          <h1 style={{fontSize:24,fontWeight:900,letterSpacing:"-.8px",marginBottom:6,color:"var(--t1)"}}>Filas por Sprint</h1>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:13,color:"var(--t3)"}}>Sprint atual:</span>
+            <span style={{padding:"3px 12px",borderRadius:999,background:`rgba(${sqColor.rgb},.12)`,border:`1px solid rgba(${sqColor.rgb},.25)`,fontSize:12,fontWeight:700,color:sqColor.h}}>
+              Sprint {cur}
+            </span>
+            <span style={{fontSize:12,color:"var(--t3)",fontFamily:"var(--mono)"}}>{sprintRange(cur,overrides)}</span>
+          </div>
         </div>
-        {["admin","moderador"].includes(undefined)&&null}
+        {/* Quick stats */}
+        <div style={{display:"flex",gap:8}}>
+          {[["Total",totalAll,"var(--t2)"],["Ativas",demands.filter(d=>["aprovada","em_andamento","em_aprovacao"].includes(d.status)).length,"#5b8dee"],["Concluídas",demands.filter(d=>d.status==="concluida").length,"#3ecf8e"]].map(([l,v,c])=>(
+            <div key={l} style={{padding:"8px 14px",background:"var(--s2)",border:"1px solid var(--border)",borderRadius:10,textAlign:"center",minWidth:72}}>
+              <div style={{fontSize:20,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
+              <div style={{fontSize:10,color:"var(--t3)",marginTop:3,fontWeight:600}}>{l}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Squad selector */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:28}}>
+      {/* Squad selector — tabs style */}
+      <div style={{display:"flex",gap:8,marginBottom:28,padding:"4px",background:"var(--s2)",borderRadius:14,border:"1px solid var(--border)",width:"fit-content"}}>
         {SQUADS.map(s=>{
           const sq2=SQUAD_COLOR[s]; const active=s===squad;
           const total=demands.filter(d=>d.squad===s).length;
           const pend=demands.filter(d=>d.squad===s&&d.status==="pendente").length;
-          const conc=demands.filter(d=>d.squad===s&&d.status==="concluida").length;
           return(
-            <button key={s} onClick={()=>setSquad(s)} className="squad-card" style={{border:`1.5px solid ${active?sq2.h+"66":"var(--border)"}`,background:active?`rgba(${sq2.rgb},.08)`:"var(--s2)",boxShadow:active?`0 8px 28px rgba(${sq2.rgb},.18),0 0 0 1px ${sq2.h}22`:"",color:"inherit"}}
-              onMouseOver={e=>{if(!active){e.currentTarget.style.borderColor=sq2.h+"44";e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow=`0 8px 24px rgba(0,0,0,.35)`;}}} onMouseOut={e=>{if(!active){e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow=""}}}>
-              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-                <div style={{width:38,height:38,borderRadius:11,background:`rgba(${sq2.rgb},.15)`,border:`1px solid rgba(${sq2.rgb},.3)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{SQUAD_ICON[s]}</div>
-                <div style={{flex:1}}>
-                  <div style={{fontWeight:700,fontSize:15,color:active?sq2.h:"var(--t1)"}}>{SQUAD_LABEL[s]}</div>
-                  <div style={{fontSize:11,color:"var(--t3)"}}>{total} demanda(s)</div>
-                </div>
-                {active&&<div style={{width:8,height:8,borderRadius:"50%",background:sq2.h,boxShadow:`0 0 10px ${sq2.h}`,animation:"pulse 2s infinite"}}/>}
+            <button key={s} onClick={()=>setSquad(s)}
+              style={{display:"flex",alignItems:"center",gap:10,padding:"10px 18px",borderRadius:10,border:`1px solid ${active?sq2.h+"50":"transparent"}`,
+                background:active?`rgba(${sq2.rgb},.1)`:"transparent",
+                cursor:"pointer",transition:"all .2s cubic-bezier(.34,1.56,.64,1)",color:"inherit",minWidth:160}}>
+              <div style={{width:34,height:34,borderRadius:10,background:`rgba(${sq2.rgb},.15)`,border:`1px solid rgba(${sq2.rgb},.3)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0,transition:"all .2s",boxShadow:active?`0 4px 12px rgba(${sq2.rgb},.25)`:"none"}}>
+                {SQUAD_ICON[s]}
               </div>
-              <div style={{display:"flex",gap:8}}>
-                <span style={{fontSize:11,padding:"3px 9px",borderRadius:999,background:"rgba(148,163,184,.1)",color:"var(--t3)"}}>⏳ {pend}</span>
-                <span style={{fontSize:11,padding:"3px 9px",borderRadius:999,background:"rgba(139,92,246,.1)",color:"#a78bfa"}}>🏁 {conc}</span>
+              <div style={{textAlign:"left"}}>
+                <div style={{fontWeight:700,fontSize:14,color:active?sq2.h:"var(--t2)",transition:"color .15s"}}>{SQUAD_LABEL[s]}</div>
+                <div style={{fontSize:10,color:"var(--t3)",marginTop:1}}>{total} task{total!==1?"s":""}  {pend>0&&<span style={{color:"#f59e0b"}}>· {pend} pendente{pend!==1?"s":""}</span>}</div>
               </div>
+              {active&&<div style={{marginLeft:"auto",width:7,height:7,borderRadius:"50%",background:sq2.h,boxShadow:`0 0 10px ${sq2.h}`,animation:"pulse 2s infinite",flexShrink:0}}/>}
             </button>
           );
         })}
       </div>
 
-      {/* Sprints */}
+      {/* Content */}
       {demands.length===0
-        ?<EmptySlate icon="📭" title="Nenhuma demanda ainda" sub="Aguarde solicitações dos usuários"/>
+        ?<EmptySlate icon="📭" title="Nenhuma demanda ainda" sub="Quando usuários enviarem tasks, elas aparecerão aqui organizadas por sprint."/>
         :<div style={{display:"flex",flexDirection:"column",gap:28}}>
+          {/* Sprint sections */}
           {sprints.map(sp=>{
             const spDemands=inSprint.filter(d=>d.sprint===sp).sort((a,b)=>PRIO_ORDER[a.priority]-PRIO_ORDER[b.priority]);
             const isCur=sp===cur; const isPast=sp<cur;
@@ -1478,60 +1494,93 @@ function QueueView({demands,overrides,onOpen}) {
             return(
               <div key={sp}>
                 {/* Sprint header */}
-                <div style={{padding:"14px 18px",background:"var(--s2)",borderRadius:14,border:`1px solid ${isCur?SQUAD_COLOR[squad].h+"40":"var(--border)"}`,marginBottom:14,display:"flex",alignItems:"center",gap:14}}>
-                  <div style={{width:44,height:44,borderRadius:12,background:isCur?`rgba(${SQUAD_COLOR[squad].rgb},.15)`:"var(--s1)",border:`2px solid ${isCur?SQUAD_COLOR[squad].h:"var(--border)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--mono)",fontSize:14,fontWeight:900,color:isCur?SQUAD_COLOR[squad].h:"var(--t3)",flexShrink:0}}>{sp}</div>
-                  <div style={{flex:1}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                      <span style={{fontWeight:800,fontSize:15}}>Sprint {sp}</span>
-                      <span style={{padding:"2px 10px",borderRadius:999,fontSize:11,fontWeight:600,background:isCur?"rgba(34,197,94,.12)":isPast?"rgba(148,163,184,.08)":"rgba(59,130,246,.1)",color:isCur?"#4ade80":isPast?"var(--t3)":"#60a5fa"}}>
-                        {isCur?"🟢 Em andamento":isPast?"✓ Concluída":"🔵 Futura"}
-                      </span>
-                      {overrides[sp]&&<span style={{fontSize:10,color:"#fbbf24"}}>📌</span>}
-                    </div>
-                    <div style={{fontSize:12,color:"var(--t3)",fontFamily:"var(--mono)"}}>{sprintRange(sp,overrides)} · {spDemands.length} task(s)</div>
-                    {(isCur||isPast)&&<div style={{marginTop:8,height:3,background:"var(--border)",borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",background:`linear-gradient(90deg,${SQUAD_COLOR[squad].h},${SQUAD_COLOR[squad].h}88)`,width:`${isCur?elapsed:100}%`,transition:"width .5s",borderRadius:3}}/></div>}
+                <div className="sprint-header" style={{padding:"14px 18px",marginBottom:14,display:"flex",alignItems:"center",gap:14,
+                  borderColor:isCur?`${sqColor.h}40`:"var(--border)",
+                  boxShadow:isCur?`0 0 0 1px ${sqColor.h}15,0 4px 16px rgba(0,0,0,.2)`:"none"}}>
+                  <div style={{width:44,height:44,borderRadius:12,
+                    background:isCur?`rgba(${sqColor.rgb},.15)`:"var(--s3)",
+                    border:`2px solid ${isCur?sqColor.h:"var(--border)"}`,
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                    fontFamily:"var(--mono)",fontSize:14,fontWeight:900,
+                    color:isCur?sqColor.h:"var(--t3)",flexShrink:0}}>
+                    {sp}
                   </div>
-                  <div style={{fontFamily:"var(--mono)",fontSize:20,fontWeight:800,color:"var(--t3)"}}>{spDemands.length}</div>
+                  <div style={{flex:1}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
+                      <span style={{fontWeight:800,fontSize:15,color:"var(--t1)"}}>Sprint {sp}</span>
+                      <span style={{padding:"2px 10px",borderRadius:999,fontSize:11,fontWeight:600,
+                        background:isCur?"rgba(62,207,142,.12)":isPast?"rgba(148,163,184,.08)":"rgba(91,141,238,.1)",
+                        border:`1px solid ${isCur?"rgba(62,207,142,.25)":isPast?"rgba(148,163,184,.15)":"rgba(91,141,238,.2)"}`,
+                        color:isCur?"#3ecf8e":isPast?"var(--t3)":"#5b8dee"}}>
+                        {isCur?"● Em andamento":isPast?"✓ Concluída":"◎ Futura"}
+                      </span>
+                      {overrides[sp]&&<span style={{fontSize:10,color:"#f59e0b",fontWeight:600}}>📌 editada</span>}
+                    </div>
+                    <div style={{fontSize:12,color:"var(--t3)",fontFamily:"var(--mono)",marginBottom:isCur||isPast?6:0}}>
+                      {sprintRange(sp,overrides)} · <strong style={{color:"var(--t2)"}}>{spDemands.length}</strong> task(s)
+                    </div>
+                    {(isCur||isPast)&&(
+                      <div style={{height:4,background:"var(--border)",borderRadius:4,overflow:"hidden"}}>
+                        <div style={{height:"100%",borderRadius:4,transition:"width .6s ease",
+                          background:isCur?`linear-gradient(90deg,${sqColor.h},${sqColor.h}88)`:sqColor.h,
+                          width:`${isCur?elapsed:100}%`}}/>
+                      </div>
+                    )}
+                  </div>
+                  {isCur&&<div style={{textAlign:"right",flexShrink:0}}>
+                    <div style={{fontSize:12,fontWeight:700,color:sqColor.h}}>{elapsed}%</div>
+                    <div style={{fontSize:10,color:"var(--t3)"}}>concluído</div>
+                  </div>}
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:14,paddingLeft:8,borderLeft:`2px solid ${SQUAD_COLOR[squad].h}22`}}>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(330px,1fr))",gap:12,paddingLeft:10,borderLeft:`2px solid ${sqColor.h}20`}}>
                   {spDemands.map((d,i)=><TaskCard key={d.id} demand={d} index={i} overrides={overrides} onClick={()=>onOpen(d)}/>)}
                 </div>
               </div>
             );
           })}
 
-          {/* Pending */}
+          {/* Pending section */}
           {pending.length>0&&(
             <div>
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
-                <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(148,163,184,.3),transparent)"}}/>
-                <span style={{fontSize:12,fontWeight:700,color:"var(--t3)",padding:"4px 14px",borderRadius:999,border:"1px solid var(--border)"}}>⏳ Aguardando Aprovação ({pending.length})</span>
-                <div style={{height:1,width:40,background:"rgba(148,163,184,.1)"}}/>
+                <div style={{height:1,flex:1,background:"linear-gradient(90deg,var(--border),transparent)"}}/>
+                <span style={{display:"flex",alignItems:"center",gap:7,fontSize:12,fontWeight:700,color:"var(--t3)",padding:"5px 14px",borderRadius:999,border:"1px solid var(--border)",background:"var(--s2)",whiteSpace:"nowrap"}}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  Aguardando Aprovação · {pending.length}
+                </span>
+                <div style={{height:1,width:40,background:"var(--border)"}}/>
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:14}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(330px,1fr))",gap:12}}>
                 {pending.map((d,i)=><TaskCard key={d.id} demand={d} index={i} overrides={overrides} onClick={()=>onOpen(d)}/>)}
               </div>
             </div>
           )}
 
-          {/* Rejected */}
+          {/* Rejected section */}
           {rejected.length>0&&(
             <div>
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
-                <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(248,113,113,.2),transparent)"}}/>
-                <span style={{fontSize:12,fontWeight:700,color:"#f87171",padding:"4px 14px",borderRadius:999,border:"1px solid rgba(239,68,68,.2)"}}>❌ Rejeitadas ({rejected.length})</span>
+                <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(239,68,68,.2),transparent)"}}/>
+                <span style={{display:"flex",alignItems:"center",gap:7,fontSize:12,fontWeight:700,color:"#f87171",padding:"5px 14px",borderRadius:999,border:"1px solid rgba(239,68,68,.2)",background:"rgba(239,68,68,.06)",whiteSpace:"nowrap"}}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                  Rejeitadas · {rejected.length}
+                </span>
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:14}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(330px,1fr))",gap:12}}>
                 {rejected.map((d,i)=><TaskCard key={d.id} demand={d} index={i} overrides={overrides} onClick={()=>onOpen(d)}/>)}
               </div>
             </div>
+          )}
+
+          {/* Empty squad state */}
+          {sq.length===0&&(
+            <EmptySlate icon={SQUAD_ICON[squad]} title={`Nenhuma task para ${SQUAD_LABEL[squad]}`} sub="Este squad ainda não tem demandas. Tasks aprovadas e pendentes aparecerão aqui."/>
           )}
         </div>
       }
     </div>
   );
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // MY TASKS VIEW
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1564,7 +1613,7 @@ function MyTasksView({demands,onOpen}) {
       </div>
 
       {filtered.length===0
-        ?<EmptySlate icon="📂" title="Nenhuma task encontrada" sub="Tente outro filtro ou crie uma nova task"/>
+        ?<EmptySlate icon="📂" title="Nenhuma task encontrada" sub="Tente outro filtro ou crie sua primeira task."/>
         :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:14}}>
           {filtered.map((d,i)=><TaskCard key={d.id} demand={d} index={i} onClick={()=>onOpen(d)}/>)}
         </div>
@@ -2196,112 +2245,242 @@ function NewTaskView({user,onSubmit}) {
   const [files,setFiles] = useState([]);
   const [errors,setErrors] = useState({});
   const [loading,setLoading] = useState(false);
+  const [submitted,setSubmitted] = useState(false);
   const fileRef = useRef();
-  const f = k => e => setForm(p=>({...p,[k]:e.target.value}));
-  const sq = SQUAD_COLOR[form.squad]||{h:"#64748b"};
+  const titleRef = useRef();
+  const f = k => e => { setForm(p=>({...p,[k]:e.target.value})); if(errors[k]) setErrors(p=>({...p,[k]:null})); };
+  const sq = SQUAD_COLOR[form.squad]||{h:"#64748b",rgb:"100,116,139"};
+
+  // Auto-focus title on mount
+  useEffect(()=>{ setTimeout(()=>titleRef.current?.focus(),100); },[]);
 
   async function submit() {
-    const e={}; if(!form.title.trim()) e.title="Obrigatório"; if(!form.description.trim()) e.description="Obrigatório";
+    const e={};
+    if(!form.title.trim()) e.title="Título é obrigatório";
+    if(!form.description.trim()) e.description="Descrição é obrigatória";
+    if(form.description.trim().length<20) e.description="Descreva com pelo menos 20 caracteres";
     setErrors(e); if(Object.keys(e).length) return;
     setLoading(true);
     await onSubmit({id:uid(),user_id:user.id||user.email,user_email:user.email,user_name:user.name,...form,files,created_at:new Date().toISOString(),status:"pendente",sprint:null});
     setLoading(false);
+    setSubmitted(true);
   }
 
+  // Success state
+  if(submitted) return(
+    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",animation:"fadeUp .4s ease"}}>
+      <div style={{textAlign:"center",maxWidth:400}}>
+        <div style={{width:80,height:80,borderRadius:24,background:"rgba(62,207,142,.12)",border:"2px solid rgba(62,207,142,.3)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 24px",animation:"scaleIn .4s cubic-bezier(.34,1.56,.64,1)"}}>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#3ecf8e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-.5px",marginBottom:8,color:"var(--t1)"}}>Task enviada!</h2>
+        <p style={{fontSize:14,color:"var(--t3)",lineHeight:1.7,marginBottom:28}}>Sua solicitação foi recebida e será analisada pelo time. Você receberá uma notificação quando for aprovada.</p>
+        <div style={{padding:"14px 20px",background:"rgba(62,207,142,.06)",border:"1px solid rgba(62,207,142,.2)",borderRadius:12,fontSize:13,color:"#3ecf8e",marginBottom:24}}>
+          <strong>"{form.title}"</strong> · {SQUAD_LABEL[form.squad]}
+        </div>
+        <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+          <button className="btn btn-primary" onClick={()=>setSubmitted(false)&&setForm({squad:"industria",priority:"media",tag:"nova_demanda",title:"",team:"",description:""})} style={{padding:"10px 20px",borderRadius:10}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nova Task
+          </button>
+          <button className="btn btn-ghost" onClick={()=>setSubmitted(false)} style={{padding:"10px 20px",borderRadius:10}}>Ver Filas</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const descLen = form.description.trim().length;
+  const isComplete = form.title.trim() && descLen >= 20;
+
   return(
-    <div style={{flex:1,padding:"28px 0",animation:"fadeUp .35s ease",maxWidth:900,width:"100%",margin:"0 auto"}}>
-      <div style={{marginBottom:28}}><h1 style={{fontSize:26,fontWeight:900,letterSpacing:"-1px",marginBottom:4}}>Nova Task</h1><p style={{fontSize:13,color:"var(--t3)"}}>Preencha as informações da sua solicitação</p></div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 300px",gap:24}}>
-        {/* Left */}
-        <div style={{display:"flex",flexDirection:"column",gap:20}}>
-          <div style={{padding:24,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
-            <div style={{fontWeight:700,fontSize:15,marginBottom:18}}>Informações da Task</div>
-            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+    <div style={{flex:1,padding:"24px 0",animation:"fadeUp .35s ease"}}>
+      {/* Header */}
+      <div style={{marginBottom:28,display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:16}}>
+        <div>
+          <h1 style={{fontSize:24,fontWeight:900,letterSpacing:"-.8px",marginBottom:6}}>Nova Task</h1>
+          <p style={{fontSize:13,color:"var(--t3)"}}>Preencha os detalhes da sua solicitação para o squad <strong style={{color:sq.h}}>{SQUAD_LABEL[form.squad]}</strong></p>
+        </div>
+        {/* Completeness indicator */}
+        <div style={{flexShrink:0,padding:"8px 16px",background:"var(--s2)",border:"1px solid var(--border)",borderRadius:10,display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:32,height:32}}>
+            <svg viewBox="0 0 36 36">
+              <circle cx="18" cy="18" r="14" fill="none" stroke="var(--border)" strokeWidth="3"/>
+              <circle cx="18" cy="18" r="14" fill="none" stroke={isComplete?"#3ecf8e":"#5b8dee"} strokeWidth="3"
+                strokeDasharray={`${(isComplete?100:Math.min(90,((form.title?40:0)+(descLen>0?Math.min(50,descLen/20*50):0))))*0.879} 87.9`}
+                strokeLinecap="round" transform="rotate(-90 18 18)"/>
+            </svg>
+          </div>
+          <div>
+            <div style={{fontSize:11,fontWeight:700,color:isComplete?"#3ecf8e":"var(--t2)"}}>{isComplete?"Pronto!":"Preenchendo..."}</div>
+            <div style={{fontSize:9,color:"var(--t3)"}}>Completude</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 290px",gap:20}}>
+        {/* Left — main form */}
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+          {/* Title + Team */}
+          <div style={{padding:22,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:18}}>
+              <div style={{width:28,height:28,borderRadius:8,background:`rgba(${sq.rgb},.15)`,border:`1px solid rgba(${sq.rgb},.3)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>{SQUAD_ICON[form.squad]}</div>
+              <span style={{fontWeight:700,fontSize:14,color:"var(--t1)"}}>Informações básicas</span>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:14}}>
               <div>
-                <FieldLabel>Título *</FieldLabel>
-                <input className="input" value={form.title} onChange={f("title")} placeholder="Ex.: Ajuste no processo de triagem" style={{borderColor:errors.title?"#ef4444":""}}/>
-                {errors.title&&<div style={{fontSize:11,color:"#f87171",marginTop:4}}>⚠ {errors.title}</div>}
+                <FieldLabel>Título <span style={{color:"#f87171"}}>*</span></FieldLabel>
+                <input ref={titleRef} className="input" value={form.title} onChange={f("title")}
+                  placeholder="Ex.: Implementar editor de texto no OB ADS"
+                  style={{borderColor:errors.title?"#ef4444":form.title?"rgba(62,207,142,.4)":"",fontSize:15,fontWeight:form.title?600:400}}/>
+                {errors.title
+                  ? <div style={{fontSize:11,color:"#f87171",marginTop:5,display:"flex",alignItems:"center",gap:4}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>{errors.title}</div>
+                  : form.title && <div style={{fontSize:11,color:"#3ecf8e",marginTop:5,display:"flex",alignItems:"center",gap:4}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>Ótimo!</div>
+                }
               </div>
               <div>
                 <FieldLabel>Time solicitante</FieldLabel>
                 <input className="input" value={form.team} onChange={f("team")} placeholder="Ex.: Operações, TI, Comercial..."/>
               </div>
-              <div>
-                <FieldLabel>Descrição *</FieldLabel>
-                <textarea className="input" value={form.description} onChange={f("description")} rows={6} placeholder="Descreva detalhadamente o que precisa ser feito..." style={{resize:"vertical",lineHeight:1.7,borderColor:errors.description?"#ef4444":""}}/>
-                {errors.description&&<div style={{fontSize:11,color:"#f87171",marginTop:4}}>⚠ {errors.description}</div>}
+            </div>
+          </div>
+
+          {/* Description */}
+          <div style={{padding:22,background:"var(--s2)",border:`1px solid ${errors.description?"rgba(239,68,68,.4)":"var(--border)"}`,borderRadius:16,transition:"border-color .2s"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                <span style={{fontWeight:700,fontSize:14}}>Descrição <span style={{color:"#f87171"}}>*</span></span>
               </div>
+              <span style={{fontSize:11,fontFamily:"var(--mono)",color:descLen<20?"var(--t3)":descLen>200?"#3ecf8e":"#5b8dee"}}>
+                {descLen} / 20 mín.
+              </span>
+            </div>
+            <textarea className="input" value={form.description} onChange={f("description")} rows={7}
+              placeholder="Descreva detalhadamente:&#10;• O que precisa ser feito?&#10;• Por que é necessário?&#10;• Quais são os critérios de aceite?"
+              style={{resize:"vertical",lineHeight:1.75,borderColor:"transparent",background:"var(--s1)",padding:"12px 14px"}}/>
+            {errors.description && <div style={{fontSize:11,color:"#f87171",marginTop:6,display:"flex",alignItems:"center",gap:4}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>{errors.description}</div>}
+            {/* Progress bar */}
+            <div style={{marginTop:10,height:2,background:"var(--border)",borderRadius:2}}>
+              <div style={{height:"100%",borderRadius:2,transition:"width .3s,background .3s",
+                background:descLen<20?"#f59e0b":descLen>100?"#3ecf8e":"#5b8dee",
+                width:`${Math.min(100,(descLen/200)*100)}%`}}/>
             </div>
           </div>
 
           {/* Attachments */}
-          <div style={{padding:24,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
-            <div style={{fontWeight:700,fontSize:15,marginBottom:16}}>Anexos</div>
-            <div onClick={()=>fileRef.current.click()} style={{border:"2px dashed var(--border)",borderRadius:12,padding:24,textAlign:"center",cursor:"pointer",transition:"all .15s"}}
-              onMouseOver={e=>{e.currentTarget.style.borderColor=sq.h;e.currentTarget.style.background=`rgba(${SQUAD_COLOR[form.squad]?.rgb||"100,116,139"},.05)`;}}
+          <div style={{padding:22,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              <span style={{fontWeight:700,fontSize:14}}>Anexos <span style={{fontSize:11,color:"var(--t3)",fontWeight:400}}>(opcional)</span></span>
+            </div>
+            <div onClick={()=>fileRef.current.click()}
+              style={{border:"1.5px dashed var(--border)",borderRadius:12,padding:"20px 16px",textAlign:"center",cursor:"pointer",transition:"all .2s"}}
+              onMouseOver={e=>{e.currentTarget.style.borderColor=sq.h;e.currentTarget.style.background=`rgba(${sq.rgb},.04)`;}}
               onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.background="transparent";}}>
-              <div style={{fontSize:28,marginBottom:8}}>📎</div>
-              <div style={{fontSize:13,color:"var(--t3)"}}>Clique para selecionar arquivos</div>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="1.5" style={{marginBottom:8}}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <div style={{fontSize:13,color:"var(--t3)",fontWeight:500}}>Arraste arquivos ou <span style={{color:"var(--blue)"}}>clique para selecionar</span></div>
+              <div style={{fontSize:11,color:"var(--t3)",marginTop:4}}>PDF, imagens, docs — qualquer formato</div>
               <input ref={fileRef} type="file" multiple onChange={e=>setFiles(p=>[...p,...Array.from(e.target.files).map(x=>({name:x.name,size:x.size}))])} style={{display:"none"}}/>
             </div>
-            {files.length>0&&<div style={{marginTop:12,display:"flex",flexDirection:"column",gap:6}}>{files.map((fl,i)=>(
-              <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"var(--s1)",borderRadius:8,fontSize:12}}>
-                <span>📄 {fl.name}</span><span style={{color:"var(--t3)",marginLeft:"auto"}}>{(fl.size/1024).toFixed(0)}KB</span>
-                <button onClick={()=>setFiles(p=>p.filter((_,idx)=>idx!==i))} style={{background:"none",border:"none",color:"#f87171",cursor:"pointer",fontSize:14}}>×</button>
+            {files.length>0&&(
+              <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:6}}>
+                {files.map((fl,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"var(--s3)",borderRadius:9,fontSize:12,border:"1px solid var(--border)"}}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span style={{flex:1,color:"var(--t2)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fl.name}</span>
+                    <span style={{color:"var(--t3)",flexShrink:0}}>{(fl.size/1024).toFixed(0)}KB</span>
+                    <button onClick={()=>setFiles(p=>p.filter((_,idx)=>idx!==i))} style={{background:"none",border:"none",color:"var(--t3)",cursor:"pointer",fontSize:16,lineHeight:1,padding:"0 2px",transition:"color .15s"}} onMouseOver={e=>e.currentTarget.style.color="#f87171"} onMouseOut={e=>e.currentTarget.style.color="var(--t3)"}>×</button>
+                  </div>
+                ))}
               </div>
-            ))}</div>}
+            )}
           </div>
         </div>
 
-        {/* Right */}
-        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+        {/* Right — config sidebar */}
+        <div style={{display:"flex",flexDirection:"column",gap:14}}>
           {/* Squad */}
-          <div style={{padding:20,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
-            <FieldLabel>Squad *</FieldLabel>
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {SQUADS.map(s=>{ const c=SQUAD_COLOR[s]; const sel=form.squad===s; return(
-                <button key={s} onClick={()=>setForm(p=>({...p,squad:s}))} style={{padding:"12px 14px",border:`1.5px solid ${sel?c.h+"55":"var(--border)"}`,borderRadius:10,background:sel?`rgba(${c.rgb},.08)`:"var(--s1)",color:sel?c.h:"var(--t2)",fontSize:13,fontWeight:sel?700:400,textAlign:"left",cursor:"pointer",transition:"all .15s",display:"flex",alignItems:"center",gap:10}}>
-                  <span style={{fontSize:18}}>{SQUAD_ICON[s]}</span>{SQUAD_LABEL[s]}
-                  {sel&&<span style={{marginLeft:"auto",fontSize:10,fontFamily:"var(--mono)",opacity:.7}}>✓</span>}
-                </button>
-              );})}
+          <div style={{padding:18,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
+            <FieldLabel>Squad <span style={{color:"#f87171"}}>*</span></FieldLabel>
+            <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:6}}>
+              {SQUADS.map(s=>{
+                const c=SQUAD_COLOR[s]; const sel=form.squad===s;
+                return(
+                  <button key={s} onClick={()=>setForm(p=>({...p,squad:s}))}
+                    style={{padding:"10px 12px",border:`1.5px solid ${sel?c.h+"60":"var(--border)"}`,borderRadius:10,
+                      background:sel?`rgba(${c.rgb},.1)`:"var(--s1)",
+                      color:"inherit",fontSize:13,fontWeight:sel?700:400,
+                      textAlign:"left",cursor:"pointer",transition:"all .2s cubic-bezier(.34,1.56,.64,1)",
+                      display:"flex",alignItems:"center",gap:9,
+                      boxShadow:sel?`0 4px 12px rgba(${c.rgb},.2)`:"none"}}>
+                    <div style={{width:28,height:28,borderRadius:8,background:`rgba(${c.rgb},.15)`,border:`1px solid rgba(${c.rgb},.25)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>{SQUAD_ICON[s]}</div>
+                    <span style={{color:sel?c.h:"var(--t2)"}}>{SQUAD_LABEL[s]}</span>
+                    {sel&&<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={c.h} strokeWidth="2.5" style={{marginLeft:"auto"}}><polyline points="20 6 9 17 4 12"/></svg>}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Priority */}
-          <div style={{padding:20,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
+          <div style={{padding:18,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
             <FieldLabel>Prioridade</FieldLabel>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-              {Object.entries(PRIO_LABEL).map(([k,v])=>{ const sel=form.priority===k; const c=PRIO_COLOR[k]; return(
-                <button key={k} onClick={()=>setForm(p=>({...p,priority:k}))} style={{padding:"9px 8px",border:`1px solid ${sel?c:"var(--border)"}`,borderRadius:9,background:sel?`${c}12`:"var(--s1)",color:sel?c:"var(--t3)",fontSize:12,fontWeight:sel?700:400,cursor:"pointer",transition:"all .15s"}}>
-                  {k==="critica"?"🔴":k==="alta"?"🟠":k==="media"?"🟡":"🟢"} {v}
-                </button>
-              );})}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginTop:6}}>
+              {Object.entries(PRIO_LABEL).map(([k,v])=>{
+                const sel=form.priority===k; const c=PRIO_COLOR[k];
+                const dot=k==="critica"?"🔴":k==="alta"?"🟠":k==="media"?"🟡":"🟢";
+                return(
+                  <button key={k} onClick={()=>setForm(p=>({...p,priority:k}))}
+                    style={{padding:"9px 8px",border:`1px solid ${sel?c+"60":"var(--border)"}`,borderRadius:9,
+                      background:sel?`${c}12`:"var(--s1)",color:sel?c:"var(--t3)",
+                      fontSize:12,fontWeight:sel?700:400,cursor:"pointer",transition:"all .15s",textAlign:"center"}}>
+                    {dot} {v}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Type */}
-          <div style={{padding:20,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
+          <div style={{padding:18,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
             <FieldLabel>Tipo</FieldLabel>
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {Object.entries(TAG_LABEL).map(([k,v])=>{ const sel=form.tag===k; const c=TAG_COLOR[k]; return(
-                <button key={k} onClick={()=>setForm(p=>({...p,tag:k}))} style={{padding:"11px 14px",border:`1px solid ${sel?c+"55":"var(--border)"}`,borderRadius:10,background:sel?`${c}10`:"var(--s1)",color:sel?c:"var(--t2)",fontSize:13,fontWeight:sel?700:400,textAlign:"left",cursor:"pointer",transition:"all .15s",display:"flex",alignItems:"center",gap:8}}>
-                  <span>{TAG_ICON[k]}</span>{v}
-                  {sel&&<span style={{marginLeft:"auto",fontSize:10}}>✓</span>}
-                </button>
-              );})}
+            <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:6}}>
+              {Object.entries(TAG_LABEL).map(([k,v])=>{
+                const sel=form.tag===k; const c=TAG_COLOR[k];
+                return(
+                  <button key={k} onClick={()=>setForm(p=>({...p,tag:k}))}
+                    style={{padding:"9px 12px",border:`1px solid ${sel?c+"55":"var(--border)"}`,borderRadius:9,
+                      background:sel?`${c}10`:"var(--s1)",color:sel?c:"var(--t2)",
+                      fontSize:12,fontWeight:sel?700:400,textAlign:"left",cursor:"pointer",transition:"all .15s",
+                      display:"flex",alignItems:"center",gap:7}}>
+                    <span>{TAG_ICON[k]}</span>{v}
+                    {sel&&<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.5" style={{marginLeft:"auto"}}><polyline points="20 6 9 17 4 12"/></svg>}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Submit */}
-          <button className="btn btn-primary" onClick={submit} disabled={loading} style={{padding:"14px",fontSize:14,borderRadius:12,justifyContent:"center",width:"100%",background:`linear-gradient(135deg,${sq.h},${sq.h}99)`,boxShadow:`0 4px 20px rgba(${SQUAD_COLOR[form.squad]?.rgb||"0,0,0"},.25)`}}>
-            {loading?<><Spin/>Enviando...</>:"Enviar Task →"}
+          {/* Submit button */}
+          <button className="btn btn-primary" onClick={submit} disabled={loading||!isComplete}
+            style={{padding:"14px",fontSize:14,borderRadius:12,justifyContent:"center",width:"100%",
+              background:isComplete?`linear-gradient(135deg,${sq.h},#6366f1)`:"var(--s3)",
+              boxShadow:isComplete?`0 4px 20px rgba(${sq.rgb},.3)`:"none",
+              color:isComplete?"#fff":"var(--t3)",
+              border:isComplete?"none":"1px solid var(--border)",
+              cursor:isComplete?"pointer":"not-allowed",
+              transition:"all .2s"}}>
+            {loading?<><Spin/>Enviando...</>:isComplete?<><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Enviar Task</>:"Complete os campos obrigatórios"}
           </button>
+          {!isComplete&&<div style={{fontSize:11,color:"var(--t3)",textAlign:"center",marginTop:-6}}>
+            {!form.title.trim()?"Adicione um título":"Descrição precisa de pelo menos 20 caracteres"}
+          </div>}
         </div>
       </div>
     </div>
   );
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROFILE VIEW
@@ -2364,7 +2543,7 @@ function ProfileView({user,onUpdate,demands}) {
     <div style={{flex:1,animation:"fadeUp .35s ease",paddingBottom:40,minWidth:0}}>
       {/* Cover banner — fully contained */}
       <div style={{marginTop:28,marginBottom:60,position:"relative"}}>
-        <div style={{height:130,background:"linear-gradient(135deg,#0f2044 0%,#1a1f35 40%,#0b1a2e 100%)",borderRadius:20,overflow:"hidden",position:"relative"}}>
+        <div style={{height:130,background:"linear-gradient(135deg,#1e2230 0%,#22262f 40%,#1a1d26 100%)",borderRadius:20,overflow:"hidden",position:"relative"}}>
           <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(circle at 20% 50%,rgba(59,130,246,.15) 0%,transparent 60%),radial-gradient(circle at 80% 20%,rgba(99,102,241,.12) 0%,transparent 50%)"}}/>
           {/* Progress ring */}
           <div style={{position:"absolute",top:14,right:20,display:"flex",alignItems:"center",gap:10,padding:"8px 16px",background:"rgba(0,0,0,.35)",borderRadius:999,backdropFilter:"blur(8px)"}}>
@@ -2552,12 +2731,42 @@ function ProfileView({user,onUpdate,demands}) {
 // ─────────────────────────────────────────────────────────────────────────────
 // EMPTY SLATE
 // ─────────────────────────────────────────────────────────────────────────────
-function EmptySlate({icon,title,sub}) {
+function EmptySlate({icon,title,sub,action,onAction}) {
   return(
-    <div style={{textAlign:"center",padding:"64px 0",color:"var(--t3)"}}>
-      <div style={{display:"flex",justifyContent:"center",marginBottom:14,fontSize:typeof icon==="string"?48:undefined}}>{icon}</div>
-      <div style={{fontSize:17,fontWeight:700,color:"var(--t2)",marginBottom:6}}>{title}</div>
-      {sub&&<div style={{fontSize:13}}>{sub}</div>}
+    <div style={{textAlign:"center",padding:"56px 20px",color:"var(--t3)",animation:"fadeUp .4s ease"}}>
+      <div style={{display:"flex",justifyContent:"center",marginBottom:20,fontSize:typeof icon==="string"?52:undefined}}>
+        {typeof icon==="string"
+          ? <div style={{width:80,height:80,borderRadius:24,background:"var(--s3)",border:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36}}>{icon}</div>
+          : icon}
+      </div>
+      <div style={{fontSize:18,fontWeight:800,color:"var(--t2)",marginBottom:8,letterSpacing:"-.3px"}}>{title}</div>
+      {sub&&<div style={{fontSize:13,color:"var(--t3)",lineHeight:1.6,maxWidth:320,margin:"0 auto"}}>{sub}</div>}
+      {action&&onAction&&(
+        <button className="btn btn-primary" onClick={onAction} style={{marginTop:20,padding:"10px 24px",fontSize:13,borderRadius:10,justifyContent:"center"}}>
+          {action}
+        </button>
+      )}
     </div>
   );
 }
+
+function SkeletonCard() {
+  return(
+    <div style={{background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16,overflow:"hidden",padding:"16px 18px"}}>
+      <div style={{height:3,background:"var(--border)",marginBottom:14,borderRadius:3}}/>
+      <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+        <div style={{width:42,height:42,borderRadius:12,background:"var(--s3)",animation:"shimmer 1.5s infinite",flexShrink:0}}/>
+        <div style={{flex:1}}>
+          <div style={{height:14,background:"var(--s3)",borderRadius:7,marginBottom:8,width:"70%",animation:"shimmer 1.5s infinite"}}/>
+          <div style={{height:10,background:"var(--s3)",borderRadius:5,width:"45%",animation:"shimmer 1.5s infinite"}}/>
+        </div>
+      </div>
+      <div style={{marginTop:14,height:3,background:"var(--s3)",borderRadius:3,animation:"shimmer 1.5s infinite"}}/>
+      <div style={{display:"flex",gap:6,marginTop:12}}>
+        <div style={{width:60,height:20,background:"var(--s3)",borderRadius:999,animation:"shimmer 1.5s infinite"}}/>
+        <div style={{width:80,height:20,background:"var(--s3)",borderRadius:999,animation:"shimmer 1.5s infinite"}}/>
+      </div>
+    </div>
+  );
+}
+
