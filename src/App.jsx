@@ -99,7 +99,7 @@ function sprintDates(n, overrides = {}) {
 function sprintRange(n, overrides = {}) {
   const { start, end, custom } = sprintDates(n, overrides);
   const o = { day:"2-digit", month:"short" };
-  return `${start.toLocaleDateString("pt-BR",o)} – ${end.toLocaleDateString("pt-BR",o)}${custom?" <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17z"/></svg>":""}`;
+  return `${start.toLocaleDateString("pt-BR",o)} – ${end.toLocaleDateString("pt-BR",o)}${custom?" ✎":""}`;
 }
 function toISO(d) { return d.toISOString().slice(0, 10); }
 const curSprint = () => sprintNum();
@@ -2444,7 +2444,7 @@ function BacklogPanel({items=[],onSave}) {
                   <div style={{width:34,height:34,borderRadius:9,background:`${ac}12`,border:`1px solid ${ac}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>{isAcc?<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>:<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></svg>}</div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontWeight:600,fontSize:14,marginBottom:2}}>{item.title}</div>
-                    <div style={{fontSize:11,color:"var(--t3)"}}>{isAcc&&item.login?`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${item.login}`:!isAcc?<span style={{color:sc}}>● {item.status}</span>:""}</div>
+                    <div style={{fontSize:11,color:"var(--t3)"}}>{isAcc&&item.login?"● " + item.login:!isAcc?<span style={{color:sc}}>● {item.status}</span>:""}</div>
                   </div>
                   {!isAcc&&<select value={item.status} onChange={e=>updStatus(item.id,e.target.value)} onClick={e=>e.stopPropagation()} style={{padding:"4px 8px",border:`1px solid ${sc}44`,borderRadius:7,background:`${sc}10`,color:sc,fontSize:11,fontWeight:700,outline:"none",cursor:"pointer"}}>
                     {["pendente","em andamento","concluído","cancelado"].map(s=><option key={s} value={s} style={{background:"var(--bg)",color:"var(--t1)"}}>{s}</option>)}
