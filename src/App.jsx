@@ -319,51 +319,214 @@ const G = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&family=JetBrains+Mono:wght@400;500&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#060912;--s1:#0b1121;--s2:#101928;--s3:#162033;
-  --border:#1d2d45;--border2:#243650;
-  --t1:#f0f4ff;--t2:#8ba3c1;--t3:#4e6a87;
-  --blue:#3b82f6;--indigo:#6366f1;
-  --font:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;
-  --r:14px;--rs:8px;--rx:20px;
+  --bg:#050810;
+  --s1:#090e1a;
+  --s2:#0e1525;
+  --s3:#131d30;
+  --s4:#182238;
+  --border:#1e3050;
+  --border2:#263d5e;
+  --t1:#eef2ff;
+  --t2:#94afd4;
+  --t3:#4e6a8a;
+  --blue:#4f8ef7;
+  --blue2:#3b82f6;
+  --indigo:#818cf8;
+  --green:#34d399;
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --r:14px;--rs:9px;--rx:20px;
+  --nav-h:64px;
 }
-body{background:var(--bg);color:var(--t1);font-family:var(--font);min-height:100vh;overflow-x:hidden}
-::selection{background:rgba(99,102,241,.35);color:#fff}
-::-webkit-scrollbar{width:5px;height:5px}
+body{background:var(--bg);color:var(--t1);font-family:var(--font);min-height:100vh;overflow-x:hidden;line-height:1.5}
+::selection{background:rgba(79,142,247,.3);color:#fff}
+::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--t3)}
 input,textarea,select,button{font-family:var(--font)}
 a{color:var(--blue)}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Animations ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-@keyframes slideRight{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
-@keyframes scaleIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
-@keyframes glow{0%,100%{box-shadow:0 0 12px rgba(99,102,241,.3)}50%{box-shadow:0 0 24px rgba(99,102,241,.6)}}
-.card{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);transition:border-color .2s,transform .2s,box-shadow .2s}
-.card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.4)}
-.btn{cursor:pointer;border:none;font-family:var(--font);display:inline-flex;align-items:center;gap:8px;font-weight:600;transition:all .15s;white-space:nowrap}
-.btn-primary{background:linear-gradient(135deg,var(--blue),var(--indigo));color:#fff;padding:10px 20px;border-radius:var(--rs);font-size:14px;box-shadow:0 4px 16px rgba(99,102,241,.25)}
-.btn-primary:hover{opacity:.88;transform:translateY(-1px);box-shadow:0 6px 20px rgba(99,102,241,.4)}
-.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--t2);padding:8px 16px;border-radius:var(--rs);font-size:13px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes slideRight{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.94) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes glow{0%,100%{box-shadow:0 0 16px rgba(79,142,247,.25)}50%{box-shadow:0 0 32px rgba(79,142,247,.55)}}
+@keyframes shimmer{0%{opacity:.4}50%{opacity:.9}100%{opacity:.4}}
+
+/* ── Cards ── */
+.card{
+  background:var(--s2);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  transition:border-color .2s,transform .22s,box-shadow .22s;
+}
+.card:hover{
+  border-color:var(--border2);
+  transform:translateY(-3px);
+  box-shadow:0 12px 40px rgba(0,0,0,.5),0 0 0 1px var(--border2);
+}
+
+/* ── Buttons ── */
+.btn{
+  cursor:pointer;border:none;
+  font-family:var(--font);
+  display:inline-flex;align-items:center;gap:7px;
+  font-weight:600;transition:all .15s;
+  white-space:nowrap;line-height:1;
+}
+.btn-primary{
+  background:linear-gradient(135deg,var(--blue2) 0%,var(--indigo) 100%);
+  color:#fff;padding:10px 20px;border-radius:var(--rs);font-size:14px;
+  box-shadow:0 4px 20px rgba(79,142,247,.3);
+}
+.btn-primary:hover{
+  transform:translateY(-1px);
+  box-shadow:0 6px 24px rgba(79,142,247,.45);
+  filter:brightness(1.08);
+}
+.btn-primary:active{transform:translateY(0);filter:brightness(.96)}
+.btn-ghost{
+  background:transparent;
+  border:1px solid var(--border2);
+  color:var(--t2);padding:8px 16px;
+  border-radius:var(--rs);font-size:13px;
+}
 .btn-ghost:hover{background:var(--s3);border-color:var(--t3);color:var(--t1)}
-.btn-danger{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#f87171;padding:7px 14px;border-radius:var(--rs);font-size:12px}
-.btn-danger:hover{background:rgba(239,68,68,.18)}
-.input{width:100%;padding:11px 14px;background:var(--s1);border:1.5px solid var(--border);border-radius:var(--rs);color:var(--t1);font-size:14px;outline:none;transition:border-color .15s,box-shadow .15s}
-.input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.btn-danger{
+  background:rgba(239,68,68,.08);
+  border:1px solid rgba(239,68,68,.25);
+  color:#f87171;padding:7px 14px;
+  border-radius:var(--rs);font-size:12px;
+}
+.btn-danger:hover{background:rgba(239,68,68,.16);border-color:rgba(239,68,68,.4)}
+
+/* ── Inputs ── */
+.input{
+  width:100%;padding:11px 14px;
+  background:var(--s1);
+  border:1.5px solid var(--border);
+  border-radius:var(--rs);
+  color:var(--t1);font-size:14px;
+  outline:none;
+  transition:border-color .15s,box-shadow .15s;
+}
+.input:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 3px rgba(79,142,247,.12);
+  background:var(--s2);
+}
 .input::placeholder{color:var(--t3)}
-.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;line-height:1}
-.nav-link{padding:8px 16px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--t2);transition:all .15s;display:flex;align-items:center;gap:6px;position:relative}
-.nav-link:hover{background:var(--s2);color:var(--t1)}
-.nav-link.active{background:var(--s2);color:var(--t1);font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.3)}
-.sidebar-link{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--rs);cursor:pointer;border:none;background:transparent;color:var(--t2);font-size:14px;font-weight:500;width:100%;text-align:left;transition:all .15s}
-.sidebar-link:hover{background:var(--s2);color:var(--t1)}
-.sidebar-link.active{background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(99,102,241,.12));color:var(--t1);border:1px solid rgba(99,102,241,.2)}
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease}
-.modal{background:var(--s2);border:1px solid var(--border2);border-radius:var(--rx);width:100%;max-width:700px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;animation:scaleIn .2s ease;box-shadow:0 24px 80px rgba(0,0,0,.7)}
-.tag-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:600}
+
+/* ── Pills / badges ── */
+.pill{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 10px;border-radius:999px;
+  font-size:11px;font-weight:700;line-height:1;
+}
+
+/* ── Nav ── */
+.nav-link{
+  padding:8px 14px;border-radius:var(--rs);
+  font-size:13px;font-weight:500;
+  cursor:pointer;border:none;background:transparent;
+  color:var(--t3);transition:all .15s;
+  display:flex;align-items:center;gap:7px;
+  position:relative;
+}
+.nav-link:hover{background:rgba(255,255,255,.05);color:var(--t2)}
+.nav-link.active{background:rgba(79,142,247,.12);color:var(--blue);font-weight:600;}
+.nav-link.active svg{color:var(--blue)!important}
+
+/* ── Sidebar ── */
+.sidebar-link{
+  display:flex;align-items:center;gap:11px;
+  padding:9px 12px;border-radius:var(--rs);
+  cursor:pointer;border:none;background:transparent;
+  color:var(--t3);font-size:13px;font-weight:500;
+  width:100%;text-align:left;transition:all .15s;
+}
+.sidebar-link:hover{background:var(--s3);color:var(--t2)}
+.sidebar-link.active{
+  background:linear-gradient(135deg,rgba(79,142,247,.14),rgba(129,140,248,.1));
+  color:var(--blue);border:1px solid rgba(79,142,247,.2);
+  font-weight:600;
+}
+.sidebar-link.active svg{color:var(--blue)!important}
+
+/* ── Modal ── */
+.modal-bg{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.82);
+  backdrop-filter:blur(8px);
+  z-index:500;
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+  animation:fadeIn .18s ease;
+}
+.modal{
+  background:var(--s2);
+  border:1px solid var(--border2);
+  border-radius:var(--rx);
+  width:100%;max-width:860px;
+  max-height:92vh;
+  overflow:hidden;
+  display:flex;flex-direction:column;
+  animation:scaleIn .2s ease;
+  box-shadow:0 32px 80px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.04);
+}
+
+/* ── Tag chip ── */
+.tag-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 9px;border-radius:6px;
+  font-size:11px;font-weight:700;
+}
+
+/* ── Icon buttons ── */
+.icon-btn{
+  width:36px;height:36px;border-radius:9px;
+  border:1px solid var(--border);
+  background:var(--s1);
+  color:var(--t2);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .15s;
+}
+.icon-btn:hover{background:var(--s3);border-color:var(--border2);color:var(--t1)}
+.icon-btn.active{background:rgba(79,142,247,.12);border-color:rgba(79,142,247,.35);color:var(--blue)}
+
+/* ── Squad cards on hover ── */
+.squad-card{
+  padding:18px 20px;border-radius:16px;
+  border:1.5px solid var(--border);
+  background:var(--s2);
+  cursor:pointer;transition:all .22s;text-align:left;
+}
+.squad-card:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,.4)}
+.squad-card.active{box-shadow:0 8px 28px rgba(0,0,0,.4)}
+
+/* ── Task cards ── */
+.task-card{
+  background:var(--s2);
+  border:1px solid var(--border);
+  border-radius:16px;
+  overflow:hidden;cursor:pointer;
+  transition:all .22s;
+}
+.task-card:hover{
+  border-color:var(--border2);
+  transform:translateY(-3px);
+  box-shadow:0 12px 40px rgba(0,0,0,.45);
+}
+
+/* ── Tooltip-like helper ── */
+.hint{font-size:11px;color:var(--t3);line-height:1.5}
 `;
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ATOMS
@@ -968,6 +1131,7 @@ function TaskCard({demand,index,onClick,overrides={}}) {
   const cur = FLOW.indexOf(demand.status);
   const pct = demand.status==="rejeitada"?0:Math.max(0,Math.min(100,(cur/(FLOW.length-1))*100));
   const tc  = demand.tag?TAG_COLOR[demand.tag]:null;
+  const isActive = demand.status==="em_andamento";
 
   return(
     <div onClick={onClick} style={{background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16,overflow:"hidden",cursor:"pointer",transition:"all .2s",animation:`fadeUp .3s ease ${index*.05}s both`,position:"relative"}}
@@ -980,7 +1144,7 @@ function TaskCard({demand,index,onClick,overrides={}}) {
       <div style={{padding:"16px 18px"}}>
         {/* Top row */}
         <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:10}}>
-          <div style={{width:36,height:36,borderRadius:10,background:`rgba(${sq.rgb},.12)`,border:`1px solid rgba(${sq.rgb},.25)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
+          <div style={{width:42,height:42,borderRadius:12,background:`rgba(${sq.rgb},.15)`,border:`1.5px solid rgba(${sq.rgb},.3)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,boxShadow:`0 4px 12px rgba(${sq.rgb},.12)`}}>
             {SQUAD_ICON[demand.squad]}
           </div>
           <div style={{flex:1,minWidth:0}}>
@@ -992,7 +1156,7 @@ function TaskCard({demand,index,onClick,overrides={}}) {
             </div>
           </div>
           {/* Status dot */}
-          <div style={{width:10,height:10,borderRadius:"50%",background:sm.dot,boxShadow:`0 0 8px ${sm.dot}`,flexShrink:0,marginTop:4,animation:demand.status==="em_andamento"?"pulse 2s infinite":"none"}}/>
+          <div style={{width:10,height:10,borderRadius:"50%",background:sm.dot,boxShadow:`0 0 12px ${sm.dot},0 0 4px ${sm.dot}`,flexShrink:0,marginTop:4,animation:isActive?"pulse 1.5s infinite":"none"}}/>
         </div>
 
         {/* Progress bar */}
@@ -1004,7 +1168,7 @@ function TaskCard({demand,index,onClick,overrides={}}) {
                 return(
                   <div key={s} title={s2.label} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,flex:1}}>
                     <div style={{width:18,height:18,borderRadius:"50%",background:done||active?`${s2.dot}20`:"var(--s1)",border:`1.5px solid ${done||active?s2.dot:"var(--border)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,transition:"all .3s",boxShadow:active?`0 0 8px ${s2.dot}50`:"none"}}>
-                      {done?"✓":active?s2.icon:""}
+                      {done?<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={s2.dot} strokeWidth="3.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>:active?<span style={{fontSize:10}}>{s2.icon}</span>:""}
                     </div>
                     {i<FLOW.length-1&&<div style={{display:"none"}}/>}
                   </div>
@@ -1427,8 +1591,8 @@ function QueueView({demands,overrides,onOpen}) {
           const pend=demands.filter(d=>d.squad===s&&d.status==="pendente").length;
           const conc=demands.filter(d=>d.squad===s&&d.status==="concluida").length;
           return(
-            <button key={s} onClick={()=>setSquad(s)} style={{padding:"18px 20px",border:`1.5px solid ${active?sq2.h+"55":"var(--border)"}`,borderRadius:16,background:active?`rgba(${sq2.rgb},.06)`:"var(--s2)",cursor:"pointer",transition:"all .2s",textAlign:"left",boxShadow:active?`0 4px 20px rgba(${sq2.rgb},.15)`:""}}
-              onMouseOver={e=>!active&&(e.currentTarget.style.borderColor=sq2.h+"33")} onMouseOut={e=>!active&&(e.currentTarget.style.borderColor="var(--border)")}>
+            <button key={s} onClick={()=>setSquad(s)} className="squad-card" style={{border:`1.5px solid ${active?sq2.h+"66":"var(--border)"}`,background:active?`rgba(${sq2.rgb},.08)`:"var(--s2)",boxShadow:active?`0 8px 28px rgba(${sq2.rgb},.18),0 0 0 1px ${sq2.h}22`:"",color:"inherit"}}
+              onMouseOver={e=>{if(!active){e.currentTarget.style.borderColor=sq2.h+"44";e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow=`0 8px 24px rgba(0,0,0,.35)`;}}} onMouseOut={e=>{if(!active){e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow=""}}}>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
                 <div style={{width:38,height:38,borderRadius:11,background:`rgba(${sq2.rgb},.15)`,border:`1px solid rgba(${sq2.rgb},.3)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{SQUAD_ICON[s]}</div>
                 <div style={{flex:1}}>
