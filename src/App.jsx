@@ -2046,7 +2046,8 @@ function UserMgrPanel({users,onUpdateRole}) {
         );})}
       </div>
 
-      {filtered.length===0?<EmptySlate icon="◌" title="Nenhum usuário" sub=""
+      {filtered.length===0
+        ?<EmptySlate icon="◌" title="Nenhum usuário" sub=""/>
         :<div style={{display:"flex",flexDirection:"column",gap:10}}>
           {filtered.map((u,i)=>{
             const roles = u.roles||[u.role||"user"];
