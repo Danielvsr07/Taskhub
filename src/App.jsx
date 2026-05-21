@@ -2214,81 +2214,164 @@ function SprintMgrPanel({overrides={},onSave}) {
   const cur = curSprint();
   const nums = Array.from({length:12},(_,i)=>cur+i);
 
-  function def(n,baseOverrides={}) {
-    const d = sprintDates(n, baseOverrides);
-    return {start:toISO(d.start), end:toISO(d.end)};
-  }
-
-  const [local,setLocal] = useState(()=>{
+  // Build initial state: each sprint starts from the previous one's end+1
+  function buildInitial(baseOverrides) {
     const o={};
-    nums.forEach(n=>{
-      o[n] = overrides[n] ? {start:overrides[n].start,end:overrides[n].end} : def(n,overrides);
+    nums.forEach((n,i)=>{
+      if (baseOverrides[n]) {
+        o[n] = {start:baseOverrides[n].start, end:baseOverrides[n].end};
+      } else if (i===0) {
+        const d = sprintDates(n, baseOverrides);
+        o[n] = {start:toISO(d.start), end:toISO(d.end)};
+      } else {
+        // Start day after previous sprint ends
+        const prevEnd = new Date(o[nums[i-1]].end);
+        const start = new Date(prevEnd); start.setDate(start.getDate()+1);
+        const end   = new Date(start);  end.setDate(end.getDate()+13);
+        o[n] = {start:toISO(start), end:toISO(end)};
+      }
     });
     return o;
-  });
+  }
 
-  // When a sprint's END date changes, cascade all subsequent sprints
-  function handleEndChange(n, newEnd) {
-    setLocal(prev => {
-      const next = {...prev, [n]:{...prev[n], end:newEnd}};
-      // Cascade: each subsequent sprint starts the day after previous ends
-      for (let i = nums.indexOf(n)+1; i < nums.length; i++) {
-        const prevN = nums[i-1];
-        const prevEnd = new Date(next[prevN].end);
-        const sprintLen = 14; // default sprint length in days
-        const newStart = new Date(prevEnd);
-        newStart.setDate(newStart.getDate()+1);
-        const newEndD = new Date(newStart);
-        newEndD.setDate(newEndD.getDate()+sprintLen-1);
-        next[nums[i]] = {
-          start: toISO(newStart),
-          end: toISO(newEndD),
-        };
-      }
-      return next;
+  const [local,setLocal] = useState(()=>buildInitial(overrides));
+
+  // Cascade from sprint n onwards
+  function cascade(prev, fromN) {
+    const next = {...prev};
+    const fromIdx = nums.indexOf(fromN);
+    for (let i=fromIdx+1; i<nums.length; i++) {
+      const prevEnd = new Date(next[nums[i-1]].end);
+      const prevStart = new Date(next[nums[i-1]].start);
+      // Preserve original duration of this sprint if it exists, else 14 days
+      const origDur = 13; // 14 days = start to end inclusive
+      const start = new Date(prevEnd); start.setDate(start.getDate()+1);
+      const end   = new Date(start);  end.setDate(end.getDate()+origDur);
+      next[nums[i]] = {start:toISO(start), end:toISO(end)};
+    }
+    return next;
+  }
+
+  function handleStartChange(n, newStart) {
+    setLocal(prev=>{
+      const oldStart = new Date(prev[n].start);
+      const oldEnd   = new Date(prev[n].end);
+      const dur = Math.round((oldEnd-oldStart)/(86400000));
+      const ns = new Date(newStart);
+      const ne = new Date(ns); ne.setDate(ne.getDate()+dur);
+      const next = {...prev, [n]:{start:newStart, end:toISO(ne)}};
+      return cascade(next, n);
     });
   }
 
-  // When a sprint's START date changes, adjust its end and cascade
-  function handleStartChange(n, newStart) {
-    setLocal(prev => {
-      const next = {...prev};
-      const prevEnd = new Date(prev[n].end);
-      const prevStart = new Date(prev[n].start);
-      const duration = Math.round((prevEnd - prevStart)/(1000*60*60*24));
-      const ns = new Date(newStart);
-      const ne = new Date(ns);
-      ne.setDate(ne.getDate() + duration);
-      next[n] = {start:newStart, end:toISO(ne)};
-      // Cascade subsequent sprints
-      for (let i = nums.indexOf(n)+1; i < nums.length; i++) {
-        const prevN = nums[i-1];
-        const pe = new Date(next[prevN].end);
-        const ss = new Date(pe); ss.setDate(ss.getDate()+1);
-        const se = new Date(ss); se.setDate(se.getDate()+13);
-        next[nums[i]] = {start:toISO(ss), end:toISO(se)};
-      }
-      return next;
+  function handleEndChange(n, newEnd) {
+    setLocal(prev=>{
+      const next = {...prev, [n]:{...prev[n], end:newEnd}};
+      return cascade(next, n);
     });
   }
 
   function save() {
+    // Save ALL edited sprints as overrides so chain is preserved
+    const defaults = buildInitial({});
     const r={};
     nums.forEach(n=>{
-      const d=def(n,{});
-      if(local[n].start!==d.start||local[n].end!==d.end) r[n]={start:local[n].start,end:local[n].end};
+      if (local[n].start!==defaults[n]?.start || local[n].end!==defaults[n]?.end) {
+        r[n] = {start:local[n].start, end:local[n].end};
+      }
     });
     onSave(r);
   }
 
-  function resetAll() {
-    const o={};
-    nums.forEach(n=>{ o[n]=def(n,{}); });
-    setLocal(o);
+  function resetAll() { setLocal(buildInitial({})); }
+  function resetOne(n) {
+    setLocal(prev=>{
+      const defaults = buildInitial({});
+      const next = {...prev, [n]:defaults[n]};
+      return cascade(next, n);
+    });
   }
 
-  const hasChanges = nums.some(n=>{ const d=def(n,{}); return local[n]?.start!==d.start||local[n]?.end!==d.end; });
-  const editedCount = nums.filter(n=>{ const d=def(n,{}); return local[n]?.start!==d.start||local[n]?.end!==d.end; }).length;
+  const defaults = buildInitial({});
+  const hasChanges = nums.some(n=>local[n]?.start!==defaults[n]?.start||local[n]?.end!==defaults[n]?.end);
+  const editedCount = nums.filter(n=>local[n]?.start!==defaults[n]?.start||local[n]?.end!==defaults[n]?.end).length;
+
+  return(
+    <div style={{maxWidth:760}}>
+      <div style={{padding:28,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+          <div style={{fontSize:16,fontWeight:800,display:"flex",alignItems:"center",gap:8}}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Gerenciar Sprints
+          </div>
+          {hasChanges&&<button className="btn btn-ghost" onClick={resetAll} style={{fontSize:11,padding:"5px 12px",color:"#f87171",borderColor:"rgba(239,68,68,.3)"}}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
+            Resetar tudo
+          </button>}
+        </div>
+        <p style={{fontSize:13,color:"var(--t3)",marginBottom:8,lineHeight:1.6}}>
+          Alterar a data de qualquer sprint <strong style={{color:"var(--t2)"}}>recalcula automaticamente</strong> todas as sprints seguintes.
+        </p>
+        <div style={{padding:"8px 12px",background:"rgba(245,158,11,.07)",border:"1px solid rgba(245,158,11,.2)",borderRadius:8,fontSize:11,color:"#fde68a",marginBottom:20,display:"flex",alignItems:"center",gap:7}}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Alterar datas não move demandas já aprovadas.
+          {editedCount>0&&<strong style={{color:"#fbbf24",marginLeft:4}}>{editedCount} sprint(s) editada(s)</strong>}
+        </div>
+
+        {/* Header */}
+        <div style={{display:"grid",gridTemplateColumns:"72px 1fr 1fr 90px 36px",gap:10,padding:"6px 10px",fontSize:10,fontWeight:700,color:"var(--t3)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>
+          <span>Sprint</span><span>Início</span><span>Fim</span><span>Status</span><span></span>
+        </div>
+
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          {nums.map(n=>{
+            const edited = local[n]?.start!==defaults[n]?.start||local[n]?.end!==defaults[n]?.end;
+            const isCur = n===cur;
+            const isFuture = n>cur;
+            return(
+              <div key={n} style={{display:"grid",gridTemplateColumns:"72px 1fr 1fr 90px 36px",gap:10,padding:"10px 10px",
+                background:isCur?"rgba(91,141,238,.05)":edited?"rgba(245,158,11,.04)":"var(--s1)",
+                border:`1px solid ${edited?"rgba(245,158,11,.35)":isCur?"rgba(91,141,238,.25)":"var(--border)"}`,
+                borderRadius:10,alignItems:"center",transition:"border-color .2s,background .2s"}}>
+                <div>
+                  <div style={{fontFamily:"var(--mono)",fontWeight:800,fontSize:13,color:isCur?"var(--blue)":edited?"#fbbf24":"var(--t2)"}}>#{n}</div>
+                  <div style={{fontSize:9,fontWeight:600,marginTop:1,color:isCur?"#3ecf8e":"var(--t3)"}}>
+                    {isCur?"atual":isFuture?"futura":"passada"}
+                  </div>
+                </div>
+                <input type="date" value={local[n]?.start||""} onChange={e=>handleStartChange(n,e.target.value)}
+                  style={{padding:"7px 10px",background:"var(--s2)",border:`1px solid ${edited?"rgba(245,158,11,.3)":"var(--border)"}`,borderRadius:7,color:"var(--t1)",fontSize:12,outline:"none",width:"100%",cursor:"pointer"}}/>
+                <input type="date" value={local[n]?.end||""} onChange={e=>handleEndChange(n,e.target.value)}
+                  style={{padding:"7px 10px",background:"var(--s2)",border:`1px solid ${edited?"rgba(245,158,11,.3)":"var(--border)"}`,borderRadius:7,color:"var(--t1)",fontSize:12,outline:"none",width:"100%",cursor:"pointer"}}/>
+                <div style={{fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:999,textAlign:"center",
+                  background:edited?"rgba(245,158,11,.12)":isCur?"rgba(91,141,238,.1)":"transparent",
+                  color:edited?"#fbbf24":isCur?"var(--blue)":"var(--t3)",
+                  border:`1px solid ${edited?"rgba(245,158,11,.25)":isCur?"rgba(91,141,238,.2)":"transparent"}`}}>
+                  {edited?"editada":isCur?"atual":"padrão"}
+                </div>
+                <button onClick={()=>resetOne(n)} title="Resetar esta sprint"
+                  style={{width:32,height:32,borderRadius:7,border:"1px solid var(--border)",background:"transparent",color:"var(--t3)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}
+                  onMouseOver={e=>{e.currentTarget.style.color="#f87171";e.currentTarget.style.borderColor="rgba(239,68,68,.3)";}}
+                  onMouseOut={e=>{e.currentTarget.style.color="var(--t3)";e.currentTarget.style.borderColor="var(--border)";}}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{display:"flex",gap:10,marginTop:20,alignItems:"center"}}>
+          <button className="btn btn-primary" onClick={save} disabled={!hasChanges}
+            style={{padding:"11px 24px",opacity:hasChanges?1:.45,justifyContent:"center",flex:1}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            {hasChanges?`Salvar (${editedCount} sprint${editedCount>1?"s":""} editada${editedCount>1?"s":""})` :"Sem alterações"}
+          </button>
+          {hasChanges&&<div style={{fontSize:11,color:"var(--t3)"}}>Sprints seguintes recalculadas automaticamente.</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
 
   return(
     <div style={{maxWidth:760}}>
