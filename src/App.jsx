@@ -2210,11 +2210,35 @@ function EmailCfgPanel({config,onSave}) {
 // ─────────────────────────────────────────────────────────────────────────────
 // SPRINT MANAGER
 // ─────────────────────────────────────────────────────────────────────────────
+// Helper: skip to next weekday (Mon-Fri)
+function nextWeekday(d) {
+  const r = new Date(d);
+  while (r.getDay()===0||r.getDay()===6) r.setDate(r.getDate()+1);
+  return r;
+}
+function addWorkdays(d, days) {
+  const r = new Date(d);
+  let added = 0;
+  while (added < days) {
+    r.setDate(r.getDate()+1);
+    if (r.getDay()!==0&&r.getDay()!==6) added++;
+  }
+  return r;
+}
+function workdaysBetween(a, b) {
+  let count=0, cur=new Date(a);
+  while (cur<=b) {
+    if (cur.getDay()!==0&&cur.getDay()!==6) count++;
+    cur.setDate(cur.getDate()+1);
+  }
+  return count;
+}
+const WEEKDAY_NAMES=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+
 function SprintMgrPanel({overrides={},onSave}) {
   const cur = curSprint();
   const nums = Array.from({length:12},(_,i)=>cur+i);
 
-  // Build initial state: each sprint starts from the previous one's end+1
   function buildInitial(baseOverrides) {
     const o={};
     nums.forEach((n,i)=>{
@@ -2222,17 +2246,258 @@ function SprintMgrPanel({overrides={},onSave}) {
         o[n] = {start:baseOverrides[n].start, end:baseOverrides[n].end};
       } else if (i===0) {
         const d = sprintDates(n, baseOverrides);
-        o[n] = {start:toISO(d.start), end:toISO(d.end)};
+        // Ensure weekday
+        const s = nextWeekday(d.start);
+        const e = addWorkdays(s, 9); // 10 workdays
+        o[n] = {start:toISO(s), end:toISO(e)};
       } else {
-        // Start day after previous sprint ends
         const prevEnd = new Date(o[nums[i-1]].end);
-        const start = new Date(prevEnd); start.setDate(start.getDate()+1);
-        const end   = new Date(start);  end.setDate(end.getDate()+13);
+        const start = nextWeekday(new Date(prevEnd.getTime()+86400000));
+        const end = addWorkdays(start, 9);
         o[n] = {start:toISO(start), end:toISO(end)};
       }
     });
     return o;
   }
+
+  const [local,setLocal] = useState(()=>buildInitial(overrides));
+  const [expandedN, setExpandedN] = useState(null);
+
+  function cascade(prev, fromN) {
+    const next = {...prev};
+    const fromIdx = nums.indexOf(fromN);
+    for (let i=fromIdx+1; i<nums.length; i++) {
+      const prevEnd = new Date(next[nums[i-1]].end);
+      const start = nextWeekday(new Date(prevEnd.getTime()+86400000));
+      const end = addWorkdays(start, 9);
+      next[nums[i]] = {start:toISO(start), end:toISO(end)};
+    }
+    return next;
+  }
+
+  function handleStartChange(n, newStart) {
+    setLocal(prev=>{
+      const s = new Date(newStart);
+      const safeStart = nextWeekday(s);
+      // Keep same duration in workdays
+      const oldS = new Date(prev[n].start);
+      const oldE = new Date(prev[n].end);
+      const dur = workdaysBetween(oldS,oldE)-1;
+      const newEnd = addWorkdays(safeStart, Math.max(dur,4));
+      const next = {...prev, [n]:{start:toISO(safeStart), end:toISO(newEnd)}};
+      return cascade(next, n);
+    });
+  }
+
+  function handleEndChange(n, newEnd) {
+    setLocal(prev=>{
+      const e = new Date(newEnd);
+      // If end is weekend, move to Friday
+      const safeEnd = new Date(e);
+      while (safeEnd.getDay()===0||safeEnd.getDay()===6) safeEnd.setDate(safeEnd.getDate()-1);
+      const start = new Date(prev[n].start);
+      if (safeEnd<=start) return prev; // Don't allow end before start
+      const next = {...prev, [n]:{...prev[n], end:toISO(safeEnd)}};
+      return cascade(next, n);
+    });
+  }
+
+  function save() {
+    const defaults = buildInitial({});
+    const r={};
+    nums.forEach(n=>{
+      if (local[n].start!==defaults[n]?.start||local[n].end!==defaults[n]?.end) {
+        r[n]={start:local[n].start,end:local[n].end};
+      }
+    });
+    onSave(r);
+  }
+
+  function resetAll() { setLocal(buildInitial({})); }
+  function resetOne(n) {
+    setLocal(prev=>{
+      const d = buildInitial({});
+      const next = {...prev,[n]:d[n]};
+      return cascade(next,n);
+    });
+  }
+
+  const defaults = buildInitial({});
+  const hasChanges = nums.some(n=>local[n]?.start!==defaults[n]?.start||local[n]?.end!==defaults[n]?.end);
+  const editedCount = nums.filter(n=>local[n]?.start!==defaults[n]?.start||local[n]?.end!==defaults[n]?.end).length;
+
+  function getDayLabel(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return `${WEEKDAY_NAMES[d.getDay()]}, ${d.toLocaleDateString("pt-BR",{day:"2-digit",month:"short"})}`;
+  }
+  function getWorkdays(n) {
+    if (!local[n]) return 0;
+    return workdaysBetween(new Date(local[n].start), new Date(local[n].end));
+  }
+
+  return(
+    <div style={{maxWidth:820}}>
+      <div style={{padding:28,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
+        {/* Header */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <div style={{fontSize:16,fontWeight:800,display:"flex",alignItems:"center",gap:8}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Gerenciar Sprints
+          </div>
+          {hasChanges&&(
+            <button className="btn btn-ghost" onClick={resetAll}
+              style={{fontSize:11,padding:"5px 12px",color:"#f87171",borderColor:"rgba(239,68,68,.3)"}}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
+              Resetar tudo
+            </button>
+          )}
+        </div>
+
+        <p style={{fontSize:13,color:"var(--t3)",marginBottom:12,lineHeight:1.6}}>
+          Fins de semana são ignorados automaticamente. Alterar qualquer sprint recalcula as seguintes.
+        </p>
+
+        {/* Info bar */}
+        <div style={{display:"flex",gap:10,marginBottom:20,flexWrap:"wrap"}}>
+          <div style={{padding:"7px 14px",borderRadius:8,background:"rgba(245,158,11,.07)",border:"1px solid rgba(245,158,11,.2)",fontSize:11,color:"#fde68a",display:"flex",alignItems:"center",gap:6}}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Datas em fim de semana são ajustadas automaticamente
+          </div>
+          {editedCount>0&&(
+            <div style={{padding:"7px 14px",borderRadius:8,background:"rgba(91,141,238,.08)",border:"1px solid rgba(91,141,238,.2)",fontSize:11,color:"#93c5fd",display:"flex",alignItems:"center",gap:6}}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <strong>{editedCount}</strong> sprint{editedCount>1?"s":""} editada{editedCount>1?"s":""}
+            </div>
+          )}
+        </div>
+
+        {/* Column headers */}
+        <div style={{display:"grid",gridTemplateColumns:"80px 1fr 1fr 80px 100px 40px",gap:8,padding:"6px 12px",fontSize:10,fontWeight:700,color:"var(--t3)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6}}>
+          <span>Sprint</span><span>Início</span><span>Fim</span><span>Dias úteis</span><span>Status</span><span></span>
+        </div>
+
+        {/* Sprint rows */}
+        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+          {nums.map(n=>{
+            const edited = local[n]?.start!==defaults[n]?.start||local[n]?.end!==defaults[n]?.end;
+            const isCur = n===cur;
+            const isPast = n<cur;
+            const days = getWorkdays(n);
+            const startDay = new Date(local[n]?.start||"");
+            const endDay = new Date(local[n]?.end||"");
+            const startIsWeekend = startDay.getDay()===0||startDay.getDay()===6;
+            const endIsWeekend = endDay.getDay()===0||endDay.getDay()===6;
+            const isExpanded = expandedN===n;
+
+            return(
+              <div key={n} style={{
+                background:isCur?"rgba(91,141,238,.05)":edited?"rgba(245,158,11,.03)":"var(--s1)",
+                border:`1px solid ${edited?"rgba(245,158,11,.4)":isCur?"rgba(91,141,238,.3)":"var(--border)"}`,
+                borderRadius:12,overflow:"hidden",
+                transition:"all .2s"}}>
+
+                {/* Main row */}
+                <div style={{display:"grid",gridTemplateColumns:"80px 1fr 1fr 80px 100px 40px",gap:8,padding:"10px 12px",alignItems:"center"}}>
+                  {/* Sprint # */}
+                  <div>
+                    <div style={{fontFamily:"var(--mono)",fontWeight:800,fontSize:14,
+                      color:isCur?"#5b8dee":edited?"#fbbf24":isPast?"var(--t3)":"var(--t2)"}}>
+                      #{n}
+                    </div>
+                    <div style={{fontSize:9,color:isCur?"#3ecf8e":isPast?"var(--t3)":"var(--t3)",fontWeight:600,marginTop:1}}>
+                      {isCur?"● atual":isPast?"passada":"futura"}
+                    </div>
+                  </div>
+
+                  {/* Start date */}
+                  <div style={{position:"relative"}}>
+                    <input type="date" value={local[n]?.start||""}
+                      onChange={e=>handleStartChange(n,e.target.value)}
+                      style={{padding:"8px 10px",background:"var(--s2)",
+                        border:`1.5px solid ${startIsWeekend?"rgba(239,68,68,.5)":edited?"rgba(245,158,11,.3)":"var(--border)"}`,
+                        borderRadius:8,color:"var(--t1)",fontSize:12,outline:"none",width:"100%",cursor:"pointer",
+                        transition:"border-color .15s"}}/>
+                    <div style={{fontSize:9,color:"var(--t3)",marginTop:3,paddingLeft:2}}>
+                      {getDayLabel(local[n]?.start)}
+                    </div>
+                  </div>
+
+                  {/* End date */}
+                  <div style={{position:"relative"}}>
+                    <input type="date" value={local[n]?.end||""}
+                      onChange={e=>handleEndChange(n,e.target.value)}
+                      style={{padding:"8px 10px",background:"var(--s2)",
+                        border:`1.5px solid ${endIsWeekend?"rgba(239,68,68,.5)":edited?"rgba(245,158,11,.3)":"var(--border)"}`,
+                        borderRadius:8,color:"var(--t1)",fontSize:12,outline:"none",width:"100%",cursor:"pointer",
+                        transition:"border-color .15s"}}/>
+                    <div style={{fontSize:9,color:"var(--t3)",marginTop:3,paddingLeft:2}}>
+                      {getDayLabel(local[n]?.end)}
+                    </div>
+                  </div>
+
+                  {/* Workdays count */}
+                  <div style={{textAlign:"center"}}>
+                    <div style={{fontFamily:"var(--mono)",fontWeight:800,fontSize:18,
+                      color:days<5?"#f87171":days>12?"#f59e0b":"#3ecf8e",lineHeight:1}}>
+                      {days}
+                    </div>
+                    <div style={{fontSize:9,color:"var(--t3)",marginTop:2}}>dias úteis</div>
+                  </div>
+
+                  {/* Status */}
+                  <div style={{textAlign:"center"}}>
+                    <span style={{fontSize:10,fontWeight:700,padding:"4px 10px",borderRadius:999,
+                      background:edited?"rgba(245,158,11,.12)":isCur?"rgba(91,141,238,.1)":"rgba(255,255,255,.04)",
+                      color:edited?"#fbbf24":isCur?"#5b8dee":"var(--t3)",
+                      border:`1px solid ${edited?"rgba(245,158,11,.25)":isCur?"rgba(91,141,238,.2)":"var(--border)"}`}}>
+                      {edited?"editada":isCur?"atual":isPast?"passada":"padrão"}
+                    </span>
+                  </div>
+
+                  {/* Reset button */}
+                  <button onClick={()=>resetOne(n)} title="Resetar esta sprint"
+                    style={{width:32,height:32,borderRadius:8,border:"1px solid var(--border)",
+                      background:"transparent",color:"var(--t3)",cursor:"pointer",
+                      display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}
+                    onMouseOver={e=>{e.currentTarget.style.color="#f87171";e.currentTarget.style.borderColor="rgba(239,68,68,.3)";e.currentTarget.style.background="rgba(239,68,68,.06)";}}
+                    onMouseOut={e=>{e.currentTarget.style.color="var(--t3)";e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.background="transparent";}}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
+                  </button>
+                </div>
+
+                {/* Warning if weekend */}
+                {(startIsWeekend||endIsWeekend)&&(
+                  <div style={{padding:"6px 12px 8px",fontSize:11,color:"#f87171",display:"flex",alignItems:"center",gap:6,background:"rgba(239,68,68,.05)"}}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    {startIsWeekend?"Início em fim de semana — será ajustado ao salvar. ":""}
+                    {endIsWeekend?"Fim em fim de semana — será ajustado ao salvar.":""}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Save button */}
+        <div style={{display:"flex",gap:10,marginTop:20,alignItems:"center"}}>
+          <button className="btn btn-primary" onClick={save} disabled={!hasChanges}
+            style={{padding:"12px 28px",opacity:hasChanges?1:.4,justifyContent:"center",flex:1,
+              background:hasChanges?"linear-gradient(135deg,#3b82f6,#6366f1)":"var(--s3)",
+              border:hasChanges?"none":"1px solid var(--border)"}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            {hasChanges?`Salvar ${editedCount} sprint${editedCount>1?"s":""}` :"Nenhuma alteração"}
+          </button>
+          {hasChanges&&(
+            <div style={{fontSize:11,color:"var(--t3)",maxWidth:200,lineHeight:1.5}}>
+              Sprints seguintes foram recalculadas automaticamente.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
   const [local,setLocal] = useState(()=>buildInitial(overrides));
 
@@ -2291,87 +2556,6 @@ function SprintMgrPanel({overrides={},onSave}) {
       return cascade(next, n);
     });
   }
-
-  const defaults = buildInitial({});
-  const hasChanges = nums.some(n=>local[n]?.start!==defaults[n]?.start||local[n]?.end!==defaults[n]?.end);
-  const editedCount = nums.filter(n=>local[n]?.start!==defaults[n]?.start||local[n]?.end!==defaults[n]?.end).length;
-
-  return(
-    <div style={{maxWidth:760}}>
-      <div style={{padding:28,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
-          <div style={{fontSize:16,fontWeight:800,display:"flex",alignItems:"center",gap:8}}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Gerenciar Sprints
-          </div>
-          {hasChanges&&<button className="btn btn-ghost" onClick={resetAll} style={{fontSize:11,padding:"5px 12px",color:"#f87171",borderColor:"rgba(239,68,68,.3)"}}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
-            Resetar tudo
-          </button>}
-        </div>
-        <p style={{fontSize:13,color:"var(--t3)",marginBottom:8,lineHeight:1.6}}>
-          Alterar a data de qualquer sprint <strong style={{color:"var(--t2)"}}>recalcula automaticamente</strong> todas as sprints seguintes.
-        </p>
-        <div style={{padding:"8px 12px",background:"rgba(245,158,11,.07)",border:"1px solid rgba(245,158,11,.2)",borderRadius:8,fontSize:11,color:"#fde68a",marginBottom:20,display:"flex",alignItems:"center",gap:7}}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          Alterar datas não move demandas já aprovadas.
-          {editedCount>0&&<strong style={{color:"#fbbf24",marginLeft:4}}>{editedCount} sprint(s) editada(s)</strong>}
-        </div>
-
-        {/* Header */}
-        <div style={{display:"grid",gridTemplateColumns:"72px 1fr 1fr 90px 36px",gap:10,padding:"6px 10px",fontSize:10,fontWeight:700,color:"var(--t3)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>
-          <span>Sprint</span><span>Início</span><span>Fim</span><span>Status</span><span></span>
-        </div>
-
-        <div style={{display:"flex",flexDirection:"column",gap:6}}>
-          {nums.map(n=>{
-            const edited = local[n]?.start!==defaults[n]?.start||local[n]?.end!==defaults[n]?.end;
-            const isCur = n===cur;
-            const isFuture = n>cur;
-            return(
-              <div key={n} style={{display:"grid",gridTemplateColumns:"72px 1fr 1fr 90px 36px",gap:10,padding:"10px 10px",
-                background:isCur?"rgba(91,141,238,.05)":edited?"rgba(245,158,11,.04)":"var(--s1)",
-                border:`1px solid ${edited?"rgba(245,158,11,.35)":isCur?"rgba(91,141,238,.25)":"var(--border)"}`,
-                borderRadius:10,alignItems:"center",transition:"border-color .2s,background .2s"}}>
-                <div>
-                  <div style={{fontFamily:"var(--mono)",fontWeight:800,fontSize:13,color:isCur?"var(--blue)":edited?"#fbbf24":"var(--t2)"}}>#{n}</div>
-                  <div style={{fontSize:9,fontWeight:600,marginTop:1,color:isCur?"#3ecf8e":"var(--t3)"}}>
-                    {isCur?"atual":isFuture?"futura":"passada"}
-                  </div>
-                </div>
-                <input type="date" value={local[n]?.start||""} onChange={e=>handleStartChange(n,e.target.value)}
-                  style={{padding:"7px 10px",background:"var(--s2)",border:`1px solid ${edited?"rgba(245,158,11,.3)":"var(--border)"}`,borderRadius:7,color:"var(--t1)",fontSize:12,outline:"none",width:"100%",cursor:"pointer"}}/>
-                <input type="date" value={local[n]?.end||""} onChange={e=>handleEndChange(n,e.target.value)}
-                  style={{padding:"7px 10px",background:"var(--s2)",border:`1px solid ${edited?"rgba(245,158,11,.3)":"var(--border)"}`,borderRadius:7,color:"var(--t1)",fontSize:12,outline:"none",width:"100%",cursor:"pointer"}}/>
-                <div style={{fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:999,textAlign:"center",
-                  background:edited?"rgba(245,158,11,.12)":isCur?"rgba(91,141,238,.1)":"transparent",
-                  color:edited?"#fbbf24":isCur?"var(--blue)":"var(--t3)",
-                  border:`1px solid ${edited?"rgba(245,158,11,.25)":isCur?"rgba(91,141,238,.2)":"transparent"}`}}>
-                  {edited?"editada":isCur?"atual":"padrão"}
-                </div>
-                <button onClick={()=>resetOne(n)} title="Resetar esta sprint"
-                  style={{width:32,height:32,borderRadius:7,border:"1px solid var(--border)",background:"transparent",color:"var(--t3)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}
-                  onMouseOver={e=>{e.currentTarget.style.color="#f87171";e.currentTarget.style.borderColor="rgba(239,68,68,.3)";}}
-                  onMouseOut={e=>{e.currentTarget.style.color="var(--t3)";e.currentTarget.style.borderColor="var(--border)";}}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
-                </button>
-              </div>
-            );
-          })}
-        </div>
-
-        <div style={{display:"flex",gap:10,marginTop:20,alignItems:"center"}}>
-          <button className="btn btn-primary" onClick={save} disabled={!hasChanges}
-            style={{padding:"11px 24px",opacity:hasChanges?1:.45,justifyContent:"center",flex:1}}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            {hasChanges?`Salvar (${editedCount} sprint${editedCount>1?"s":""} editada${editedCount>1?"s":""})` :"Sem alterações"}
-          </button>
-          {hasChanges&&<div style={{fontSize:11,color:"var(--t3)"}}>Sprints seguintes recalculadas automaticamente.</div>}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 
 // ─────────────────────────────────────────────────────────────────────────────
