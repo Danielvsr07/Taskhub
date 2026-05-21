@@ -2499,64 +2499,6 @@ function SprintMgrPanel({overrides={},onSave}) {
   );
 }
 
-  const [local,setLocal] = useState(()=>buildInitial(overrides));
-
-  // Cascade from sprint n onwards
-  function cascade(prev, fromN) {
-    const next = {...prev};
-    const fromIdx = nums.indexOf(fromN);
-    for (let i=fromIdx+1; i<nums.length; i++) {
-      const prevEnd = new Date(next[nums[i-1]].end);
-      const prevStart = new Date(next[nums[i-1]].start);
-      // Preserve original duration of this sprint if it exists, else 14 days
-      const origDur = 13; // 14 days = start to end inclusive
-      const start = new Date(prevEnd); start.setDate(start.getDate()+1);
-      const end   = new Date(start);  end.setDate(end.getDate()+origDur);
-      next[nums[i]] = {start:toISO(start), end:toISO(end)};
-    }
-    return next;
-  }
-
-  function handleStartChange(n, newStart) {
-    setLocal(prev=>{
-      const oldStart = new Date(prev[n].start);
-      const oldEnd   = new Date(prev[n].end);
-      const dur = Math.round((oldEnd-oldStart)/(86400000));
-      const ns = new Date(newStart);
-      const ne = new Date(ns); ne.setDate(ne.getDate()+dur);
-      const next = {...prev, [n]:{start:newStart, end:toISO(ne)}};
-      return cascade(next, n);
-    });
-  }
-
-  function handleEndChange(n, newEnd) {
-    setLocal(prev=>{
-      const next = {...prev, [n]:{...prev[n], end:newEnd}};
-      return cascade(next, n);
-    });
-  }
-
-  function save() {
-    // Save ALL edited sprints as overrides so chain is preserved
-    const defaults = buildInitial({});
-    const r={};
-    nums.forEach(n=>{
-      if (local[n].start!==defaults[n]?.start || local[n].end!==defaults[n]?.end) {
-        r[n] = {start:local[n].start, end:local[n].end};
-      }
-    });
-    onSave(r);
-  }
-
-  function resetAll() { setLocal(buildInitial({})); }
-  function resetOne(n) {
-    setLocal(prev=>{
-      const defaults = buildInitial({});
-      const next = {...prev, [n]:defaults[n]};
-      return cascade(next, n);
-    });
-  }
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BACKLOG PANEL
