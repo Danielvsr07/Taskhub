@@ -2216,6 +2216,11 @@ function nextWeekday(d) {
   while (r.getDay()===0||r.getDay()===6) r.setDate(r.getDate()+1);
   return r;
 }
+function prevWeekday(d) {
+  const r = new Date(d); r.setHours(12,0,0,0);
+  while (r.getDay()===0||r.getDay()===6) r.setDate(r.getDate()-1);
+  return r;
+}
 function addWorkdays(d, days) {
   const r = new Date(d); r.setHours(12,0,0,0);
   let added = 0;
@@ -2225,233 +2230,160 @@ function addWorkdays(d, days) {
   }
   return r;
 }
-function workdaysBetween(a, b) {
-  let count=0;
-  const end = new Date(b); end.setHours(12,0,0,0);
-  const cur = new Date(a); cur.setHours(12,0,0,0);
-  while (cur<=end) {
+function workdaysBetween(startISO, endISO) {
+  let count = 0;
+  const end = new Date(endISO+"T12:00:00");
+  const cur = new Date(startISO+"T12:00:00");
+  while (cur <= end) {
     if (cur.getDay()!==0&&cur.getDay()!==6) count++;
     cur.setDate(cur.getDate()+1);
   }
   return count;
 }
-const WEEKDAY_NAMES=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+const WD = ["Dom","Seg","Ter","Qua","Qui","Sex","Sab"];
 
 function SprintMgrPanel({overrides={},onSave}) {
   const cur = curSprint();
   const nums = Array.from({length:12},(_,i)=>cur+i);
 
-  // Build sprint dates from scratch using workdays only
-  function buildFromScratch() {
-    const o={};
-    nums.forEach((n,i)=>{
-      if (i===0) {
-        // Use existing sprintDates as anchor but force to weekday
-        try {
-          const d = sprintDates(n, {});
-          const s = nextWeekday(d.start);
-          const e = addWorkdays(s, 9);
-          o[n] = {start:toISO(s), end:toISO(e)};
-        } catch(_) {
-          // Fallback: today's next Monday
-          const s = nextWeekday(new Date());
-          o[n] = {start:toISO(s), end:toISO(addWorkdays(s,9))};
-        }
+  function loadDates(savedOverrides) {
+    const o = {};
+    nums.forEach((n, i) => {
+      if (savedOverrides[n]) {
+        o[n] = { start: savedOverrides[n].start, end: savedOverrides[n].end };
+      } else if (i === 0) {
+        const d = sprintDates(n, {});
+        o[n] = { start: toISO(d.start), end: toISO(d.end) };
       } else {
-        const prevEnd = new Date(o[nums[i-1]].end); prevEnd.setHours(12,0,0,0);
-        const s = nextWeekday(new Date(prevEnd.getTime()+86400000));
-        o[n] = {start:toISO(s), end:toISO(addWorkdays(s,9))};
+        const prevEnd = new Date(o[nums[i-1]].end + "T12:00:00");
+        const start = nextWeekday(new Date(prevEnd.getTime() + 86400000));
+        const end = addWorkdays(start, 9);
+        o[n] = { start: toISO(start), end: toISO(end) };
       }
     });
     return o;
   }
 
-  function buildInitial(savedOverrides) {
-    const base = buildFromScratch();
-    // Apply overrides on top
-    nums.forEach(n=>{
-      if (savedOverrides[n]) {
-        base[n] = {start:savedOverrides[n].start, end:savedOverrides[n].end};
-      }
-    });
-    return base;
-  }
+  const [local, setLocal] = useState(() => loadDates(overrides));
+  const [justSaved, setJustSaved] = useState(false);
 
-  const [local,setLocal] = useState(()=>buildInitial(overrides));
-  const [saved, setSaved] = useState(false); // track if just saved
-
-  function cascade(prev, fromN) {
-    const next = {...prev};
+  function cascade(state, fromN) {
+    const next = { ...state };
     const fromIdx = nums.indexOf(fromN);
-    for (let i=fromIdx+1; i<nums.length; i++) {
-      const prevEnd = new Date(next[nums[i-1]].end); prevEnd.setHours(12,0,0,0);
-      const s = nextWeekday(new Date(prevEnd.getTime()+86400000));
-      next[nums[i]] = {start:toISO(s), end:toISO(addWorkdays(s,9))};
+    for (let i = fromIdx + 1; i < nums.length; i++) {
+      const prevEnd = new Date(next[nums[i-1]].end + "T12:00:00");
+      const start = nextWeekday(new Date(prevEnd.getTime() + 86400000));
+      const end = addWorkdays(start, 9);
+      next[nums[i]] = { start: toISO(start), end: toISO(end) };
     }
     return next;
   }
 
   function handleStartChange(n, val) {
     if (!val) return;
-    setLocal(prev=>{
-      const s = nextWeekday(new Date(val+"T12:00:00"));
-      const oldDur = workdaysBetween(new Date(prev[n].start), new Date(prev[n].end));
-      const e = addWorkdays(s, Math.max(oldDur-1, 4));
-      const next = {...prev, [n]:{start:toISO(s), end:toISO(e)}};
-      return cascade(next, n);
+    setLocal(prev => {
+      const s = nextWeekday(new Date(val + "T12:00:00"));
+      const dur = workdaysBetween(prev[n].start, prev[n].end);
+      const e = addWorkdays(s, Math.max(dur - 1, 4));
+      return cascade({ ...prev, [n]: { start: toISO(s), end: toISO(e) } }, n);
     });
-    setSaved(false);
+    setJustSaved(false);
   }
 
   function handleEndChange(n, val) {
     if (!val) return;
-    setLocal(prev=>{
-      let e = new Date(val+"T12:00:00");
-      // Move back to Friday if weekend
-      while (e.getDay()===0||e.getDay()===6) e.setDate(e.getDate()-1);
-      const s = new Date(prev[n].start); s.setHours(12,0,0,0);
-      if (e<=s) return prev;
-      const next = {...prev, [n]:{...prev[n], end:toISO(e)}};
-      return cascade(next, n);
+    setLocal(prev => {
+      const e = prevWeekday(new Date(val + "T12:00:00"));
+      const s = new Date(prev[n].start + "T12:00:00");
+      if (e <= s) return prev;
+      return cascade({ ...prev, [n]: { ...prev[n], end: toISO(e) } }, n);
     });
-    setSaved(false);
+    setJustSaved(false);
   }
 
   function save() {
-    const base = buildFromScratch();
-    const r={};
-    nums.forEach(n=>{
-      if (local[n].start!==base[n]?.start||local[n].end!==base[n]?.end) {
-        r[n]={start:local[n].start,end:local[n].end};
+    const r = {};
+    nums.forEach(n => {
+      const sys = sprintDates(n, {});
+      if (local[n].start !== toISO(sys.start) || local[n].end !== toISO(sys.end)) {
+        r[n] = { start: local[n].start, end: local[n].end };
       }
     });
     onSave(r);
-    setSaved(true);
+    setJustSaved(true);
+    setTimeout(() => setJustSaved(false), 3000);
   }
 
-  function resetAll() { setLocal(buildFromScratch()); setSaved(false); }
   function resetOne(n) {
-    setLocal(prev=>{
-      const base = buildFromScratch();
-      return cascade({...prev,[n]:base[n]}, n);
+    setLocal(prev => {
+      const sys = sprintDates(n, {});
+      return cascade({ ...prev, [n]: { start: toISO(sys.start), end: toISO(sys.end) } }, n);
     });
-    setSaved(false);
+    setJustSaved(false);
   }
 
-  const base = buildFromScratch();
-  const hasChanges = !saved && nums.some(n=>local[n]?.start!==base[n]?.start||local[n]?.end!==base[n]?.end);
-  const editedCount = nums.filter(n=>local[n]?.start!==base[n]?.start||local[n]?.end!==base[n]?.end).length;
+  function resetAll() { setLocal(loadDates({})); setJustSaved(false); }
 
-  function getDayLabel(iso) {
-    if (!iso) return "";
-    try {
-      const d = new Date(iso+"T12:00:00");
-      return `${WEEKDAY_NAMES[d.getDay()]}, ${d.toLocaleDateString("pt-BR",{day:"2-digit",month:"short"})}`;
-    } catch(_) { return ""; }
+  const hasChanges = nums.some(n => {
+    const orig = overrides[n];
+    if (!orig) { const sys = sprintDates(n, {}); return local[n].start !== toISO(sys.start) || local[n].end !== toISO(sys.end); }
+    return local[n].start !== orig.start || local[n].end !== orig.end;
+  });
+
+  function dayLabel(iso) {
+    try { const d = new Date(iso + "T12:00:00"); return WD[d.getDay()] + ", " + d.toLocaleDateString("pt-BR",{day:"2-digit",month:"short"}); } catch(e) { return ""; }
   }
 
-  return(
-    <div style={{maxWidth:820}}>
+  return (
+    <div style={{maxWidth:760}}>
       <div style={{padding:24,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
-        {/* Header */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,marginBottom:20}}>
           <div>
             <div style={{fontSize:15,fontWeight:800,display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               Gerenciar Sprints
             </div>
-            <p style={{fontSize:12,color:"var(--t3)",lineHeight:1.5}}>
-              Sábados e domingos são ignorados automaticamente. Ao alterar uma sprint, as seguintes se ajustam.
+            <p style={{fontSize:12,color:"var(--t3)",lineHeight:1.6,maxWidth:420}}>
+              Sabados e domingos sao ignorados. Alterar uma sprint recalcula automaticamente as seguintes.
             </p>
           </div>
-          {hasChanges&&(
-            <button className="btn btn-ghost" onClick={resetAll}
-              style={{fontSize:11,padding:"6px 14px",color:"#f87171",borderColor:"rgba(239,68,68,.3)",flexShrink:0}}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
-              Resetar tudo
-            </button>
-          )}
-          {saved&&(
-            <div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:8,background:"rgba(62,207,142,.1)",border:"1px solid rgba(62,207,142,.25)",fontSize:12,color:"#3ecf8e",flexShrink:0}}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Salvo!
-            </div>
-          )}
+          <div style={{display:"flex",gap:8,flexShrink:0,alignItems:"center"}}>
+            {justSaved&&<div style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:8,background:"rgba(62,207,142,.1)",border:"1px solid rgba(62,207,142,.25)",fontSize:12,color:"#3ecf8e"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Salvo!</div>}
+            {hasChanges&&<button className="btn btn-ghost" onClick={resetAll} style={{fontSize:11,padding:"7px 14px",color:"#f87171",borderColor:"rgba(239,68,68,.25)"}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg> Resetar</button>}
+          </div>
         </div>
-
-        {/* Column headers */}
-        <div style={{display:"grid",gridTemplateColumns:"72px 1fr 1fr 88px 36px",gap:8,padding:"6px 12px",fontSize:10,fontWeight:700,color:"var(--t3)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6}}>
-          <span>Sprint</span><span>Início</span><span>Fim</span><span style={{textAlign:"center"}}>Dias úteis</span><span></span>
+        <div style={{display:"grid",gridTemplateColumns:"70px 1fr 1fr 90px 34px",gap:10,padding:"5px 14px",fontSize:10,fontWeight:700,color:"var(--t3)",textTransform:"uppercase",letterSpacing:".6px",marginBottom:6}}>
+          <span>Sprint</span><span>Inicio</span><span>Fim</span><span style={{textAlign:"center"}}>Dias uteis</span><span/>
         </div>
-
-        {/* Sprint rows */}
         <div style={{display:"flex",flexDirection:"column",gap:4}}>
-          {nums.map(n=>{
-            const isCur = n===cur;
-            const isPast = n<cur;
-            const isEdited = !saved && (local[n]?.start!==base[n]?.start||local[n]?.end!==base[n]?.end);
-            const days = local[n] ? workdaysBetween(new Date(local[n].start+"T12:00:00"), new Date(local[n].end+"T12:00:00")) : 0;
-
-            return(
-              <div key={n} style={{
-                display:"grid",gridTemplateColumns:"72px 1fr 1fr 88px 36px",gap:8,
-                padding:"10px 12px",
-                background:isCur?"rgba(91,141,238,.05)":"var(--s1)",
-                border:`1px solid ${isCur?"rgba(91,141,238,.25)":"var(--border)"}`,
-                borderRadius:10,alignItems:"center",
-                transition:"border-color .2s"}}>
-
-                {/* Sprint # */}
+          {nums.map(n => {
+            const isCur=n===cur, isPast=n<cur;
+            const days = local[n] ? workdaysBetween(local[n].start, local[n].end) : 0;
+            const dc = days<5?"#f87171":days>12?"#f59e0b":"#3ecf8e";
+            return (
+              <div key={n} style={{display:"grid",gridTemplateColumns:"70px 1fr 1fr 90px 34px",gap:10,padding:"12px 14px",background:isCur?"rgba(91,141,238,.05)":"var(--s1)",border:`1px solid ${isCur?"rgba(91,141,238,.22)":"var(--border)"}`,borderRadius:11,alignItems:"center"}}>
                 <div>
-                  <div style={{fontFamily:"var(--mono)",fontWeight:800,fontSize:13,
-                    color:isCur?"#5b8dee":isPast?"var(--t3)":"var(--t2)"}}>
-                    #{n}
-                  </div>
-                  <div style={{fontSize:9,color:isCur?"#3ecf8e":"var(--t3)",fontWeight:600,marginTop:1}}>
-                    {isCur?"● atual":isPast?"passada":"futura"}
-                  </div>
+                  <div style={{fontFamily:"var(--mono)",fontWeight:800,fontSize:13,color:isCur?"#5b8dee":isPast?"var(--t3)":"var(--t2)"}}>{n}</div>
+                  <div style={{fontSize:9,fontWeight:600,marginTop:2,color:isCur?"#3ecf8e":"var(--t3)"}}>{isCur?"atual":isPast?"passada":"futura"}</div>
                 </div>
-
-                {/* Start date */}
                 <div>
-                  <input type="date" value={local[n]?.start||""}
-                    onChange={e=>handleStartChange(n,e.target.value)}
-                    style={{padding:"8px 10px",background:"var(--s3)",
-                      border:`1.5px solid ${isEdited?"rgba(91,141,238,.4)":"var(--border)"}`,
-                      borderRadius:8,color:"var(--t1)",fontSize:12,outline:"none",width:"100%",cursor:"pointer",
-                      transition:"border-color .15s"}}/>
-                  <div style={{fontSize:9,color:"var(--t3)",marginTop:3,paddingLeft:2}}>
-                    {getDayLabel(local[n]?.start)}
-                  </div>
+                  <input type="date" value={local[n]?.start||""} onChange={e=>handleStartChange(n,e.target.value)}
+                    style={{width:"100%",padding:"8px 10px",background:"var(--s3)",border:"1.5px solid var(--border)",borderRadius:8,color:"var(--t1)",fontSize:13,outline:"none",cursor:"pointer"}}
+                    onFocus={e=>e.target.style.borderColor="rgba(91,141,238,.5)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+                  <div style={{fontSize:10,color:"var(--t3)",marginTop:3,paddingLeft:2}}>{dayLabel(local[n]?.start)}</div>
                 </div>
-
-                {/* End date */}
                 <div>
-                  <input type="date" value={local[n]?.end||""}
-                    onChange={e=>handleEndChange(n,e.target.value)}
-                    style={{padding:"8px 10px",background:"var(--s3)",
-                      border:`1.5px solid ${isEdited?"rgba(91,141,238,.4)":"var(--border)"}`,
-                      borderRadius:8,color:"var(--t1)",fontSize:12,outline:"none",width:"100%",cursor:"pointer",
-                      transition:"border-color .15s"}}/>
-                  <div style={{fontSize:9,color:"var(--t3)",marginTop:3,paddingLeft:2}}>
-                    {getDayLabel(local[n]?.end)}
-                  </div>
+                  <input type="date" value={local[n]?.end||""} onChange={e=>handleEndChange(n,e.target.value)}
+                    style={{width:"100%",padding:"8px 10px",background:"var(--s3)",border:"1.5px solid var(--border)",borderRadius:8,color:"var(--t1)",fontSize:13,outline:"none",cursor:"pointer"}}
+                    onFocus={e=>e.target.style.borderColor="rgba(91,141,238,.5)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+                  <div style={{fontSize:10,color:"var(--t3)",marginTop:3,paddingLeft:2}}>{dayLabel(local[n]?.end)}</div>
                 </div>
-
-                {/* Workdays */}
                 <div style={{textAlign:"center"}}>
-                  <div style={{fontFamily:"var(--mono)",fontWeight:800,fontSize:20,
-                    color:days<5?"#f87171":days>12?"#f59e0b":"#3ecf8e",lineHeight:1}}>
-                    {days}
-                  </div>
-                  <div style={{fontSize:9,color:"var(--t3)",marginTop:1}}>dias úteis</div>
+                  <div style={{fontFamily:"var(--mono)",fontWeight:900,fontSize:22,color:dc,lineHeight:1}}>{days}</div>
+                  <div style={{fontSize:9,color:"var(--t3)",marginTop:1}}>dias uteis</div>
                 </div>
-
-                {/* Reset */}
-                <button onClick={()=>resetOne(n)} title="Resetar"
-                  style={{width:30,height:30,borderRadius:7,border:"1px solid var(--border)",
-                    background:"transparent",color:"var(--t3)",cursor:"pointer",
-                    display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}
+                <button onClick={()=>resetOne(n)} title="Restaurar"
+                  style={{width:30,height:30,borderRadius:7,border:"1px solid var(--border)",background:"transparent",color:"var(--t3)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}
                   onMouseOver={e=>{e.currentTarget.style.color="#f87171";e.currentTarget.style.borderColor="rgba(239,68,68,.3)";e.currentTarget.style.background="rgba(239,68,68,.06)";}}
                   onMouseOut={e=>{e.currentTarget.style.color="var(--t3)";e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.background="transparent";}}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
@@ -2460,23 +2392,18 @@ function SprintMgrPanel({overrides={},onSave}) {
             );
           })}
         </div>
-
-        {/* Save */}
         <div style={{marginTop:16}}>
           <button className="btn btn-primary" onClick={save} disabled={!hasChanges}
-            style={{padding:"12px",justifyContent:"center",width:"100%",
-              opacity:hasChanges?1:.4,
-              background:hasChanges?"linear-gradient(135deg,#3b82f6,#6366f1)":"var(--s3)",
-              border:hasChanges?"none":"1px solid var(--border)",
-              color:hasChanges?"#fff":"var(--t3)"}}>
+            style={{width:"100%",justifyContent:"center",padding:"12px",opacity:hasChanges?1:.45,background:hasChanges?"linear-gradient(135deg,#3b82f6,#6366f1)":"var(--s3)",border:hasChanges?"none":"1px solid var(--border)",color:hasChanges?"#fff":"var(--t3)"}}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            {hasChanges?`Salvar alterações (${editedCount} sprint${editedCount>1?"s":""})` : saved?"Alterações salvas":"Nenhuma alteração"}
+            {hasChanges?"Salvar alteracoes":"Sem alteracoes pendentes"}
           </button>
         </div>
       </div>
     </div>
   );
 }
+
 
 
 
