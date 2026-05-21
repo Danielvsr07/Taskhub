@@ -436,7 +436,7 @@ function Toast({msg,type}) {
       border:`1px solid ${isOk&&!isWarn?"rgba(16,185,129,.3)":isWarn?"rgba(245,158,11,.3)":"rgba(239,68,68,.3)"}`,
       color:isOk&&!isWarn?"#34d399":isWarn?"#fbbf24":"#f87171",
       boxShadow:"0 8px 32px rgba(0,0,0,.6)",
-      backdropFilter:"blur(16px)",maxWidth:400,zIndex:9999}}>
+      backdropFilter:"blur(16px)",maxWidth:400}}>
       <div style={{width:20,height:20,borderRadius:6,background:"currentColor",opacity:.15,position:"absolute",left:14}}/>
       <span style={{fontSize:15,position:"relative"}}>{isOk&&!isWarn?"✓":isWarn?"⚠":"✕"}</span>
       <span style={{position:"relative"}}>{msg}</span>
@@ -2658,7 +2658,8 @@ function NewTaskView({user,onSubmit}) {
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginTop:6}}>
               {Object.entries(PRIO_LABEL).map(([k,v])=>{
                 const sel=form.priority===k; const c=PRIO_COLOR[k];
-                const dot=k==="critica"?"<span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#ef4444",flexShrink:0,verticalAlign:"middle"}}/>":k==="alta"?"<span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#f97316",flexShrink:0,verticalAlign:"middle"}}/>":k==="media"?"<span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#eab308",flexShrink:0,verticalAlign:"middle"}}/>":"<span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#22c55e",flexShrink:0,verticalAlign:"middle"}}/>";
+                const DOT_COLORS={"critica":"#ef4444","alta":"#f97316","media":"#eab308","baixa":"#22c55e"};
+                  const dot=<span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:DOT_COLORS[k]||"#94a3b8",flexShrink:0,verticalAlign:"middle"}}/>;
                 return(
                   <button key={k} onClick={()=>setForm(p=>({...p,priority:k}))}
                     style={{padding:"9px 8px",border:`1px solid ${sel?c+"60":"var(--border)"}`,borderRadius:9,
