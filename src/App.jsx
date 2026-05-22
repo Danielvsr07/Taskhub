@@ -114,7 +114,14 @@ async function dbDemands() {
 async function dbInsertDemand(d) {
   const s = await getSB();
   if (s) {
-    const { error } = await s.from("demands").insert([d]);
+    // Try with squads field first
+    let { error } = await s.from("demands").insert([d]);
+    if (error && error.message?.includes("squads")) {
+      // squads column doesn't exist yet — insert without it
+      const {squads: _, ...rest} = d;
+      const res = await s.from("demands").insert([rest]);
+      error = res.error;
+    }
     if (error) { console.error("dbInsertDemand error:", error.message); }
     else return;
   }
@@ -1145,12 +1152,18 @@ export default function App() {
 
   // ── DEMAND ACTIONS ──
   async function handleNewDemand(demand) {
-    const d = {...demand, timeline:[{status:"pendente",at:new Date().toISOString(),note:"Demanda criada"}]};
-    await dbInsertDemand(d);
-    setDemands(p=>[d,...p]);
-    const r = await notify(d,"pendente",{note:"Demanda criada com sucesso"});
-    showToast(`Demanda enviada!${r.ok?" E-mail enviado ✓":""}`);
-    setView("my");
+    try {
+      const d = {...demand, squads: demand.squads||[demand.squad], timeline:[{status:"pendente",at:new Date().toISOString(),note:"Demanda criada"}]};
+      await dbInsertDemand(d);
+      setDemands(p=>[d,...p]);
+      // Fire and forget — don't block UI on notify
+      notify(d,"pendente",{note:"Demanda criada com sucesso"}).catch(()=>{});
+      showToast("Demanda enviada!");
+      setView("my");
+    } catch(e) {
+      console.error("handleNewDemand error:", e);
+      showToast("Erro ao enviar demanda. Tente novamente.","error");
+    }
   }
 
   async function handleApprove({demandId,status,sprint,adminNote}) {
@@ -2565,15 +2578,20 @@ function NewTaskView({user,onSubmit}) {
     if(!form.squads||form.squads.length===0) e.squads="Selecione pelo menos um squad";
     setErrors(e); if(Object.keys(e).length) return;
     setLoading(true);
-    await onSubmit({
-      id:uid(),user_id:user.id||user.email,user_email:user.email,user_name:user.name,
-      ...form,
-      squad: primarySquad, // primary squad for backwards compat
-      squads: form.squads, // all squads
-      files,created_at:new Date().toISOString(),status:"pendente",sprint:null
-    });
-    setLoading(false);
-    setSubmitted(true);
+    try {
+      await onSubmit({
+        id:uid(),user_id:user.id||user.email,user_email:user.email,user_name:user.name,
+        ...form,
+        squad: primarySquad,
+        squads: form.squads,
+        files,created_at:new Date().toISOString(),status:"pendente",sprint:null
+      });
+      setSubmitted(true);
+    } catch(err) {
+      console.error("submit error:", err);
+    } finally {
+      setLoading(false);
+    }
   }
 
   if(submitted) return(
