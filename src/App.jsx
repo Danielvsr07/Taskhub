@@ -668,7 +668,7 @@ async function dbDeleteComment(id) {
 function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}) {
   const [tab,setTab]       = useState("details");
   const [editing,setEditing] = useState(false);
-  const [form,setForm]     = useState({title:demand.title,description:demand.description,team:demand.team||"",priority:demand.priority,tag:demand.tag});
+  const [form,setForm]     = useState({title:demand.title,description:demand.description,team:demand.team||"",priority:demand.priority,tag:demand.tag,squad:demand.squad,squads:demand.squads||(demand.squad?[demand.squad]:[])});
   const [saving,setSaving] = useState(false);
   const [comments,setComments] = useState([]);
   const [loadingComments,setLoadingComments] = useState(true);
@@ -1279,6 +1279,21 @@ export default function App() {
     showToast(`Movida para Sprint ${newSprint}!${r.ok?" E-mail enviado ✓":""}`);
   }
 
+  async function handleChangeSquad(demandId, newSquads) {
+    const demand = demands.find(d=>d.id===demandId);
+    const now = new Date().toISOString();
+    const names = newSquads.map(s=>SQUAD_LABEL[s]||s).join(", ");
+    const entry = {status:"squad_change",at:now,note:`Squads alterados para: ${names}`};
+    const patch = {
+      squad: newSquads[0],
+      squads: newSquads,
+      timeline:[...(demand.timeline||[]),entry]
+    };
+    await dbUpdateDemand(demandId,patch);
+    setDemands(p=>p.map(d=>d.id===demandId?{...d,...patch}:d));
+    showToast(`Squads alterados: ${names}`);
+  }
+
   async function handleEditDemand(demandId,form) {
     const demand = demands.find(d=>d.id===demandId);
     const now = new Date().toISOString();
@@ -1412,7 +1427,7 @@ export default function App() {
         {view==="queue"     && <QueueView demands={demands} overrides={overrides} onOpen={d=>setTaskModal(d)}/>}
         {view==="new"       && <NewTaskView user={user} onSubmit={handleNewDemand}/>}
         {view==="my"        && <MyTasksView demands={demands.filter(d=>d.user_id===user?.id||d.user_email===user?.email)} onOpen={d=>setTaskModal(d)}/>}
-        {view==="admin"     && isMod && <AdminView demands={demands} config={config} backlog={backlog} isAdmin={isAdmin} overrides={overrides} onApprove={handleApprove} onDelete={handleDeleteDemand} onUpdateStatus={handleUpdateStatus} onMoveSprint={handleMoveSprint} onSaveConfig={handleSaveConfig} onBacklog={setBacklog} onOpen={d=>setTaskModal(d)}/>}
+        {view==="admin"     && isMod && <AdminView demands={demands} config={config} backlog={backlog} isAdmin={isAdmin} overrides={overrides} onApprove={handleApprove} onDelete={handleDeleteDemand} onUpdateStatus={handleUpdateStatus} onMoveSprint={handleMoveSprint} onChangeSquad={handleChangeSquad} onSaveConfig={handleSaveConfig} onBacklog={setBacklog} onOpen={d=>setTaskModal(d)}/>}
         {view==="analytics" && isAdmin && <AnalyticsView demands={demands}/>}
         {view==="profile"   && <ProfileView user={user} onUpdate={u=>{setUser(u);session.set(u);}} demands={demands}/>}
       </main>
@@ -1468,7 +1483,10 @@ function NotifDropdown({notifs,onMarkRead,onClose,onOpen}) {
 function QueueView({demands,overrides,onOpen}) {
   const [squad,setSquad] = useState("industria");
   const cur = curSprint();
-  const sq  = demands.filter(d=>d.squad===squad);
+  const sq  = demands.filter(d=>{
+    const dSquads = d.squads||(d.squad?[d.squad]:[]);
+    return dSquads.includes(squad)||d.squad===squad;
+  });
   const inSprint = sq.filter(d=>["aprovada","em_andamento","em_aprovacao","concluida"].includes(d.status)&&d.sprint);
   const pending  = sq.filter(d=>d.status==="pendente");
   const rejected = sq.filter(d=>d.status==="rejeitada");
@@ -1739,7 +1757,7 @@ const IC = {
   open:       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>,
 };
 
-function AdminView({demands,config,backlog,isAdmin,overrides,onApprove,onDelete,onUpdateStatus,onMoveSprint,onSaveConfig,onBacklog,onOpen}) {
+function AdminView({demands,config,backlog,isAdmin,overrides,onApprove,onDelete,onUpdateStatus,onMoveSprint,onChangeSquad,onSaveConfig,onBacklog,onOpen}) {
   const [tab,setTab]            = useState("pending");
   const [users,setUsers]        = useState([]);
   const [confirmDel,setConfirm] = useState(null);
@@ -1886,6 +1904,7 @@ function AdminView({demands,config,backlog,isAdmin,overrides,onApprove,onDelete,
                   canStatus={["approved","em_andamento","em_aprovacao"].includes(tab)}
                   onApprove={onApprove} onDelete={()=>setConfirm(d)}
                   onUpdateStatus={onUpdateStatus} onMoveSprint={onMoveSprint}
+                  onChangeSquad={onChangeSquad}
                   onOpen={()=>onOpen(d)}/>
               ))}
             </div>
@@ -1895,14 +1914,61 @@ function AdminView({demands,config,backlog,isAdmin,overrides,onApprove,onDelete,
   );
 }
 
-function AdminTaskRow({demand,overrides,canAct,canStatus,onApprove,onDelete,onUpdateStatus,onMoveSprint,onOpen}) {
+function SquadChangePanel({demand,onSave,onCancel}) {
+  const current = demand.squads||(demand.squad?[demand.squad]:[]);
+  const [selected,setSelected] = useState(current);
+
+  function toggle(s) {
+    setSelected(p=> p.includes(s) ? (p.length===1?p:p.filter(x=>x!==s)) : [...p,s]);
+  }
+
+  return(
+    <div style={{padding:"16px 18px",borderTop:"1px solid rgba(129,140,248,.2)",background:"rgba(129,140,248,.03)",animation:"fadeIn .15s"}}>
+      <div style={{fontSize:13,fontWeight:700,marginBottom:12,color:"var(--t1)"}}>Alterar squads desta task</div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
+        {SQUADS.map(s=>{
+          const c=SQUAD_COLOR[s]; const sel=selected.includes(s);
+          return(
+            <button key={s} onClick={()=>toggle(s)}
+              style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",
+                border:`1.5px solid ${sel?c.h+"60":"var(--border)"}`,borderRadius:10,
+                background:sel?`rgba(${c.rgb},.12)`:"var(--s1)",
+                cursor:"pointer",transition:"all .15s",color:"inherit"}}>
+              <div style={{width:16,height:16,borderRadius:4,border:`2px solid ${sel?c.h:"var(--border2)"}`,background:sel?c.h:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                {sel&&<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+              </div>
+              <span style={{fontSize:14}}>{SQUAD_ICON[s]}</span>
+              <span style={{fontSize:12,fontWeight:sel?700:400,color:sel?c.h:"var(--t2)"}}>{SQUAD_LABEL[s]}</span>
+              {sel&&s===selected[0]&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:999,background:`rgba(${c.rgb},.2)`,color:c.h}}>principal</span>}
+            </button>
+          );
+        })}
+      </div>
+      {selected.length>1&&<div style={{fontSize:11,color:"#93c5fd",marginBottom:12,padding:"7px 10px",background:"rgba(91,141,238,.07)",borderRadius:7,border:"1px solid rgba(91,141,238,.15)"}}>
+        A task aparecerá nos {selected.length} squads. Clique primeiro no squad principal.
+      </div>}
+      <div style={{display:"flex",gap:8}}>
+        <button className="btn btn-primary" onClick={()=>onSave(selected)} disabled={selected.length===0}
+          style={{padding:"8px 20px",fontSize:12,justifyContent:"center"}}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Salvar
+        </button>
+        <button className="btn btn-ghost" onClick={onCancel} style={{padding:"8px 14px",fontSize:12}}>Cancelar</button>
+      </div>
+    </div>
+  );
+}
+
+function AdminTaskRow({demand,overrides,canAct,canStatus,onApprove,onDelete,onUpdateStatus,onMoveSprint,onOpen,onChangeSquad}) {
   const [actOpen,setActOpen]   = useState(false);
   const [statOpen,setStatOpen] = useState(false);
   const [spOpen,setSpOpen]     = useState(false);
+  const [sqOpen,setSqOpen]     = useState(false);
   const [sprint,setSprint]     = useState(curSprint());
   const [note,setNote]         = useState("");
   const [statNote,setStatNote] = useState("");
   const [loading,setLoading]   = useState(false);
+  const dSquads = demand.squads||(demand.squad?[demand.squad]:[]);
   const sq = SQUAD_COLOR[demand.squad]||{h:"#64748b",rgb:"100,116,139"};
   const sm = STATUS[demand.status]||STATUS.pendente;
   const cur = curSprint(); const nxt = cur+1;
@@ -1910,6 +1976,7 @@ function AdminTaskRow({demand,overrides,canAct,canStatus,onApprove,onDelete,onUp
   async function approve(status) { setLoading(true); await onApprove({demandId:demand.id,status,sprint,adminNote:note}); setLoading(false); setActOpen(false); setNote(""); }
   async function updStatus(s)    { setLoading(true); await onUpdateStatus(demand.id,s,statNote); setLoading(false); setStatOpen(false); setStatNote(""); }
   async function moveSp(sp)      { await onMoveSprint(demand.id,sp); setSpOpen(false); }
+  async function changeSquads(newSquads) { await onChangeSquad(demand.id, newSquads); setSqOpen(false); }
 
   return(
     <div style={{background:"var(--s2)",border:"1px solid var(--border)",borderRadius:14,overflow:"hidden"}}>
@@ -1918,23 +1985,35 @@ function AdminTaskRow({demand,overrides,canAct,canStatus,onApprove,onDelete,onUp
         <div style={{width:38,height:38,borderRadius:10,background:`rgba(${sq.rgb},.12)`,border:`1px solid rgba(${sq.rgb},.25)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>{SQUAD_ICON[demand.squad]}</div>
         <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={onOpen}>
           <div style={{fontWeight:700,fontSize:14,marginBottom:3}}>{demand.title}</div>
-          <div style={{display:"flex",gap:10,fontSize:11,color:"var(--t3)",flexWrap:"wrap"}}>
+          <div style={{display:"flex",gap:8,fontSize:11,color:"var(--t3)",flexWrap:"wrap",alignItems:"center"}}>
             <span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> {demand.user_name}</span>
             {demand.team&&<span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> {demand.team}</span>}
-            <span style={{color:sq.h}}>● {SQUAD_LABEL[demand.squad]}</span>
+            {/* Show all squads */}
+            <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+              {dSquads.map(s=>{const c=SQUAD_COLOR[s]||sq;return<span key={s} style={{color:c.h,display:"flex",alignItems:"center",gap:3}}>● {SQUAD_LABEL[s]}</span>;})}
+            </div>
             {demand.sprint&&<span style={{color:"#38bdf8",fontFamily:"var(--mono)"}}>Sprint {demand.sprint}</span>}
           </div>
         </div>
         <PrioBadge priority={demand.priority}/>
         <StatusBadge status={demand.status}/>
-        <div style={{display:"flex",gap:6,flexShrink:0}}>
-          {canAct&&<button className="btn btn-ghost" onClick={()=>{setActOpen(p=>!p);setStatOpen(false);setSpOpen(false);}} style={{fontSize:11,padding:"6px 12px",gap:6,background:actOpen?"rgba(99,102,241,.15)":"",borderColor:actOpen?"rgba(99,102,241,.4)":"",color:actOpen?"#818cf8":""}}>{IC.approve} Avaliar</button>}
-          {canStatus&&<button className="btn btn-ghost" onClick={()=>{setStatOpen(p=>!p);setActOpen(false);setSpOpen(false);}} style={{fontSize:11,padding:"6px 12px",gap:6,background:statOpen?"rgba(56,189,248,.1)":"",borderColor:statOpen?"rgba(56,189,248,.3)":"",color:statOpen?"#38bdf8":""}}>{IC.status} Status</button>}
-          {demand.sprint&&demand.status!=="concluida"&&<button className="btn btn-ghost" onClick={()=>{setSpOpen(p=>!p);setActOpen(false);setStatOpen(false);}} style={{fontSize:11,padding:"6px 12px",gap:6,background:spOpen?"rgba(251,191,36,.1)":"",borderColor:spOpen?"rgba(251,191,36,.3)":"",color:spOpen?"#fbbf24":""}}>{IC.sprint} Sprint</button>}
+        <div style={{display:"flex",gap:5,flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
+          {canAct&&<button className="btn btn-ghost" onClick={()=>{setActOpen(p=>!p);setStatOpen(false);setSpOpen(false);setSqOpen(false);}} style={{fontSize:11,padding:"6px 12px",gap:6,background:actOpen?"rgba(99,102,241,.15)":"",borderColor:actOpen?"rgba(99,102,241,.4)":"",color:actOpen?"#818cf8":""}}>{IC.approve} Avaliar</button>}
+          {canStatus&&<button className="btn btn-ghost" onClick={()=>{setStatOpen(p=>!p);setActOpen(false);setSpOpen(false);setSqOpen(false);}} style={{fontSize:11,padding:"6px 12px",gap:6,background:statOpen?"rgba(56,189,248,.1)":"",borderColor:statOpen?"rgba(56,189,248,.3)":"",color:statOpen?"#38bdf8":""}}>{IC.status} Status</button>}
+          {demand.sprint&&demand.status!=="concluida"&&<button className="btn btn-ghost" onClick={()=>{setSpOpen(p=>!p);setActOpen(false);setStatOpen(false);setSqOpen(false);}} style={{fontSize:11,padding:"6px 12px",gap:6,background:spOpen?"rgba(251,191,36,.1)":"",borderColor:spOpen?"rgba(251,191,36,.3)":"",color:spOpen?"#fbbf24":""}}>{IC.sprint} Sprint</button>}
+          <button className="btn btn-ghost" onClick={()=>{setSqOpen(p=>!p);setActOpen(false);setStatOpen(false);setSpOpen(false);}} style={{fontSize:11,padding:"6px 10px",gap:5,background:sqOpen?"rgba(129,140,248,.1)":"",borderColor:sqOpen?"rgba(129,140,248,.3)":"",color:sqOpen?"#818cf8":""}}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Squad
+          </button>
           <button onClick={onOpen} className="btn btn-ghost" style={{padding:"6px 10px",fontSize:11,gap:5}}>{IC.open}</button>
           <button className="btn btn-danger" onClick={onDelete} style={{padding:"6px 10px"}}>{IC.delete}</button>
         </div>
       </div>
+
+      {/* Squad change panel */}
+      {sqOpen&&(
+        <SquadChangePanel demand={demand} onSave={changeSquads} onCancel={()=>setSqOpen(false)}/>
+      )}
 
       {/* Approve panel */}
       {actOpen&&(
@@ -1968,10 +2047,10 @@ function AdminTaskRow({demand,overrides,canAct,canStatus,onApprove,onDelete,onUp
           </div>
           <div style={{display:"flex",gap:10}}>
             <button className="btn" onClick={()=>approve("aprovada")} disabled={loading} style={{flex:1,justifyContent:"center",padding:"10px",border:"1px solid rgba(34,197,94,.4)",borderRadius:10,background:"rgba(34,197,94,.1)",color:"#4ade80",fontSize:13,fontWeight:700,opacity:loading?.6:1}}>
-              {loading?<Spin/>:`✅ Aprovar → Sprint ${sprint}`}
+              {loading?<Spin/>:<><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Aprovar → Sprint {sprint}</>}
             </button>
             <button className="btn" onClick={()=>approve("rejeitada")} disabled={loading} style={{flex:1,justifyContent:"center",padding:"10px",border:"1px solid rgba(239,68,68,.35)",borderRadius:10,background:"rgba(239,68,68,.08)",color:"#f87171",fontSize:13,fontWeight:700,opacity:loading?.6:1}}>
-              {loading?<Spin/>:"❌ Rejeitar"}
+              {loading?<Spin/>:<><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Rejeitar</>}
             </button>
           </div>
         </div>
@@ -2504,7 +2583,7 @@ function BacklogPanel({items=[],onSave}) {
 // NEW TASK VIEW
 // ─────────────────────────────────────────────────────────────────────────────
 function NewTaskView({user,onSubmit}) {
-  const [form,setForm] = useState({squad:"industria",priority:"media",tag:"nova_demanda",title:"",team:"",description:""});
+  const [form,setForm] = useState({squads:["industria"],priority:"media",tag:"nova_demanda",title:"",team:"",description:""});
   const [files,setFiles] = useState([]);
   const [errors,setErrors] = useState({});
   const [loading,setLoading] = useState(false);
@@ -2512,9 +2591,19 @@ function NewTaskView({user,onSubmit}) {
   const fileRef = useRef();
   const titleRef = useRef();
   const f = k => e => { setForm(p=>({...p,[k]:e.target.value})); if(errors[k]) setErrors(p=>({...p,[k]:null})); };
-  const sq = SQUAD_COLOR[form.squad]||{h:"#64748b",rgb:"100,116,139"};
 
-  // Auto-focus title on mount
+  // Multi-squad toggle
+  function toggleSquad(s) {
+    setForm(p=>{
+      const cur = p.squads||[];
+      const next = cur.includes(s) ? cur.filter(x=>x!==s) : [...cur,s];
+      return {...p, squads: next.length===0 ? [s] : next}; // at least one
+    });
+  }
+
+  const primarySquad = form.squads?.[0]||"industria";
+  const sq = SQUAD_COLOR[primarySquad]||{h:"#64748b",rgb:"100,116,139"};
+
   useEffect(()=>{ setTimeout(()=>titleRef.current?.focus(),100); },[]);
 
   async function submit() {
@@ -2522,14 +2611,20 @@ function NewTaskView({user,onSubmit}) {
     if(!form.title.trim()) e.title="Título é obrigatório";
     if(!form.description.trim()) e.description="Descrição é obrigatória";
     if(form.description.trim().length<20) e.description="Descreva com pelo menos 20 caracteres";
+    if(!form.squads||form.squads.length===0) e.squads="Selecione pelo menos um squad";
     setErrors(e); if(Object.keys(e).length) return;
     setLoading(true);
-    await onSubmit({id:uid(),user_id:user.id||user.email,user_email:user.email,user_name:user.name,...form,files,created_at:new Date().toISOString(),status:"pendente",sprint:null});
+    await onSubmit({
+      id:uid(),user_id:user.id||user.email,user_email:user.email,user_name:user.name,
+      ...form,
+      squad: primarySquad, // primary squad for backwards compat
+      squads: form.squads, // all squads
+      files,created_at:new Date().toISOString(),status:"pendente",sprint:null
+    });
     setLoading(false);
     setSubmitted(true);
   }
 
-  // Success state
   if(submitted) return(
     <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",animation:"fadeUp .4s ease"}}>
       <div style={{textAlign:"center",maxWidth:400}}>
@@ -2537,12 +2632,15 @@ function NewTaskView({user,onSubmit}) {
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#3ecf8e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
         <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-.5px",marginBottom:8,color:"var(--t1)"}}>Task enviada!</h2>
-        <p style={{fontSize:14,color:"var(--t3)",lineHeight:1.7,marginBottom:28}}>Sua solicitação foi recebida e será analisada pelo time. Você receberá uma notificação quando for aprovada.</p>
+        <p style={{fontSize:14,color:"var(--t3)",lineHeight:1.7,marginBottom:20}}>Sua solicitação foi recebida e será analisada pelo time.</p>
         <div style={{padding:"14px 20px",background:"rgba(62,207,142,.06)",border:"1px solid rgba(62,207,142,.2)",borderRadius:12,fontSize:13,color:"#3ecf8e",marginBottom:24}}>
-          <strong>"{form.title}"</strong> · {SQUAD_LABEL[form.squad]}
+          <strong>"{form.title}"</strong>
+          <div style={{marginTop:6,display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
+            {form.squads.map(s=>{const c=SQUAD_COLOR[s];return<span key={s} style={{fontSize:11,padding:"2px 8px",borderRadius:999,background:`rgba(${c.rgb},.15)`,color:c.h}}>{SQUAD_LABEL[s]}</span>;})}
+          </div>
         </div>
         <div style={{display:"flex",gap:10,justifyContent:"center"}}>
-          <button className="btn btn-primary" onClick={()=>setSubmitted(false)&&setForm({squad:"industria",priority:"media",tag:"nova_demanda",title:"",team:"",description:""})} style={{padding:"10px 20px",borderRadius:10}}>
+          <button className="btn btn-primary" onClick={()=>{setSubmitted(false);setForm({squads:["industria"],priority:"media",tag:"nova_demanda",title:"",team:"",description:""}); }} style={{padding:"10px 20px",borderRadius:10}}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Nova Task
           </button>
@@ -2553,7 +2651,7 @@ function NewTaskView({user,onSubmit}) {
   );
 
   const descLen = form.description.trim().length;
-  const isComplete = form.title.trim() && descLen >= 20;
+  const isComplete = form.title.trim() && descLen >= 20 && form.squads?.length > 0;
 
   return(
     <div style={{flex:1,padding:"24px 0",animation:"fadeUp .35s ease"}}>
@@ -2662,27 +2760,45 @@ function NewTaskView({user,onSubmit}) {
 
         {/* Right — config sidebar */}
         <div style={{display:"flex",flexDirection:"column",gap:14}}>
-          {/* Squad */}
-          <div style={{padding:18,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
-            <FieldLabel>Squad <span style={{color:"#f87171"}}>*</span></FieldLabel>
-            <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:6}}>
+          {/* Squad — multi select */}
+          <div style={{padding:18,background:"var(--s2)",border:`1px solid ${errors.squads?"rgba(239,68,68,.4)":"var(--border)"}`,borderRadius:16}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+              <FieldLabel>Squad <span style={{color:"#f87171"}}>*</span></FieldLabel>
+              <span style={{fontSize:10,color:"var(--t3)"}}>Selecione um ou mais</span>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
               {SQUADS.map(s=>{
-                const c=SQUAD_COLOR[s]; const sel=form.squad===s;
+                const c=SQUAD_COLOR[s];
+                const sel=(form.squads||[]).includes(s);
                 return(
-                  <button key={s} onClick={()=>setForm(p=>({...p,squad:s}))}
+                  <button key={s} onClick={()=>toggleSquad(s)}
                     style={{padding:"10px 12px",border:`1.5px solid ${sel?c.h+"60":"var(--border)"}`,borderRadius:10,
                       background:sel?`rgba(${c.rgb},.1)`:"var(--s1)",
                       color:"inherit",fontSize:13,fontWeight:sel?700:400,
                       textAlign:"left",cursor:"pointer",transition:"all .2s cubic-bezier(.34,1.56,.64,1)",
                       display:"flex",alignItems:"center",gap:9,
-                      boxShadow:sel?`0 4px 12px rgba(${c.rgb},.2)`:"none"}}>
-                    <div style={{width:28,height:28,borderRadius:8,background:`rgba(${c.rgb},.15)`,border:`1px solid rgba(${c.rgb},.25)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>{SQUAD_ICON[s]}</div>
+                      boxShadow:sel?`0 4px 12px rgba(${c.rgb},.15)`:"none"}}>
+                    {/* Checkbox */}
+                    <div style={{width:18,height:18,borderRadius:5,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",
+                      background:sel?c.h:"transparent",
+                      border:`2px solid ${sel?c.h:"var(--border2)"}`,
+                      transition:"all .15s"}}>
+                      {sel&&<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                    </div>
+                    <div style={{width:26,height:26,borderRadius:7,background:`rgba(${c.rgb},.15)`,border:`1px solid rgba(${c.rgb},.25)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{SQUAD_ICON[s]}</div>
                     <span style={{color:sel?c.h:"var(--t2)"}}>{SQUAD_LABEL[s]}</span>
-                    {sel&&<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={c.h} strokeWidth="2.5" style={{marginLeft:"auto"}}><polyline points="20 6 9 17 4 12"/></svg>}
+                    {sel&&s===primarySquad&&<span style={{marginLeft:"auto",fontSize:9,padding:"2px 7px",borderRadius:999,background:`rgba(${c.rgb},.2)`,color:c.h,fontWeight:700}}>principal</span>}
                   </button>
                 );
               })}
             </div>
+            {errors.squads&&<div style={{fontSize:11,color:"#f87171",marginTop:6}}>{errors.squads}</div>}
+            {form.squads?.length>1&&(
+              <div style={{marginTop:8,padding:"8px 10px",borderRadius:8,background:"rgba(91,141,238,.07)",border:"1px solid rgba(91,141,238,.15)",fontSize:11,color:"#93c5fd"}}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight:5}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                A task aparecerá nos {form.squads.length} squads selecionados. O primeiro é o principal.
+              </div>
+            )}
           </div>
 
           {/* Priority */}
