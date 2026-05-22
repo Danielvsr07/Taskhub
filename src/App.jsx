@@ -1156,13 +1156,11 @@ export default function App() {
       const d = {...demand, squads: demand.squads||[demand.squad], timeline:[{status:"pendente",at:new Date().toISOString(),note:"Demanda criada"}]};
       await dbInsertDemand(d);
       setDemands(p=>[d,...p]);
-      // Fire and forget — don't block UI on notify
-      notify(d,"pendente",{note:"Demanda criada com sucesso"}).catch(()=>{});
       showToast("Demanda enviada!");
       setView("my");
     } catch(e) {
       console.error("handleNewDemand error:", e);
-      showToast("Erro ao enviar demanda. Tente novamente.","error");
+      showToast("Erro ao enviar. Tente novamente.","error");
     }
   }
 
