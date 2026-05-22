@@ -245,6 +245,18 @@ async function dbMarkRead(userId) {
   const s = sb(); if (s) { await s.from("notifications").update({read:true}).eq("user_id",userId); return; }
   const data = ls.get()||{notifications:[]}; data.notifications=(data.notifications||[]).map(n=>n.user_id===userId?{...n,read:true}:n); ls.set(data);
 }
+
+// ── File upload to Supabase Storage ──
+async function uploadFile(file, demandId) {
+  const s = await getSB();
+  if (!s) return {name:file.name, size:file.size, url:null};
+  const ext = file.name.split('.').pop();
+  const path = `demands/${demandId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+  const { data, error } = await s.storage.from('attachments').upload(path, file, {cacheControl:'3600',upsert:false});
+  if (error) { console.warn("Upload error:", error.message); return {name:file.name, size:file.size, url:null}; }
+  const { data: urlData } = s.storage.from('attachments').getPublicUrl(path);
+  return {name:file.name, size:file.size, url:urlData.publicUrl, path};
+}
 async function dbBacklog() {
   const s = sb(); if (s) { const { data } = await s.from("backlog").select("*").order("created_at",{ascending:false}); return data||[]; }
   return ls.get()?.backlog||[];
@@ -756,6 +768,32 @@ function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}
                 <div style={{marginTop:14,padding:"12px 14px",background:"rgba(99,102,241,.07)",border:"1px solid rgba(99,102,241,.2)",borderRadius:10}}>
                   <FieldLabel>Nota do Gestor</FieldLabel>
                   <p style={{fontSize:13,color:"#c7d2fe",lineHeight:1.6,marginTop:4}}>{demand.admin_note}</p>
+                </div>
+              )}
+
+              {/* Attachments */}
+              {demand.files&&demand.files.length>0&&(
+                <div style={{marginTop:14}}>
+                  <FieldLabel>Anexos ({demand.files.length})</FieldLabel>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:8}}>
+                    {demand.files.map((f,i)=>{
+                      const isImg = f.url && (f.name?.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) || f.url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i));
+                      return isImg
+                        ? <a key={i} href={f.url} target="_blank" rel="noreferrer"
+                            style={{display:"block",borderRadius:8,overflow:"hidden",border:"1px solid var(--border)",flexShrink:0}}>
+                            <img src={f.url} alt={f.name} style={{width:100,height:80,objectFit:"cover",display:"block"}}/>
+                            <div style={{fontSize:9,color:"var(--t3)",padding:"3px 6px",background:"var(--s1)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{f.name}</div>
+                          </a>
+                        : <a key={i} href={f.url||"#"} target="_blank" rel="noreferrer"
+                            style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"var(--s1)",border:"1px solid var(--border)",borderRadius:8,fontSize:12,color:"var(--t2)",textDecoration:"none",maxWidth:200}}
+                            onMouseOver={e=>e.currentTarget.style.borderColor="var(--border2)"}
+                            onMouseOut={e=>e.currentTarget.style.borderColor="var(--border)"}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.name||"Arquivo"}</span>
+                            {f.size&&<span style={{color:"var(--t3)",flexShrink:0,fontSize:10}}>{(f.size/1024).toFixed(0)}KB</span>}
+                          </a>;
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -2510,7 +2548,7 @@ function BacklogPanel({items=[],onSave}) {
 // ─────────────────────────────────────────────────────────────────────────────
 function NewTaskView({user,onSubmit}) {
   const [form,setForm] = useState({squads:["industria"],priority:"media",tag:"nova_demanda",title:"",team:"",description:""});
-  const [files,setFiles] = useState([]);
+  const [files,setFiles] = useState([]); // [{file: File, name, size, preview}]
   const [errors,setErrors] = useState({});
   const [loading,setLoading] = useState(false);
   const [submitted,setSubmitted] = useState(false);
@@ -2541,12 +2579,18 @@ function NewTaskView({user,onSubmit}) {
     setErrors(e); if(Object.keys(e).length) return;
     setLoading(true);
     try {
+      const demandId = uid();
+      // Upload files to Supabase Storage
+      const uploadedFiles = await Promise.all(
+        files.map(f => f.file ? uploadFile(f.file, demandId) : f)
+      );
       await onSubmit({
-        id:uid(),user_id:user.id||user.email,user_email:user.email,user_name:user.name,
+        id:demandId, user_id:user.id||user.email, user_email:user.email, user_name:user.name,
         ...form,
         squad: primarySquad,
         squads: form.squads,
-        files,created_at:new Date().toISOString(),status:"pendente",sprint:null
+        files: uploadedFiles,
+        created_at:new Date().toISOString(), status:"pendente", sprint:null
       });
       setSubmitted(true);
     } catch(err) {
@@ -2672,13 +2716,23 @@ function NewTaskView({user,onSubmit}) {
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="1.5" style={{marginBottom:8}}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               <div style={{fontSize:13,color:"var(--t3)",fontWeight:500}}>Arraste arquivos ou <span style={{color:"var(--blue)"}}>clique para selecionar</span></div>
               <div style={{fontSize:11,color:"var(--t3)",marginTop:4}}>PDF, imagens, docs — qualquer formato</div>
-              <input ref={fileRef} type="file" multiple onChange={e=>setFiles(p=>[...p,...Array.from(e.target.files).map(x=>({name:x.name,size:x.size}))])} style={{display:"none"}}/>
+              <input ref={fileRef} type="file" multiple onChange={e=>{
+                const newFiles = Array.from(e.target.files).map(f=>({
+                  file:f, name:f.name, size:f.size,
+                  preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null,
+                  isImage: f.type.startsWith('image/')
+                }));
+                setFiles(p=>[...p,...newFiles]);
+              }} style={{display:"none"}}/>
             </div>
             {files.length>0&&(
               <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:6}}>
                 {files.map((fl,i)=>(
                   <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"var(--s3)",borderRadius:9,fontSize:12,border:"1px solid var(--border)"}}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    {fl.isImage && fl.preview
+                      ? <img src={fl.preview} alt="" style={{width:36,height:36,borderRadius:6,objectFit:"cover",flexShrink:0}}/>
+                      : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    }
                     <span style={{flex:1,color:"var(--t2)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fl.name}</span>
                     <span style={{color:"var(--t3)",flexShrink:0}}>{(fl.size/1024).toFixed(0)}KB</span>
                     <button onClick={()=>setFiles(p=>p.filter((_,idx)=>idx!==i))} style={{background:"none",border:"none",color:"var(--t3)",cursor:"pointer",fontSize:16,lineHeight:1,padding:"0 2px",transition:"color .15s"}} onMouseOver={e=>e.currentTarget.style.color="#f87171"} onMouseOut={e=>e.currentTarget.style.color="var(--t3)"}>×</button>
