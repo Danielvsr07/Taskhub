@@ -240,43 +240,7 @@ async function dbInsertNotif(n) {
   const data = ls.get()||{notifications:[]}; data.notifications=[n,...(data.notifications||[])]; ls.set(data);
 }
 
-// ── Power Automate webhook ──
-async function triggerPowerAutomate(webhookUrl, payload) {
-  if (!webhookUrl) return;
-  try {
-    await fetch(webhookUrl, {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(payload),
-      mode:"no-cors"
-    });
-  } catch(e) { console.warn("Power Automate webhook error:", e.message); }
-}
 
-async function notifyPowerAutomate(demand, event, adminNote="") {
-  const s = await getSB();
-  if (!s) return;
-  // Use same query as dbConfig
-  const { data: cfg } = await s.from("config").select("*").eq("id","main").single();
-  const webhookUrl = cfg?.email_config?.powerAutomateUrl;
-  console.log("[TaskHUB] webhook event:", event, "| url:", webhookUrl ? "✓ found" : "✗ not found", "| email_config:", JSON.stringify(cfg?.email_config));
-  if (!webhookUrl) return;
-  const sm = STATUS[demand.status]||STATUS.pendente;
-  await triggerPowerAutomate(webhookUrl, {
-    event,
-    demand_id: demand.id,
-    demand_title: demand.title,
-    demand_squad: SQUAD_LABEL[demand.squad]||demand.squad,
-    demand_status: sm.label,
-    demand_priority: PRIO_LABEL[demand.priority]||demand.priority,
-    user_email: demand.user_email,
-    user_name: demand.user_name,
-    admin_note: adminNote,
-    sprint: demand.sprint ? `Sprint ${demand.sprint}` : "Não atribuída",
-    updated_at: new Date().toISOString(),
-    app_url: window.location.origin,
-  });
-}
 async function dbMarkRead(userId) {
   const s = sb(); if (s) { await s.from("notifications").update({read:true}).eq("user_id",userId); return; }
   const data = ls.get()||{notifications:[]}; data.notifications=(data.notifications||[]).map(n=>n.user_id===userId?{...n,read:true}:n); ls.set(data);
@@ -1185,7 +1149,6 @@ export default function App() {
     setDemands(p=>p.map(d=>d.id===demandId?{...d,...patch}:d));
     const updated = {...demand,...patch};
     const r = await notify(updated,status,{note:adminNote});
-    await notifyPowerAutomate(updated, status==="aprovada"?"task_approved":"task_rejected", adminNote);
     showToast(`Demanda ${STATUS[status]?.label}!`);
   }
 
@@ -1199,7 +1162,6 @@ export default function App() {
     setDemands(p=>p.map(d=>d.id===demandId?{...d,...patch}:d));
     const updated = {...demand,...patch};
     const r = await notify(updated,newStatus,{note});
-    await notifyPowerAutomate(updated, "status_updated", note);
     showToast(`Status: ${STATUS[newStatus]?.label}!`);
     if(taskModal?.id===demandId) setTaskModal({...taskModal,...patch});
   }
@@ -1214,7 +1176,6 @@ export default function App() {
     setDemands(p=>p.map(d=>d.id===demandId?{...d,...patch}:d));
     const updated = {...demand,...patch};
     const r = await notify(updated,demand.status,{note:`Sprint atualizada: Sprint ${newSprint} (${sr})`});
-    await notifyPowerAutomate(updated, "sprint_updated");
     showToast(`Movida para Sprint ${newSprint}!`);
   }
 
@@ -1253,7 +1214,6 @@ export default function App() {
   async function handleSaveConfig(patch) {
     const next = {...config,...patch};
     setConfig(next);
-    // Save powerAutomateUrl directly inside email_config so notifyPowerAutomate finds it
     const emailCfg = next.paConfig||{};
     await dbSetConfig({email_config:emailCfg, sprint_overrides:next.sprintOverrides});
     showToast("Configurações salvas!");
@@ -2120,19 +2080,9 @@ function EmailCfgPanel({config,onSave}) {
     if (!url) return;
     setTesting(true); setTestResult(null);
     try {
-      await triggerPowerAutomate(url, {
-        event:"test",
-        demand_title:"Task de Teste — TaskHUB",
-        demand_squad:"Industria",
-        demand_status:"Aprovada",
-        demand_priority:"Media",
-        user_email:"teste@oficinabrasil.com.br",
-        user_name:"Usuario Teste",
-        admin_note:"Este e um teste de conexao com o Power Automate.",
-        sprint:"Sprint atual",
-        updated_at:new Date().toISOString(),
-        app_url:window.location.origin,
-      });
+      await fetch(url, {method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({event:"test",demand_title:"Task de Teste",demand_squad:"Industria",demand_status:"Aprovada",demand_priority:"Media",user_email:"teste@oficinabrasil.com.br",user_name:"Usuario Teste",admin_note:"Teste de conexao.",sprint:"Sprint atual",updated_at:new Date().toISOString(),app_url:window.location.origin}),
+        mode:"no-cors"});
       setTestResult({ok:true});
     } catch(e) { setTestResult({ok:false,reason:e.message}); }
     setTesting(false);
