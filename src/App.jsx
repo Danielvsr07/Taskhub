@@ -702,25 +702,26 @@ function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}
   const getReplies     = id => comments.filter(c=>c.parent_id===id);
 
   return(
-    <div className="modal-bg" onClick={lightbox ? ()=>setLightbox(null) : onClose}>
-      {/* Lightbox — rendered at top level to cover everything */}
+    <div className="modal-bg" onClick={lightbox ? undefined : onClose}>
       {lightbox&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.95)",zIndex:9999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",animation:"fadeIn .15s ease"}}
-          onClick={()=>setLightbox(null)}>
-          <img src={lightbox} alt="" onClick={e=>e.stopPropagation()}
-            style={{maxWidth:"90vw",maxHeight:"82vh",objectFit:"contain",borderRadius:8,boxShadow:"0 20px 60px rgba(0,0,0,.8)"}}/>
+        <div
+          onClick={e=>{e.stopPropagation();setLightbox(null);}}
+          style={{position:"fixed",inset:0,background:"rgba(0,0,0,.95)",zIndex:10000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+          <img src={lightbox} alt=""
+            onClick={e=>e.stopPropagation()}
+            style={{maxWidth:"90vw",maxHeight:"80vh",objectFit:"contain",borderRadius:8,boxShadow:"0 20px 60px rgba(0,0,0,.8)"}}/>
           <div style={{display:"flex",gap:12,marginTop:20}} onClick={e=>e.stopPropagation()}>
             <a href={lightbox} download target="_blank" rel="noreferrer"
               style={{display:"flex",alignItems:"center",gap:6,padding:"8px 18px",borderRadius:8,background:"var(--s2)",border:"1px solid var(--border2)",color:"var(--t2)",fontSize:13,textDecoration:"none"}}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               Baixar
             </a>
-            <button onClick={()=>setLightbox(null)}
+            <button onClick={e=>{e.stopPropagation();setLightbox(null);}}
               style={{padding:"8px 18px",borderRadius:8,background:"var(--s2)",border:"1px solid var(--border2)",color:"var(--t2)",fontSize:13,cursor:"pointer"}}>
               Fechar
             </button>
           </div>
-          <div style={{marginTop:12,fontSize:11,color:"rgba(255,255,255,.3)"}}>Clique fora para fechar</div>
+          <div style={{marginTop:10,fontSize:11,color:"rgba(255,255,255,.3)"}}>Clique fora da imagem para fechar</div>
         </div>
       )}
       <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:800,maxHeight:"92vh"}}>
@@ -800,7 +801,7 @@ function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}
                     {demand.files.map((f,i)=>{
                       const isImg = f.url && f.name?.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i);
                       return isImg
-                        ? <div key={i} onClick={()=>setLightbox(f.url)}
+                        ? <div key={i} onClick={e=>{e.stopPropagation();setLightbox(f.url);}}
                             style={{borderRadius:8,overflow:"hidden",border:"1px solid var(--border)",flexShrink:0,cursor:"zoom-in",transition:"all .15s"}}
                             onMouseOver={e=>{e.currentTarget.style.borderColor="var(--border2)";e.currentTarget.style.transform="scale(1.03)";}}
                             onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.transform="scale(1)";}}>
