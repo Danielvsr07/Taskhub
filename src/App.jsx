@@ -256,12 +256,10 @@ async function triggerPowerAutomate(webhookUrl, payload) {
 async function notifyPowerAutomate(demand, event, adminNote="") {
   const s = await getSB();
   if (!s) return;
-  const { data: cfg } = await s.from("config").select("*").eq("id",1).single();
-  // Try all possible locations where the URL might be stored
-  const webhookUrl = cfg?.email_config?.powerAutomateUrl
-    || cfg?.pa_config?.powerAutomateUrl
-    || cfg?.email_config?.webhookUrl;
-  console.log("[TaskHUB] notifyPowerAutomate:", event, "url:", webhookUrl ? "✓" : "NOT FOUND", cfg?.email_config);
+  // Use same query as dbConfig
+  const { data: cfg } = await s.from("config").select("*").eq("id","main").single();
+  const webhookUrl = cfg?.email_config?.powerAutomateUrl;
+  console.log("[TaskHUB] webhook event:", event, "| url:", webhookUrl ? "✓ found" : "✗ not found", "| email_config:", JSON.stringify(cfg?.email_config));
   if (!webhookUrl) return;
   const sm = STATUS[demand.status]||STATUS.pendente;
   await triggerPowerAutomate(webhookUrl, {
@@ -1255,7 +1253,9 @@ export default function App() {
   async function handleSaveConfig(patch) {
     const next = {...config,...patch};
     setConfig(next);
-    await dbSetConfig({email_config:next.paConfig,sprint_overrides:next.sprintOverrides});
+    // Save powerAutomateUrl directly inside email_config so notifyPowerAutomate finds it
+    const emailCfg = next.paConfig||{};
+    await dbSetConfig({email_config:emailCfg, sprint_overrides:next.sprintOverrides});
     showToast("Configurações salvas!");
   }
 
