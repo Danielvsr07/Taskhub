@@ -257,7 +257,11 @@ async function notifyPowerAutomate(demand, event, adminNote="") {
   const s = await getSB();
   if (!s) return;
   const { data: cfg } = await s.from("config").select("*").eq("id",1).single();
-  const webhookUrl = cfg?.email_config?.powerAutomateUrl || cfg?.pa_config?.powerAutomateUrl;
+  // Try all possible locations where the URL might be stored
+  const webhookUrl = cfg?.email_config?.powerAutomateUrl
+    || cfg?.pa_config?.powerAutomateUrl
+    || cfg?.email_config?.webhookUrl;
+  console.log("[TaskHUB] notifyPowerAutomate:", event, "url:", webhookUrl ? "✓" : "NOT FOUND", cfg?.email_config);
   if (!webhookUrl) return;
   const sm = STATUS[demand.status]||STATUS.pendente;
   await triggerPowerAutomate(webhookUrl, {
@@ -1816,7 +1820,7 @@ function AdminView({demands,config,backlog,isAdmin,overrides,onApprove,onDelete,
         </div>
 
         {/* Content panels */}
-        {tab==="email"   && <EmailCfgPanel config={config.emailConfig||{}} onSave={c=>onSaveConfig({paConfig:c})}/>}
+        {tab==="email"   && <EmailCfgPanel config={config.paConfig||{}} onSave={c=>onSaveConfig({paConfig:c})}/>}
         {tab==="sprints" && <SprintMgrPanel overrides={overrides} onSave={o=>onSaveConfig({sprintOverrides:o})}/>}
         {tab==="backlog" && <BacklogPanel items={backlog} onSave={onBacklog}/>}
         {tab==="users"   && <UserMgrPanel users={users} onUpdateRole={updateRole}/>}
