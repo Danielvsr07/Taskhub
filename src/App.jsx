@@ -596,6 +596,7 @@ async function dbDeleteComment(id) {
 function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}) {
   const [tab,setTab]       = useState("details");
   const [editing,setEditing] = useState(false);
+  const [lightbox,setLightbox] = useState(null); // url string
   const [form,setForm]     = useState({title:demand.title,description:demand.description,team:demand.team||"",priority:demand.priority,tag:demand.tag,squad:demand.squad,squads:demand.squads||(demand.squad?[demand.squad]:[])});
   const [saving,setSaving] = useState(false);
   const [comments,setComments] = useState([]);
@@ -777,13 +778,15 @@ function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}
                   <FieldLabel>Anexos ({demand.files.length})</FieldLabel>
                   <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:8}}>
                     {demand.files.map((f,i)=>{
-                      const isImg = f.url && (f.name?.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) || f.url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i));
+                      const isImg = f.url && f.name?.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i);
                       return isImg
-                        ? <a key={i} href={f.url} target="_blank" rel="noreferrer"
-                            style={{display:"block",borderRadius:8,overflow:"hidden",border:"1px solid var(--border)",flexShrink:0}}>
+                        ? <div key={i} onClick={()=>setLightbox(f.url)}
+                            style={{borderRadius:8,overflow:"hidden",border:"1px solid var(--border)",flexShrink:0,cursor:"zoom-in",transition:"all .15s"}}
+                            onMouseOver={e=>{e.currentTarget.style.borderColor="var(--border2)";e.currentTarget.style.transform="scale(1.03)";}}
+                            onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.transform="scale(1)";}}>
                             <img src={f.url} alt={f.name} style={{width:100,height:80,objectFit:"cover",display:"block"}}/>
                             <div style={{fontSize:9,color:"var(--t3)",padding:"3px 6px",background:"var(--s1)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{f.name}</div>
-                          </a>
+                          </div>
                         : <a key={i} href={f.url||"#"} target="_blank" rel="noreferrer"
                             style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"var(--s1)",border:"1px solid var(--border)",borderRadius:8,fontSize:12,color:"var(--t2)",textDecoration:"none",maxWidth:200}}
                             onMouseOver={e=>e.currentTarget.style.borderColor="var(--border2)"}
@@ -793,6 +796,26 @@ function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}
                             {f.size&&<span style={{color:"var(--t3)",flexShrink:0,fontSize:10}}>{(f.size/1024).toFixed(0)}KB</span>}
                           </a>;
                     })}
+                  </div>
+                </div>
+              )}
+
+              {/* Lightbox */}
+              {lightbox&&(
+                <div onClick={()=>setLightbox(null)}
+                  style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",cursor:"zoom-out",animation:"fadeIn .15s ease"}}>
+                  <div style={{position:"relative",maxWidth:"90vw",maxHeight:"90vh"}}>
+                    <img src={lightbox} alt="" style={{maxWidth:"90vw",maxHeight:"88vh",objectFit:"contain",borderRadius:8,boxShadow:"0 20px 60px rgba(0,0,0,.8)"}}/>
+                    <button onClick={()=>setLightbox(null)}
+                      style={{position:"absolute",top:-14,right:-14,width:32,height:32,borderRadius:"50%",background:"var(--s2)",border:"1px solid var(--border2)",color:"var(--t2)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>
+                      ×
+                    </button>
+                    <a href={lightbox} download target="_blank" rel="noreferrer"
+                      onClick={e=>e.stopPropagation()}
+                      style={{position:"absolute",bottom:-40,left:"50%",transform:"translateX(-50%)",display:"flex",alignItems:"center",gap:6,padding:"7px 16px",borderRadius:8,background:"var(--s2)",border:"1px solid var(--border2)",color:"var(--t2)",fontSize:12,textDecoration:"none"}}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                      Baixar imagem
+                    </a>
                   </div>
                 </div>
               )}
