@@ -1082,6 +1082,16 @@ export default function App() {
   const overrides = config.sprintOverrides||{};
 
 
+  // ── NOTIFY (in-app only — Power Automate handles external) ──
+  async function notify(demand, type, extra={}) {
+    try {
+      const n = {id:uid(),user_id:demand.user_id||demand.user_email,type,demand_id:demand.id,demand_title:demand.title,squad:demand.squad,sprint:demand.sprint,admin_note:extra.note||"",read:false,created_at:new Date().toISOString()};
+      await dbInsertNotif(n);
+      setNotifs(p=>[n,...p]);
+    } catch(e) { console.warn("notify error:", e); }
+    return {ok:true};
+  }
+
   // ── LOAD DATA ──
   async function loadData(u) {
     const usr = u||user;
