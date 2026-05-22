@@ -596,9 +596,29 @@ async function dbDeleteComment(id) {
 function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}) {
   const [tab,setTab]       = useState("details");
   const [editing,setEditing] = useState(false);
-  const [lightbox,setLightbox] = useState(null); // url string
+  const [viewerIdx,setViewerIdx] = useState(null); // index into imgFiles
+  const [zoom,setZoom] = useState(1);
   const [form,setForm]     = useState({title:demand.title,description:demand.description,team:demand.team||"",priority:demand.priority,tag:demand.tag,squad:demand.squad,squads:demand.squads||(demand.squad?[demand.squad]:[])});
   const [saving,setSaving] = useState(false);
+
+  // All image files
+  const allFiles = demand.files||[];
+  const imgFiles = allFiles.filter(f=>f.url&&f.name?.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i));
+  const otherFiles = allFiles.filter(f=>!f.url||!f.name?.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i));
+
+  // Keyboard navigation for viewer
+  useEffect(()=>{
+    if(viewerIdx===null) return;
+    const handler = e=>{
+      if(e.key==="ArrowRight") setViewerIdx(p=>Math.min(p+1,imgFiles.length-1));
+      if(e.key==="ArrowLeft")  setViewerIdx(p=>Math.max(p-1,0));
+      if(e.key==="Escape")     { setViewerIdx(null); setZoom(1); }
+      if(e.key==="+" || e.key==="=") setZoom(p=>Math.min(p+0.5,4));
+      if(e.key==="-") setZoom(p=>Math.max(p-0.5,0.5));
+    };
+    document.addEventListener("keydown",handler);
+    return()=>document.removeEventListener("keydown",handler);
+  },[viewerIdx,imgFiles.length]);
   const [comments,setComments] = useState([]);
   const [loadingComments,setLoadingComments] = useState(true);
   const [comment,setComment] = useState("");
@@ -702,28 +722,85 @@ function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}
   const getReplies     = id => comments.filter(c=>c.parent_id===id);
 
   return(
-    <div className="modal-bg" onClick={lightbox ? undefined : onClose}>
-      {lightbox&&(
-        <div
-          onClick={e=>{e.stopPropagation();setLightbox(null);}}
-          style={{position:"fixed",inset:0,background:"rgba(0,0,0,.95)",zIndex:10000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-          <img src={lightbox} alt=""
-            onClick={e=>e.stopPropagation()}
-            style={{maxWidth:"90vw",maxHeight:"80vh",objectFit:"contain",borderRadius:8,boxShadow:"0 20px 60px rgba(0,0,0,.8)"}}/>
-          <div style={{display:"flex",gap:12,marginTop:20}} onClick={e=>e.stopPropagation()}>
-            <a href={lightbox} download target="_blank" rel="noreferrer"
-              style={{display:"flex",alignItems:"center",gap:6,padding:"8px 18px",borderRadius:8,background:"var(--s2)",border:"1px solid var(--border2)",color:"var(--t2)",fontSize:13,textDecoration:"none"}}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              Baixar
-            </a>
-            <button onClick={e=>{e.stopPropagation();setLightbox(null);}}
-              style={{padding:"8px 18px",borderRadius:8,background:"var(--s2)",border:"1px solid var(--border2)",color:"var(--t2)",fontSize:13,cursor:"pointer"}}>
-              Fechar
-            </button>
+    <div className="modal-bg" onClick={viewerIdx!==null ? undefined : onClose}>
+      {/* ── IMAGE VIEWER ── */}
+      {viewerIdx!==null&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.97)",zIndex:10000,display:"flex",flexDirection:"column"}}
+          onClick={e=>{if(e.target===e.currentTarget){setViewerIdx(null);setZoom(1);}}}>
+
+          {/* Top bar */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 20px",background:"rgba(255,255,255,.04)",flexShrink:0}}>
+            <div style={{fontSize:13,color:"rgba(255,255,255,.7)",fontWeight:600}}>
+              {imgFiles[viewerIdx]?.name}
+              <span style={{marginLeft:10,fontSize:11,color:"rgba(255,255,255,.35)"}}>{viewerIdx+1} / {imgFiles.length}</span>
+            </div>
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              {/* Zoom controls */}
+              <button onClick={e=>{e.stopPropagation();setZoom(p=>Math.max(p-.5,.5));}} style={{width:30,height:30,borderRadius:7,border:"1px solid rgba(255,255,255,.15)",background:"transparent",color:"rgba(255,255,255,.7)",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>−</button>
+              <span style={{fontSize:11,color:"rgba(255,255,255,.4)",minWidth:36,textAlign:"center"}}>{Math.round(zoom*100)}%</span>
+              <button onClick={e=>{e.stopPropagation();setZoom(p=>Math.min(p+.5,4));}} style={{width:30,height:30,borderRadius:7,border:"1px solid rgba(255,255,255,.15)",background:"transparent",color:"rgba(255,255,255,.7)",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
+              <button onClick={e=>{e.stopPropagation();setZoom(1);}} style={{padding:"5px 10px",borderRadius:7,border:"1px solid rgba(255,255,255,.15)",background:"transparent",color:"rgba(255,255,255,.5)",cursor:"pointer",fontSize:11}}>Reset</button>
+              <a href={imgFiles[viewerIdx]?.url} download target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}
+                style={{padding:"6px 12px",borderRadius:7,border:"1px solid rgba(255,255,255,.15)",background:"transparent",color:"rgba(255,255,255,.7)",fontSize:12,textDecoration:"none",display:"flex",alignItems:"center",gap:5}}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Baixar
+              </a>
+              <button onClick={e=>{e.stopPropagation();setViewerIdx(null);setZoom(1);}}
+                style={{width:32,height:32,borderRadius:8,border:"1px solid rgba(255,255,255,.2)",background:"rgba(255,255,255,.06)",color:"rgba(255,255,255,.8)",cursor:"pointer",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+            </div>
           </div>
-          <div style={{marginTop:10,fontSize:11,color:"rgba(255,255,255,.3)"}}>Clique fora da imagem para fechar</div>
+
+          {/* Main image area */}
+          <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden",padding:"20px 80px"}}>
+            {/* Prev button */}
+            {viewerIdx>0&&(
+              <button onClick={e=>{e.stopPropagation();setViewerIdx(p=>p-1);setZoom(1);}}
+                style={{position:"absolute",left:16,width:44,height:44,borderRadius:12,border:"1px solid rgba(255,255,255,.2)",background:"rgba(255,255,255,.08)",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,zIndex:2,transition:"all .15s"}}
+                onMouseOver={e=>e.currentTarget.style.background="rgba(255,255,255,.18)"}
+                onMouseOut={e=>e.currentTarget.style.background="rgba(255,255,255,.08)"}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+            )}
+
+            {/* Image */}
+            <img src={imgFiles[viewerIdx]?.url} alt={imgFiles[viewerIdx]?.name}
+              style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",
+                transform:`scale(${zoom})`,transition:"transform .2s ease",
+                cursor:zoom>1?"grab":"zoom-in",userSelect:"none",borderRadius:4}}
+              onClick={e=>{e.stopPropagation();setZoom(p=>p===1?2:1);}}/>
+
+            {/* Next button */}
+            {viewerIdx<imgFiles.length-1&&(
+              <button onClick={e=>{e.stopPropagation();setViewerIdx(p=>p+1);setZoom(1);}}
+                style={{position:"absolute",right:16,width:44,height:44,borderRadius:12,border:"1px solid rgba(255,255,255,.2)",background:"rgba(255,255,255,.08)",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,zIndex:2,transition:"all .15s"}}
+                onMouseOver={e=>e.currentTarget.style.background="rgba(255,255,255,.18)"}
+                onMouseOut={e=>e.currentTarget.style.background="rgba(255,255,255,.08)"}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            )}
+          </div>
+
+          {/* Thumbnails strip */}
+          {imgFiles.length>1&&(
+            <div style={{display:"flex",gap:6,padding:"10px 20px",background:"rgba(255,255,255,.03)",overflowX:"auto",flexShrink:0,justifyContent:"center"}}>
+              {imgFiles.map((img,i)=>(
+                <div key={i} onClick={e=>{e.stopPropagation();setViewerIdx(i);setZoom(1);}}
+                  style={{width:56,height:44,borderRadius:6,overflow:"hidden",flexShrink:0,cursor:"pointer",
+                    border:`2px solid ${i===viewerIdx?"#fff":"transparent"}`,
+                    opacity:i===viewerIdx?1:.5,transition:"all .15s"}}>
+                  <img src={img.url} alt="" style={{width:"100%",height:"100%",objectFit:"cover",pointerEvents:"none"}}/>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Hint */}
+          <div style={{textAlign:"center",padding:"8px",fontSize:10,color:"rgba(255,255,255,.2)",flexShrink:0}}>
+            ← → navegar · clique na imagem para zoom · ESC fechar
+          </div>
         </div>
       )}
+
       <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:800,maxHeight:"92vh"}}>
 
         {/* ── HEADER ── */}
@@ -794,34 +871,48 @@ function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}
               )}
 
               {/* Attachments */}
-              {demand.files&&demand.files.length>0&&(
+              {allFiles.length>0&&(
                 <div style={{marginTop:14}}>
-                  <FieldLabel>Anexos ({demand.files.length})</FieldLabel>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:8}}>
-                    {demand.files.map((f,i)=>{
-                      const isImg = f.url && f.name?.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i);
-                      return isImg
-                        ? <div key={i} onClick={e=>{e.stopPropagation();setLightbox(f.url);}}
-                            style={{borderRadius:8,overflow:"hidden",border:"1px solid var(--border)",flexShrink:0,cursor:"zoom-in",transition:"all .15s"}}
-                            onMouseOver={e=>{e.currentTarget.style.borderColor="var(--border2)";e.currentTarget.style.transform="scale(1.03)";}}
-                            onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.transform="scale(1)";}}>
-                            <img src={f.url} alt={f.name} style={{width:100,height:80,objectFit:"cover",display:"block",pointerEvents:"none"}}/>
-                            <div style={{fontSize:9,color:"var(--t3)",padding:"3px 6px",background:"var(--s1)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{f.name}</div>
+                  <FieldLabel>Anexos ({allFiles.length})</FieldLabel>
+
+                  {/* Image grid */}
+                  {imgFiles.length>0&&(
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))",gap:6,marginTop:8}}>
+                      {imgFiles.map((f,i)=>(
+                        <div key={i} onClick={e=>{e.stopPropagation();setViewerIdx(i);setZoom(1);}}
+                          style={{aspectRatio:"1",borderRadius:8,overflow:"hidden",border:"1px solid var(--border)",cursor:"zoom-in",position:"relative",background:"var(--s1)",transition:"all .2s"}}
+                          onMouseOver={e=>{e.currentTarget.style.borderColor="var(--border2)";e.currentTarget.querySelector('.overlay').style.opacity="1";}}
+                          onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.querySelector('.overlay').style.opacity="0";}}>
+                          <img src={f.url} alt={f.name} style={{width:"100%",height:"100%",objectFit:"cover",display:"block",pointerEvents:"none"}}/>
+                          <div className="overlay" style={{position:"absolute",inset:0,background:"rgba(0,0,0,.45)",display:"flex",alignItems:"center",justifyContent:"center",opacity:0,transition:"opacity .15s"}}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
                           </div>
-                        : <a key={i} href={f.url||"#"} target="_blank" rel="noreferrer"
-                            style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"var(--s1)",border:"1px solid var(--border)",borderRadius:8,fontSize:12,color:"var(--t2)",textDecoration:"none",maxWidth:200}}
-                            onMouseOver={e=>e.currentTarget.style.borderColor="var(--border2)"}
-                            onMouseOut={e=>e.currentTarget.style.borderColor="var(--border)"}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                            <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.name||"Arquivo"}</span>
-                            {f.size&&<span style={{color:"var(--t3)",flexShrink:0,fontSize:10}}>{(f.size/1024).toFixed(0)}KB</span>}
-                          </a>;
-                    })}
-                  </div>
+                          {imgFiles.length>1&&<div style={{position:"absolute",bottom:3,right:5,fontSize:9,color:"rgba(255,255,255,.7)",fontWeight:700,textShadow:"0 1px 3px rgba(0,0,0,.8)"}}>{i+1}/{imgFiles.length}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Other files */}
+                  {otherFiles.length>0&&(
+                    <div style={{display:"flex",flexDirection:"column",gap:4,marginTop:imgFiles.length>0?8:8}}>
+                      {otherFiles.map((f,i)=>(
+                        <a key={i} href={f.url||"#"} target="_blank" rel="noreferrer"
+                          style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"var(--s1)",border:"1px solid var(--border)",borderRadius:8,fontSize:12,color:"var(--t2)",textDecoration:"none"}}
+                          onMouseOver={e=>e.currentTarget.style.borderColor="var(--border2)"}
+                          onMouseOut={e=>e.currentTarget.style.borderColor="var(--border)"}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                          <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.name||"Arquivo"}</span>
+                          {f.size&&<span style={{color:"var(--t3)",flexShrink:0,fontSize:10}}>{(f.size/1024).toFixed(0)}KB</span>}
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Lightbox handled at modal-bg level */}
+              {/* Viewer handled at top level */}
             </div>
 
             {/* Comments section — inline below description */}
