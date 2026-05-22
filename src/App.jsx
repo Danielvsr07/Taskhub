@@ -250,7 +250,7 @@ async function notifyPowerAutomate(demand, event, adminNote="") {
   const s = await getSB();
   if (!s) return;
   const { data: cfg } = await s.from("config").select("*").eq("id",1).single();
-  const webhookUrl = cfg?.email_config?.powerAutomateUrl;
+  const webhookUrl = cfg?.email_config?.powerAutomateUrl || cfg?.pa_config?.powerAutomateUrl;
   if (!webhookUrl) return;
   const sm = STATUS[demand.status]||STATUS.pendente;
   await triggerPowerAutomate(webhookUrl, {
@@ -286,63 +286,6 @@ async function dbDeleteBacklog(id) {
   const data = ls.get()||{backlog:[]}; data.backlog=data.backlog.filter(x=>x.id!==id); ls.set(data);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// RESEND EMAIL  (free tier: 100/day, no backend needed)
-// ─────────────────────────────────────────────────────────────────────────────
-async function sendResend({ apiKey, from, to, subject, html }) {
-  if (!apiKey) return { ok: false, reason: "Resend API Key não configurada" };
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to, subject, html }),
-    });
-    const data = await res.json();
-    if (res.ok) return { ok: true, id: data.id };
-    return { ok: false, reason: data.message || `HTTP ${res.status}` };
-  } catch (e) { return { ok: false, reason: e.message }; }
-}
-
-function buildEmailHtml({ title, toName, statusLabel, statusIcon, squadLabel, sprint, sprintRange: sr, adminNote, dateTime, description }) {
-  return `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"/><style>
-body{font-family:Inter,system-ui,sans-serif;background:#0d1117;color:#e2eaf8;margin:0;padding:0}
-.wrap{max-width:580px;margin:0 auto;background:#111827;border-radius:16px;overflow:hidden;border:1px solid #1f2937}
-.header{background:linear-gradient(135deg,#1e3a5f,#1e293b);padding:32px 36px;text-align:center}
-.logo{font-size:28px;font-weight:900;letter-spacing:-1px;color:#fff}
-.logo span{background:linear-gradient(135deg,#3b82f6,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.body{padding:32px 36px}
-.status-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:999px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:#60a5fa;font-size:14px;font-weight:700;margin-bottom:24px}
-h2{font-size:20px;font-weight:700;margin:0 0 8px;color:#f0f4ff}
-.desc{font-size:14px;color:#a8bdd4;line-height:1.6;margin:0 0 24px}
-.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
-.info-item{background:#1f2937;border-radius:10px;padding:14px;border:1px solid #374151}
-.info-label{font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
-.info-value{font-size:14px;font-weight:600;color:#e2eaf8}
-.note{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);border-radius:10px;padding:16px;margin-bottom:24px}
-.note-label{font-size:11px;color:#818cf8;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-.note-text{font-size:13px;color:#c7d2fe;line-height:1.6}
-.footer{background:#0d1117;padding:20px 36px;text-align:center;font-size:12px;color:#4b5563;border-top:1px solid #1f2937}
-.cta{display:inline-block;margin-top:20px;padding:12px 28px;background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;font-weight:700;font-size:14px;border-radius:10px;text-decoration:none}
-</style></head>
-<body><div style="padding:24px"><div class="wrap">
-<div class="header"><div class="logo">Task<span>HUB</span></div><div style="font-size:13px;color:#94a3b8;margin-top:6px">Atualização de demanda</div></div>
-<div class="body">
-<div class="status-badge">${statusIcon} ${statusLabel}</div>
-<h2>${title}</h2>
-<p class="desc">${description}</p>
-<div class="info-grid">
-  <div class="info-item"><div class="info-label"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Solicitante</div><div class="info-value">${toName}</div></div>
-  <div class="info-item"><div class="info-label"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg> Squad</div><div class="info-value">${squadLabel}</div></div>
-  ${sprint ? `<div class="info-item"><div class="info-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Sprint</div><div class="info-value">Sprint ${sprint}</div></div>` : ""}
-  ${sr ? `<div class="info-item"><div class="info-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Período</div><div class="info-value">${sr}</div></div>` : ""}
-  <div class="info-item"><div class="info-label"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Data/Hora</div><div class="info-value">${dateTime}</div></div>
-</div>
-${adminNote ? `<div class="note"><div class="note-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Nota do Gestor</div><div class="note-text">${adminNote}</div></div>` : ""}
-</div>
-<div class="footer">TaskHUB — Plataforma de Gestão de Demandas<br/>Este e-mail foi enviado automaticamente.</div>
-</div></div></body></html>`;
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UTILS
@@ -1114,7 +1057,7 @@ export default function App() {
   const [phase,setPhase]     = useState("loading");
   const [user,setUser]       = useState(null);
   const [demands,setDemands] = useState([]);
-  const [config,setConfig]   = useState({emailConfig:{},sprintOverrides:{}});
+  const [config,setConfig]   = useState({paConfig:{},sprintOverrides:{}});
   const [backlog,setBacklog] = useState([]);
   const [notifs,setNotifs]   = useState([]);
   const [view,setView]       = useState("queue");
@@ -1127,33 +1070,6 @@ export default function App() {
   const isMod   = ["admin","moderador"].includes(user?.role);
   const overrides = config.sprintOverrides||{};
 
-  // ── SEND EMAIL VIA RESEND ──
-  async function sendEmail(to, toName, subject, statusLabel, statusIcon, demand, extra={}) {
-    const cfg = config.emailConfig||{};
-    if (!cfg.resendKey||!cfg.fromEmail) return { ok:false, reason:"Resend não configurado" };
-    const html = buildEmailHtml({
-      title:demand.title, toName, statusLabel, statusIcon,
-      squadLabel:SQUAD_LABEL[demand.squad],
-      sprint:demand.sprint, sprintRange:demand.sprint?sprintRange(demand.sprint,overrides):"",
-      adminNote:demand.admin_note||extra.note||"",
-      dateTime:new Date().toLocaleString("pt-BR"),
-      description:demand.description,
-    });
-    return sendResend({ apiKey:cfg.resendKey, from:cfg.fromEmail, to, subject, html });
-  }
-
-  // ── NOTIFY ──
-  async function notify(demand, type, extra={}) {
-    const sm = STATUS[type]||STATUS.pendente;
-    // In-app notification
-    const n = {id:uid(),user_id:demand.user_id||demand.user_email,type,demand_id:demand.id,demand_title:demand.title,squad:demand.squad,sprint:demand.sprint,admin_note:extra.note||"",read:false,created_at:new Date().toISOString()};
-    await dbInsertNotif(n);
-    setNotifs(p=>[n,...p]);
-    // Email
-    const subj = `[TaskHUB] ${sm.label}: ${demand.title}`;
-    const r = await sendEmail(demand.user_email, demand.user_name, subj, sm.label, sm.icon, demand, extra);
-    return r;
-  }
 
   // ── LOAD DATA ──
   async function loadData(u) {
@@ -1163,7 +1079,7 @@ export default function App() {
       dbNotifications(usr?.id||usr?.email||"")
     ]);
     setDemands(d||[]);
-    const cfg = c&&Object.keys(c).length ? {emailConfig:c.email_config||{},sprintOverrides:c.sprint_overrides||{}} : {emailConfig:{},sprintOverrides:{}};
+    const cfg = c&&Object.keys(c).length ? {paConfig:c.email_config||{},sprintOverrides:c.sprint_overrides||{}} : {emailConfig:{},sprintOverrides:{}};
     setConfig(cfg);
     setBacklog(b||[]);
     setNotifs(n||[]);
@@ -1247,7 +1163,7 @@ export default function App() {
     const updated = {...demand,...patch};
     const r = await notify(updated,status,{note:adminNote});
     await notifyPowerAutomate(updated, status==="aprovada"?"task_approved":"task_rejected", adminNote);
-    showToast(`Demanda ${STATUS[status]?.label}!${r.ok?" E-mail enviado ✓":` (Email: ${r.reason})`}`,r.ok?"success":"error");
+    showToast(`Demanda ${STATUS[status]?.label}!`);
   }
 
   async function handleUpdateStatus(demandId,newStatus,note="") {
@@ -1261,7 +1177,7 @@ export default function App() {
     const updated = {...demand,...patch};
     const r = await notify(updated,newStatus,{note});
     await notifyPowerAutomate(updated, "status_updated", note);
-    showToast(`Status: ${STATUS[newStatus]?.label}!${r.ok?" E-mail enviado ✓":""}`);
+    showToast(`Status: ${STATUS[newStatus]?.label}!`);
     if(taskModal?.id===demandId) setTaskModal({...taskModal,...patch});
   }
 
@@ -1276,7 +1192,7 @@ export default function App() {
     const updated = {...demand,...patch};
     const r = await notify(updated,demand.status,{note:`Sprint atualizada: Sprint ${newSprint} (${sr})`});
     await notifyPowerAutomate(updated, "sprint_updated");
-    showToast(`Movida para Sprint ${newSprint}!${r.ok?" E-mail enviado ✓":""}`);
+    showToast(`Movida para Sprint ${newSprint}!`);
   }
 
   async function handleChangeSquad(demandId, newSquads) {
@@ -1314,7 +1230,7 @@ export default function App() {
   async function handleSaveConfig(patch) {
     const next = {...config,...patch};
     setConfig(next);
-    await dbSetConfig({email_config:next.emailConfig,sprint_overrides:next.sprintOverrides});
+    await dbSetConfig({email_config:next.paConfig,sprint_overrides:next.sprintOverrides});
     showToast("Configurações salvas!");
   }
 
@@ -1889,7 +1805,7 @@ function AdminView({demands,config,backlog,isAdmin,overrides,onApprove,onDelete,
         </div>
 
         {/* Content panels */}
-        {tab==="email"   && <EmailCfgPanel config={config.emailConfig||{}} onSave={c=>onSaveConfig({emailConfig:c})}/>}
+        {tab==="email"   && <EmailCfgPanel config={config.emailConfig||{}} onSave={c=>onSaveConfig({paConfig:c})}/>}
         {tab==="sprints" && <SprintMgrPanel overrides={overrides} onSave={o=>onSaveConfig({sprintOverrides:o})}/>}
         {tab==="backlog" && <BacklogPanel items={backlog} onSave={onBacklog}/>}
         {tab==="users"   && <UserMgrPanel users={users} onUpdateRole={updateRole}/>}
@@ -2166,126 +2082,161 @@ function UserMgrPanel({users,onUpdateRole}) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EMAIL CONFIG (Resend)
+// ─────────────────────────────────────────────────────────────────────────────
+// POWER AUTOMATE CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
 function EmailCfgPanel({config,onSave}) {
-  const [form,setForm] = useState({
-    resendKey:config.resendKey||"",
-    fromEmail:config.fromEmail||"",
-    powerAutomateUrl:config.powerAutomateUrl||""
-  });
-  const [testing,setTesting]  = useState(false);
-  const [testResult,setTestResult] = useState(null);
-  const [testPA,setTestPA] = useState(false);
-  const [testPAResult,setTestPAResult] = useState(null);
-  const f = k => e => setForm(p=>({...p,[k]:e.target.value}));
+  const [url, setUrl] = useState(config.powerAutomateUrl||"");
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+  const [saved, setSaved] = useState(false);
 
-  async function testEmail() {
+  async function testWebhook() {
+    if (!url) return;
     setTesting(true); setTestResult(null);
-    const r = await sendResend({apiKey:form.resendKey,from:form.fromEmail,to:form.fromEmail,subject:"[TaskHUB] Teste de e-mail",html:"<p>E-mail de teste enviado com sucesso pelo TaskHUB!</p>"});
-    setTestResult(r); setTesting(false);
-  }
-
-  async function testPowerAutomate() {
-    setTestPA(true); setTestPAResult(null);
     try {
-      await triggerPowerAutomate(form.powerAutomateUrl, {
+      await triggerPowerAutomate(url, {
         event:"test",
-        demand_title:"Task de Teste",
-        demand_squad:"Indústria",
+        demand_title:"Task de Teste — TaskHUB",
+        demand_squad:"Industria",
         demand_status:"Aprovada",
-        demand_priority:"Média",
+        demand_priority:"Media",
         user_email:"teste@oficinabrasil.com.br",
-        user_name:"Usuário Teste",
-        admin_note:"Teste de conexão com Power Automate",
-        sprint:"Sprint 36",
+        user_name:"Usuario Teste",
+        admin_note:"Este e um teste de conexao com o Power Automate.",
+        sprint:"Sprint atual",
         updated_at:new Date().toISOString(),
         app_url:window.location.origin,
       });
-      setTestPAResult({ok:true});
-    } catch(e) { setTestPAResult({ok:false,reason:e.message}); }
-    setTestPA(false);
+      setTestResult({ok:true});
+    } catch(e) { setTestResult({ok:false,reason:e.message}); }
+    setTesting(false);
+  }
+
+  function save() {
+    onSave({powerAutomateUrl:url});
+    setSaved(true);
+    setTimeout(()=>setSaved(false),3000);
   }
 
   return(
-    <div style={{maxWidth:600,display:"flex",flexDirection:"column",gap:16}}>
-      {/* Resend */}
-      <div style={{padding:28,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
-        <div style={{fontSize:16,fontWeight:800,marginBottom:6,display:"flex",alignItems:"center",gap:8}}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-          Configuração de E-mail (Resend)
-        </div>
-        <p style={{fontSize:13,color:"var(--t3)",marginBottom:20,lineHeight:1.7}}>
-          O TaskHUB usa <a href="https://resend.com" target="_blank" rel="noreferrer">Resend</a> para envio de e-mails. Crie uma conta gratuita (100 e-mails/dia), verifique seu domínio e cole as credenciais abaixo.
-        </p>
-        <div style={{display:"flex",flexDirection:"column",gap:14,marginBottom:20}}>
-          <div>
-            <FieldLabel>Resend API Key</FieldLabel>
-            <input className="input" value={form.resendKey} onChange={f("resendKey")} placeholder="re_xxxxxxxxxxxxxxxxxxxx" type="password"/>
+    <div style={{maxWidth:640,display:"flex",flexDirection:"column",gap:16}}>
+
+      {/* Header card */}
+      <div style={{padding:24,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
+          <div style={{width:44,height:44,borderRadius:12,background:"rgba(91,141,238,.12)",border:"1px solid rgba(91,141,238,.25)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5b8dee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
           </div>
           <div>
-            <FieldLabel>E-mail remetente (From)</FieldLabel>
-            <input className="input" value={form.fromEmail} onChange={f("fromEmail")} placeholder="noreply@seudominio.com"/>
-            <div style={{fontSize:11,color:"var(--t3)",marginTop:5}}>Para testes use: <code style={{color:"var(--blue)"}}>onboarding@resend.dev</code></div>
+            <div style={{fontWeight:800,fontSize:16,marginBottom:3}}>Power Automate</div>
+            <div style={{fontSize:12,color:"var(--t3)"}}>Notificacoes automaticas via Microsoft</div>
           </div>
         </div>
-        {testResult&&(
-          <div style={{marginBottom:14,padding:"10px 14px",borderRadius:8,fontSize:12,background:testResult.ok?"rgba(62,207,142,.1)":"rgba(239,68,68,.1)",border:`1px solid ${testResult.ok?"rgba(62,207,142,.3)":"rgba(239,68,68,.3)"}`,color:testResult.ok?"#3ecf8e":"#f87171"}}>
-            {testResult.ok?`Enviado! ID: ${testResult.id}`:`Erro: ${testResult.reason}`}
+
+        {/* How it works */}
+        <div style={{padding:14,background:"rgba(91,141,238,.06)",border:"1px solid rgba(91,141,238,.15)",borderRadius:10,marginBottom:20,fontSize:12,lineHeight:1.9,color:"var(--t2)"}}>
+          <div style={{fontWeight:700,color:"var(--t1)",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Como configurar
           </div>
-        )}
-        <div style={{display:"flex",gap:10}}>
-          <button className="btn btn-primary" onClick={()=>onSave(form)} style={{flex:1,justifyContent:"center",padding:"11px"}}>Salvar tudo</button>
-          <button className="btn btn-ghost" onClick={testEmail} disabled={!form.resendKey||!form.fromEmail||testing} style={{padding:"11px 20px"}}>
-            {testing?<><Spin/>Testando...</>:"Testar e-mail"}
-          </button>
-        </div>
-      </div>
-
-      {/* Power Automate */}
-      <div style={{padding:28,background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16}}>
-        <div style={{fontSize:16,fontWeight:800,marginBottom:6,display:"flex",alignItems:"center",gap:8}}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          Power Automate (Microsoft)
-        </div>
-        <p style={{fontSize:13,color:"var(--t3)",marginBottom:16,lineHeight:1.7}}>
-          Conecte ao Power Automate para enviar notificações via Outlook/Teams quando tasks forem aprovadas, rejeitadas ou atualizadas.
-        </p>
-
-        <div style={{padding:14,background:"rgba(91,141,238,.07)",border:"1px solid rgba(91,141,238,.2)",borderRadius:10,marginBottom:18,fontSize:12,color:"#93c5fd",lineHeight:1.8}}>
-          <strong style={{color:"#60a5fa",display:"block",marginBottom:4}}>Como configurar:</strong>
-          1. Acesse <a href="https://make.powerautomate.com" target="_blank" rel="noreferrer" style={{color:"#60a5fa"}}>make.powerautomate.com</a><br/>
-          2. Criar → <strong>Flow automatizado</strong> → gatilho: <strong>"Quando uma solicitação HTTP é recebida"</strong><br/>
-          3. Adicione uma ação <strong>Enviar e-mail (Outlook)</strong> ou <strong>Publicar mensagem (Teams)</strong><br/>
-          4. Salve → copie a URL gerada e cole abaixo<br/>
-          5. Use as variáveis: <code style={{background:"rgba(0,0,0,.2)",padding:"1px 5px",borderRadius:3}}>triggerBody()?['user_email']</code>, <code style={{background:"rgba(0,0,0,.2)",padding:"1px 5px",borderRadius:3}}>triggerBody()?['demand_title']</code>, <code style={{background:"rgba(0,0,0,.2)",padding:"1px 5px",borderRadius:3}}>triggerBody()?['demand_status']</code>
+          <div>1. Acesse <a href="https://make.powerautomate.com" target="_blank" rel="noreferrer" style={{color:"#5b8dee",fontWeight:600}}>make.powerautomate.com</a></div>
+          <div>2. Criar → <strong>Fluxo da nuvem automatizado</strong></div>
+          <div>3. Gatilho: <strong>Quando uma solicitacao HTTP e recebida</strong></div>
+          <div>4. Adicione acao: <strong>Enviar e-mail (Outlook)</strong> ou <strong>Postar no Teams</strong></div>
+          <div>5. Salve → copie a URL gerada e cole abaixo</div>
         </div>
 
+        {/* Variables reference */}
+        <div style={{marginBottom:20}}>
+          <div style={{fontSize:11,fontWeight:700,color:"var(--t3)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Variaveis disponiveis no flow</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+            {[
+              ["user_email","E-mail do solicitante"],
+              ["user_name","Nome do solicitante"],
+              ["demand_title","Titulo da task"],
+              ["demand_status","Status atual"],
+              ["demand_squad","Squad responsavel"],
+              ["demand_priority","Prioridade"],
+              ["admin_note","Nota do gestor"],
+              ["sprint","Sprint alocada"],
+              ["event","Tipo do evento"],
+              ["app_url","Link do sistema"],
+            ].map(([k,v])=>(
+              <div key={k} style={{padding:"6px 10px",background:"var(--s1)",borderRadius:7,border:"1px solid var(--border)",fontSize:11}}>
+                <code style={{color:"#93c5fd",fontFamily:"var(--mono)",fontSize:10}}>{`triggerBody()?['${k}']`}</code>
+                <div style={{color:"var(--t3)",marginTop:2,fontSize:10}}>{v}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Webhook URL input */}
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:12,fontWeight:600,color:"var(--t2)",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            URL do Webhook HTTP
+          </div>
+          <input className="input" value={url} onChange={e=>{setUrl(e.target.value);setSaved(false);}}
+            placeholder="https://prod-xx.westus.logic.azure.com/workflows/..."/>
+          <div style={{fontSize:10,color:"var(--t3)",marginTop:5,display:"flex",alignItems:"center",gap:4}}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            A URL e salva de forma segura no banco de dados.
+          </div>
+        </div>
+
+        {/* Events */}
         <div style={{marginBottom:16}}>
-          <FieldLabel>URL do Webhook (HTTP POST)</FieldLabel>
-          <input className="input" value={form.powerAutomateUrl} onChange={f("powerAutomateUrl")} placeholder="https://prod-xx.westus.logic.azure.com/workflows/..."/>
-          <div style={{fontSize:11,color:"var(--t3)",marginTop:5}}>
-            Eventos enviados: <code style={{color:"#93c5fd"}}>task_approved</code> · <code style={{color:"#93c5fd"}}>task_rejected</code> · <code style={{color:"#93c5fd"}}>status_updated</code> · <code style={{color:"#93c5fd"}}>sprint_updated</code>
+          <div style={{fontSize:11,fontWeight:700,color:"var(--t3)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Eventos que disparam o webhook</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {[
+              {ev:"task_approved","color":"#3ecf8e",label:"Aprovada"},
+              {ev:"task_rejected","color":"#f87171",label:"Rejeitada"},
+              {ev:"status_updated","color":"#5b8dee",label:"Status alterado"},
+              {ev:"sprint_updated","color":"#fbbf24",label:"Sprint alterada"},
+            ].map(({ev,color,label})=>(
+              <span key={ev} style={{fontSize:11,padding:"4px 10px",borderRadius:999,background:`${color}15`,border:`1px solid ${color}35`,color,fontWeight:600}}>
+                {label}
+              </span>
+            ))}
           </div>
         </div>
 
-        {testPAResult&&(
-          <div style={{marginBottom:14,padding:"10px 14px",borderRadius:8,fontSize:12,background:testPAResult.ok?"rgba(62,207,142,.1)":"rgba(239,68,68,.1)",border:`1px solid ${testPAResult.ok?"rgba(62,207,142,.3)":"rgba(239,68,68,.3)"}`,color:testPAResult.ok?"#3ecf8e":"#f87171"}}>
-            {testPAResult.ok?"Webhook disparado com sucesso! Verifique o Power Automate.":(`Erro: ${testPAResult.reason}`)}
+        {/* Test result */}
+        {testResult&&(
+          <div style={{marginBottom:14,padding:"10px 14px",borderRadius:8,fontSize:12,
+            background:testResult.ok?"rgba(62,207,142,.08)":"rgba(239,68,68,.08)",
+            border:`1px solid ${testResult.ok?"rgba(62,207,142,.25)":"rgba(239,68,68,.25)"}`,
+            color:testResult.ok?"#3ecf8e":"#f87171",
+            display:"flex",alignItems:"center",gap:8}}>
+            {testResult.ok
+              ?<><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Webhook disparado! Verifique o historico de execucoes no Power Automate.</>
+              :<><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Erro: {testResult.reason}</>
+            }
           </div>
         )}
 
+        {/* Actions */}
         <div style={{display:"flex",gap:10}}>
-          <button className="btn btn-primary" onClick={()=>onSave(form)} style={{flex:1,justifyContent:"center",padding:"11px"}}>Salvar tudo</button>
-          <button className="btn btn-ghost" onClick={testPowerAutomate} disabled={!form.powerAutomateUrl||testPA} style={{padding:"11px 20px"}}>
-            {testPA?<><Spin/>Testando...</>:"Testar webhook"}
+          <button className="btn btn-primary" onClick={save} disabled={!url}
+            style={{flex:1,justifyContent:"center",padding:"11px",opacity:url?1:.5}}>
+            {saved
+              ?<><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Salvo!</>
+              :<><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Salvar URL</>
+            }
+          </button>
+          <button className="btn btn-ghost" onClick={testWebhook} disabled={!url||testing}
+            style={{padding:"11px 20px"}}>
+            {testing
+              ?<><Spin/> Testando...</>
+              :<><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Testar webhook</>
+            }
           </button>
         </div>
       </div>
     </div>
   );
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // SPRINT MANAGER
 // ─────────────────────────────────────────────────────────────────────────────
