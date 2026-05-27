@@ -88,6 +88,27 @@ const ADMIN_EMAILS = ["daniel.cunha@oficinabrasil.com.br"];
 // ─────────────────────────────────────────────────────────────────────────────
 // SPRINT HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
+const SPRINT_ANCHOR = new Date("2025-01-06T12:00:00"); // noon to avoid timezone shift
+function sprintNum(date = new Date()) {
+  const d = new Date(date); d.setHours(12,0,0,0);
+  return Math.max(1, Math.floor((d - SPRINT_ANCHOR) / (14 * 86400000)) + 1);
+}
+function sprintDates(n, overrides = {}) {
+  if (overrides[n]) return {
+    start: new Date(overrides[n].start + "T12:00:00"),
+    end:   new Date(overrides[n].end   + "T12:00:00"),
+    custom: true
+  };
+  const start = new Date(SPRINT_ANCHOR.getTime() + (n - 1) * 14 * 86400000);
+  return { start, end: new Date(start.getTime() + 13 * 86400000), custom: false };
+}
+function sprintRange(n, overrides = {}) {
+  const { start, end, custom } = sprintDates(n, overrides);
+  const o = { day:"2-digit", month:"short", timeZone:"America/Sao_Paulo" };
+  return `${start.toLocaleDateString("pt-BR",o)} – ${end.toLocaleDateString("pt-BR",o)}${custom?" ✎":""}`;
+}
+function toISO(d) { return d.toISOString().slice(0, 10); }
+
 // FERIADOS NACIONAIS + SP
 // ─────────────────────────────────────────────────────────────────────────────
 function getHolidays(year) {
@@ -136,25 +157,6 @@ function holidaysInRange(startISO, endISO) {
 }
 
 
-function sprintNum(date = new Date()) {
-  const d = new Date(date); d.setHours(12,0,0,0);
-  return Math.max(1, Math.floor((d - SPRINT_ANCHOR) / (14 * 86400000)) + 1);
-}
-function sprintDates(n, overrides = {}) {
-  if (overrides[n]) return {
-    start: new Date(overrides[n].start + "T12:00:00"),
-    end:   new Date(overrides[n].end   + "T12:00:00"),
-    custom: true
-  };
-  const start = new Date(SPRINT_ANCHOR.getTime() + (n - 1) * 14 * 86400000);
-  return { start, end: new Date(start.getTime() + 13 * 86400000), custom: false };
-}
-function sprintRange(n, overrides = {}) {
-  const { start, end, custom } = sprintDates(n, overrides);
-  const o = { day:"2-digit", month:"short", timeZone:"America/Sao_Paulo" };
-  return `${start.toLocaleDateString("pt-BR",o)} – ${end.toLocaleDateString("pt-BR",o)}${custom?" ✎":""}`;
-}
-function toISO(d) { return d.toISOString().slice(0, 10); }
 const curSprint = () => sprintNum();
 
 // ─────────────────────────────────────────────────────────────────────────────
