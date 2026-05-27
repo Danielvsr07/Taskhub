@@ -65,14 +65,15 @@ const TAG_COLOR  = { nova_demanda:"#38bdf8", bug:"#f472b6" };
 const TAG_ICON   = { nova_demanda:"✦", bug:"⬡" };
 
 const STATUS = {
-  pendente:    { label:"Pendente",       icon:"⏳", color:"#64748b", dot:"#94a3b8", order:0 },
-  aprovada:    { label:"Aprovada",       icon:"✅", color:"#22c55e", dot:"#4ade80", order:1 },
-  em_andamento:{ label:"Em Andamento",   icon:"↻", color:"#3b82f6", dot:"#60a5fa", order:2 },
-  em_aprovacao:{ label:"Em Aprovação",   icon:"◎", color:"#f59e0b", dot:"#fbbf24", order:3 },
-  concluida:   { label:"Concluída",      icon:"✓", color:"#8b5cf6", dot:"#a78bfa", order:4 },
-  rejeitada:   { label:"Rejeitada",      icon:"❌", color:"#ef4444", dot:"#f87171", order:5 },
+  pendente:       { label:"Pendente",         icon:"⏳", color:"#64748b", dot:"#94a3b8", order:0 },
+  aprovada:       { label:"Aprovada",         icon:"✅", color:"#22c55e", dot:"#4ade80", order:1 },
+  em_andamento:   { label:"Em Andamento",     icon:"↻", color:"#3b82f6", dot:"#60a5fa", order:2 },
+  criando_layout: { label:"Criando Layout",   icon:"◫", color:"#ec4899", dot:"#f472b6", order:3 },
+  em_aprovacao:   { label:"Em Aprovação",     icon:"◎", color:"#f59e0b", dot:"#fbbf24", order:4 },
+  concluida:      { label:"Concluída",        icon:"✓", color:"#8b5cf6", dot:"#a78bfa", order:5 },
+  rejeitada:      { label:"Rejeitada",        icon:"❌", color:"#ef4444", dot:"#f87171", order:6 },
 };
-const FLOW = ["pendente","aprovada","em_andamento","em_aprovacao","concluida"];
+const FLOW = ["pendente","aprovada","em_andamento","criando_layout","em_aprovacao","concluida"];
 
 const ROLES = {
   admin:     { label:"Admin",      icon:"◈", color:"#818cf8" },
@@ -87,18 +88,70 @@ const ADMIN_EMAILS = ["daniel.cunha@oficinabrasil.com.br"];
 // ─────────────────────────────────────────────────────────────────────────────
 // SPRINT HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
-const SPRINT_ANCHOR = new Date("2025-01-06");
+// FERIADOS NACIONAIS + SP
+// ─────────────────────────────────────────────────────────────────────────────
+function getHolidays(year) {
+  // Easter calculation (Gaussian)
+  const a=year%19,b=Math.floor(year/100),c=year%100;
+  const d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25);
+  const g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30;
+  const i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7;
+  const m=Math.floor((a+11*h+22*l)/451);
+  const month=Math.floor((h+l-7*m+114)/31);
+  const day=((h+l-7*m+114)%31)+1;
+  const easter = new Date(year, month-1, day, 12);
+
+  const e2 = d => new Date(easter.getTime() + d*86400000);
+  const dt = (m,d) => new Date(year, m-1, d, 12);
+
+  return [
+    // Nacionais fixos
+    { date:dt(1,1),   name:"Confraternização Universal",  type:"nacional" },
+    { date:dt(4,21),  name:"Tiradentes",                  type:"nacional" },
+    { date:dt(5,1),   name:"Dia do Trabalho",              type:"nacional" },
+    { date:dt(9,7),   name:"Independência do Brasil",      type:"nacional" },
+    { date:dt(10,12), name:"Nossa Sra. Aparecida",         type:"nacional" },
+    { date:dt(11,2),  name:"Finados",                      type:"nacional" },
+    { date:dt(11,15), name:"Proclamação da República",     type:"nacional" },
+    { date:dt(11,20), name:"Consciência Negra",            type:"nacional" },
+    { date:dt(12,25), name:"Natal",                        type:"nacional" },
+    // Nacionais móveis
+    { date:e2(-48),   name:"Segunda de Carnaval",          type:"nacional" },
+    { date:e2(-47),   name:"Terça de Carnaval",            type:"nacional" },
+    { date:e2(-2),    name:"Sexta-Feira Santa",            type:"nacional" },
+    { date:easter,    name:"Páscoa",                       type:"nacional" },
+    { date:e2(60),    name:"Corpus Christi",               type:"nacional" },
+    // SP
+    { date:dt(1,25),  name:"Aniversário de São Paulo",     type:"sp" },
+    { date:dt(7,9),   name:"Revolução Constitucionalista", type:"sp" },
+  ].map(h=>({...h, iso:toISO(h.date)}));
+}
+
+function holidaysInRange(startISO, endISO) {
+  const start = new Date(startISO+"T12:00:00");
+  const end   = new Date(endISO+"T12:00:00");
+  const years = [...new Set([start.getFullYear(), end.getFullYear()])];
+  return years.flatMap(y=>getHolidays(y))
+    .filter(h=>h.date>=start && h.date<=end);
+}
+
+
 function sprintNum(date = new Date()) {
-  return Math.max(1, Math.floor((new Date(date) - SPRINT_ANCHOR) / (14 * 86400000)) + 1);
+  const d = new Date(date); d.setHours(12,0,0,0);
+  return Math.max(1, Math.floor((d - SPRINT_ANCHOR) / (14 * 86400000)) + 1);
 }
 function sprintDates(n, overrides = {}) {
-  if (overrides[n]) return { start: new Date(overrides[n].start + "T00:00:00"), end: new Date(overrides[n].end + "T00:00:00"), custom: true };
+  if (overrides[n]) return {
+    start: new Date(overrides[n].start + "T12:00:00"),
+    end:   new Date(overrides[n].end   + "T12:00:00"),
+    custom: true
+  };
   const start = new Date(SPRINT_ANCHOR.getTime() + (n - 1) * 14 * 86400000);
   return { start, end: new Date(start.getTime() + 13 * 86400000), custom: false };
 }
 function sprintRange(n, overrides = {}) {
   const { start, end, custom } = sprintDates(n, overrides);
-  const o = { day:"2-digit", month:"short" };
+  const o = { day:"2-digit", month:"short", timeZone:"America/Sao_Paulo" };
   return `${start.toLocaleDateString("pt-BR",o)} – ${end.toLocaleDateString("pt-BR",o)}${custom?" ✎":""}`;
 }
 function toISO(d) { return d.toISOString().slice(0, 10); }
@@ -1663,10 +1716,11 @@ function QueueView({demands,overrides,onOpen}) {
               const elapsed=Math.min(100,Math.max(0,Math.round(((new Date()-start)/((end.getTime()+86400000)-start.getTime()))*100)));
               const done = spDemands.filter(d=>d.status==="concluida").length;
               const statusGroups = [
-                {key:"aprovada",    label:"Aprovadas",     color:STATUS.aprovada.dot},
-                {key:"em_andamento",label:"Em Andamento",  color:STATUS.em_andamento.dot},
-                {key:"em_aprovacao",label:"Em Aprovação",  color:STATUS.em_aprovacao.dot},
-                {key:"concluida",   label:"Concluídas",    color:STATUS.concluida.dot},
+                {key:"aprovada",       label:"Aprovadas",       color:STATUS.aprovada.dot},
+                {key:"em_andamento",   label:"Em Andamento",    color:STATUS.em_andamento.dot},
+                {key:"criando_layout", label:"Criando Layout",  color:STATUS.criando_layout.dot},
+                {key:"em_aprovacao",   label:"Em Aprovação",    color:STATUS.em_aprovacao.dot},
+                {key:"concluida",      label:"Concluídas",      color:STATUS.concluida.dot},
               ].map(g=>({...g, items:spDemands.filter(d=>d.status===g.key)})).filter(g=>g.items.length>0);
 
               return(
@@ -1705,6 +1759,21 @@ function QueueView({demands,overrides,onOpen}) {
                           <span style={{fontSize:10,color:"var(--t3)",flexShrink:0,fontFamily:"var(--mono)"}}>{done}/{spDemands.length}</span>
                         </div>
                       )}
+                      {(()=>{
+                        const hols = local[sp] ? holidaysInRange(local[sp].start||toISO(sprintDates(sp,overrides).start), local[sp]?.end||toISO(sprintDates(sp,overrides).end)) : holidaysInRange(toISO(sprintDates(sp,overrides).start), toISO(sprintDates(sp,overrides).end));
+                        const hols2 = holidaysInRange(toISO(sprintDates(sp,overrides).start), toISO(sprintDates(sp,overrides).end));
+                        if(!hols2.length) return null;
+                        return <div style={{marginTop:5,display:"flex",gap:4,flexWrap:"wrap"}}>
+                          {hols2.map((h,i)=>(
+                            <span key={i} style={{fontSize:9,padding:"2px 7px",borderRadius:999,
+                              background:h.type==="sp"?"rgba(168,85,247,.1)":"rgba(245,158,11,.1)",
+                              border:`1px solid ${h.type==="sp"?"rgba(168,85,247,.2)":"rgba(245,158,11,.2)"}`,
+                              color:h.type==="sp"?"#c084fc":"#fbbf24"}}>
+                              {h.iso.slice(5).replace("-","/")} {h.name}{h.type==="sp"?" (SP)":""}
+                            </span>
+                          ))}
+                        </div>;
+                      })()}
                     </div>
                   </div>
 
@@ -1878,12 +1947,13 @@ function AdminView({demands,config,backlog,isAdmin,overrides,onApprove,onDelete,
   const [users,setUsers]        = useState([]);
   const [confirmDel,setConfirm] = useState(null);
 
-  const pending    = demands.filter(d=>d.status==="pendente");
-  const approved   = demands.filter(d=>d.status==="aprovada");
-  const inProgress = demands.filter(d=>d.status==="em_andamento");
-  const inReview   = demands.filter(d=>d.status==="em_aprovacao");
-  const concluded  = demands.filter(d=>d.status==="concluida");
-  const rejected   = demands.filter(d=>d.status==="rejeitada");
+  const pending      = demands.filter(d=>d.status==="pendente");
+  const approved     = demands.filter(d=>d.status==="aprovada");
+  const inProgress   = demands.filter(d=>d.status==="em_andamento");
+  const inLayout     = demands.filter(d=>d.status==="criando_layout");
+  const inReview     = demands.filter(d=>d.status==="em_aprovacao");
+  const concluded    = demands.filter(d=>d.status==="concluida");
+  const rejected     = demands.filter(d=>d.status==="rejeitada");
 
   useEffect(()=>{ if(isAdmin) dbProfiles().then(setUsers); },[isAdmin]);
 
@@ -1896,12 +1966,13 @@ function AdminView({demands,config,backlog,isAdmin,overrides,onApprove,onDelete,
   }
 
   const demandTabs = [
-    {id:"pending",      icon:IC.pending,   label:"Pendentes",    count:pending.length,    color:"#94a3b8", list:pending},
-    {id:"approved",     icon:IC.approved,  label:"Aprovadas",    count:approved.length,   color:"#22c55e", list:approved},
-    {id:"em_andamento", icon:IC.progress,  label:"Em Andamento", count:inProgress.length, color:"#3b82f6", list:inProgress},
-    {id:"em_aprovacao", icon:IC.review,    label:"Em Aprovação", count:inReview.length,   color:"#f59e0b", list:inReview},
-    {id:"concluded",    icon:IC.done,      label:"Concluídas",   count:concluded.length,  color:"#8b5cf6", list:concluded},
-    {id:"rejected",     icon:IC.rejected,  label:"Rejeitadas",   count:rejected.length,   color:"#ef4444", list:rejected},
+    {id:"pending",        icon:IC.pending,   label:"Pendentes",      count:pending.length,    color:"#94a3b8", list:pending},
+    {id:"approved",       icon:IC.approved,  label:"Aprovadas",      count:approved.length,   color:"#22c55e", list:approved},
+    {id:"em_andamento",   icon:IC.progress,  label:"Em Andamento",   count:inProgress.length, color:"#3b82f6", list:inProgress},
+    {id:"criando_layout", icon:IC.progress,  label:"Criando Layout", count:inLayout.length,   color:"#ec4899", list:inLayout},
+    {id:"em_aprovacao",   icon:IC.review,    label:"Em Aprovação",   count:inReview.length,   color:"#f59e0b", list:inReview},
+    {id:"concluded",      icon:IC.done,      label:"Concluídas",     count:concluded.length,  color:"#8b5cf6", list:concluded},
+    {id:"rejected",       icon:IC.rejected,  label:"Rejeitadas",     count:rejected.length,   color:"#ef4444", list:rejected},
   ];
   const settingTabs = isAdmin ? [
     {id:"users",   icon:IC.users,   label:"Usuários",  color:"#a78bfa"},
@@ -1914,7 +1985,7 @@ function AdminView({demands,config,backlog,isAdmin,overrides,onApprove,onDelete,
   const activeTab = allTabs.find(t=>t.id===tab);
   const list = demandTabs.find(t=>t.id===tab)?.list||[];
   const isDemandTab = demandTabs.some(t=>t.id===tab);
-  const totalActive = pending.length+approved.length+inProgress.length+inReview.length;
+  const totalActive = pending.length+approved.length+inProgress.length+inLayout.length+inReview.length;
 
   return(
     <div style={{flex:1,display:"flex",gap:0,minHeight:0,width:"100%"}}>
@@ -2017,7 +2088,7 @@ function AdminView({demands,config,backlog,isAdmin,overrides,onApprove,onDelete,
               {[...list].sort((a,b)=>new Date(b.created_at||b.createdAt)-new Date(a.created_at||a.createdAt)).map(d=>(
                 <AdminTaskRow key={d.id} demand={d} overrides={overrides}
                   canAct={tab==="pending"}
-                  canStatus={["approved","em_andamento","em_aprovacao"].includes(tab)}
+                  canStatus={["approved","em_andamento","criando_layout","em_aprovacao"].includes(tab)}
                   onApprove={onApprove} onDelete={()=>setConfirm(d)}
                   onUpdateStatus={onUpdateStatus} onMoveSprint={onMoveSprint}
                   onChangeSquad={onChangeSquad}
@@ -2580,34 +2651,55 @@ function SprintMgrPanel({overrides={},onSave}) {
             const isCur=n===cur, isPast=n<cur;
             const days = local[n] ? workdaysBetween(local[n].start, local[n].end) : 0;
             const dc = days<5?"#f87171":days>12?"#f59e0b":"#3ecf8e";
+            const holidays = local[n] ? holidaysInRange(local[n].start, local[n].end) : [];
             return (
-              <div key={n} style={{display:"grid",gridTemplateColumns:"70px 1fr 1fr 90px 34px",gap:10,padding:"12px 14px",background:isCur?"rgba(91,141,238,.05)":"var(--s1)",border:`1px solid ${isCur?"rgba(91,141,238,.22)":"var(--border)"}`,borderRadius:11,alignItems:"center"}}>
-                <div>
-                  <div style={{fontFamily:"var(--mono)",fontWeight:800,fontSize:13,color:isCur?"#5b8dee":isPast?"var(--t3)":"var(--t2)"}}>{n}</div>
-                  <div style={{fontSize:9,fontWeight:600,marginTop:2,color:isCur?"#3ecf8e":"var(--t3)"}}>{isCur?"atual":isPast?"passada":"futura"}</div>
+              <div key={n} style={{border:`1px solid ${isCur?"rgba(91,141,238,.22)":"var(--border)"}`,borderRadius:11,overflow:"hidden",background:isCur?"rgba(91,141,238,.05)":"var(--s1)"}}>
+                <div style={{display:"grid",gridTemplateColumns:"70px 1fr 1fr 90px 34px",gap:10,padding:"12px 14px",alignItems:"center"}}>
+                  <div>
+                    <div style={{fontFamily:"var(--mono)",fontWeight:800,fontSize:13,color:isCur?"#5b8dee":isPast?"var(--t3)":"var(--t2)"}}>{n}</div>
+                    <div style={{fontSize:9,fontWeight:600,marginTop:2,color:isCur?"#3ecf8e":"var(--t3)"}}>{isCur?"atual":isPast?"passada":"futura"}</div>
+                  </div>
+                  <div>
+                    <input type="date" value={local[n]?.start||""} onChange={e=>handleStartChange(n,e.target.value)}
+                      style={{width:"100%",padding:"8px 10px",background:"var(--s3)",border:"1.5px solid var(--border)",borderRadius:8,color:"var(--t1)",fontSize:13,outline:"none",cursor:"pointer"}}
+                      onFocus={e=>e.target.style.borderColor="rgba(91,141,238,.5)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+                    <div style={{fontSize:10,color:"var(--t3)",marginTop:3,paddingLeft:2}}>{dayLabel(local[n]?.start)}</div>
+                  </div>
+                  <div>
+                    <input type="date" value={local[n]?.end||""} onChange={e=>handleEndChange(n,e.target.value)}
+                      style={{width:"100%",padding:"8px 10px",background:"var(--s3)",border:"1.5px solid var(--border)",borderRadius:8,color:"var(--t1)",fontSize:13,outline:"none",cursor:"pointer"}}
+                      onFocus={e=>e.target.style.borderColor="rgba(91,141,238,.5)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+                    <div style={{fontSize:10,color:"var(--t3)",marginTop:3,paddingLeft:2}}>{dayLabel(local[n]?.end)}</div>
+                  </div>
+                  <div style={{textAlign:"center"}}>
+                    <div style={{fontFamily:"var(--mono)",fontWeight:900,fontSize:22,color:dc,lineHeight:1}}>{days}</div>
+                    <div style={{fontSize:9,color:"var(--t3)",marginTop:1}}>dias úteis</div>
+                    {holidays.length>0&&<div style={{fontSize:9,color:"#f59e0b",marginTop:1,fontWeight:600}}>{holidays.length} feriado{holidays.length>1?"s":""}</div>}
+                  </div>
+                  <button onClick={()=>resetOne(n)} title="Restaurar"
+                    style={{width:30,height:30,borderRadius:7,border:"1px solid var(--border)",background:"transparent",color:"var(--t3)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}
+                    onMouseOver={e=>{e.currentTarget.style.color="#f87171";e.currentTarget.style.borderColor="rgba(239,68,68,.3)";e.currentTarget.style.background="rgba(239,68,68,.06)";}}
+                    onMouseOut={e=>{e.currentTarget.style.color="var(--t3)";e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.background="transparent";}}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
+                  </button>
                 </div>
-                <div>
-                  <input type="date" value={local[n]?.start||""} onChange={e=>handleStartChange(n,e.target.value)}
-                    style={{width:"100%",padding:"8px 10px",background:"var(--s3)",border:"1.5px solid var(--border)",borderRadius:8,color:"var(--t1)",fontSize:13,outline:"none",cursor:"pointer"}}
-                    onFocus={e=>e.target.style.borderColor="rgba(91,141,238,.5)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
-                  <div style={{fontSize:10,color:"var(--t3)",marginTop:3,paddingLeft:2}}>{dayLabel(local[n]?.start)}</div>
-                </div>
-                <div>
-                  <input type="date" value={local[n]?.end||""} onChange={e=>handleEndChange(n,e.target.value)}
-                    style={{width:"100%",padding:"8px 10px",background:"var(--s3)",border:"1.5px solid var(--border)",borderRadius:8,color:"var(--t1)",fontSize:13,outline:"none",cursor:"pointer"}}
-                    onFocus={e=>e.target.style.borderColor="rgba(91,141,238,.5)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
-                  <div style={{fontSize:10,color:"var(--t3)",marginTop:3,paddingLeft:2}}>{dayLabel(local[n]?.end)}</div>
-                </div>
-                <div style={{textAlign:"center"}}>
-                  <div style={{fontFamily:"var(--mono)",fontWeight:900,fontSize:22,color:dc,lineHeight:1}}>{days}</div>
-                  <div style={{fontSize:9,color:"var(--t3)",marginTop:1}}>dias uteis</div>
-                </div>
-                <button onClick={()=>resetOne(n)} title="Restaurar"
-                  style={{width:30,height:30,borderRadius:7,border:"1px solid var(--border)",background:"transparent",color:"var(--t3)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}
-                  onMouseOver={e=>{e.currentTarget.style.color="#f87171";e.currentTarget.style.borderColor="rgba(239,68,68,.3)";e.currentTarget.style.background="rgba(239,68,68,.06)";}}
-                  onMouseOut={e=>{e.currentTarget.style.color="var(--t3)";e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.background="transparent";}}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
-                </button>
+
+                {/* Holidays inside this sprint */}
+                {holidays.length>0&&(
+                  <div style={{borderTop:"1px solid rgba(245,158,11,.15)",background:"rgba(245,158,11,.04)",padding:"8px 14px",display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {holidays.map((h,i)=>(
+                      <span key={i} style={{display:"inline-flex",alignItems:"center",gap:5,fontSize:10,padding:"3px 9px",borderRadius:999,
+                        background:h.type==="sp"?"rgba(168,85,247,.1)":"rgba(245,158,11,.1)",
+                        border:`1px solid ${h.type==="sp"?"rgba(168,85,247,.25)":"rgba(245,158,11,.25)"}`,
+                        color:h.type==="sp"?"#c084fc":"#fbbf24"}}>
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        <span style={{fontFamily:"var(--mono)",opacity:.7}}>{h.iso.slice(5).replace("-","/")} </span>
+                        {h.name}
+                        {h.type==="sp"&&<span style={{fontSize:8,opacity:.6}}>SP</span>}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
