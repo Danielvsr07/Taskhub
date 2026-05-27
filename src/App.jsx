@@ -1093,72 +1093,93 @@ function CommentItem({comment,replies=[],onReply,onDelete,currentUserId,renderCo
 // TASK CARD (compact, shows progress inline)
 // ─────────────────────────────────────────────────────────────────────────────
 function TaskCard({demand,index,onClick,overrides={}}) {
-  const sq = SQUAD_COLOR[demand.squad]||{h:"#64748b",rgb:"100,116,139"};
-  const sm = STATUS[demand.status]||STATUS.pendente;
-  const pc = PRIO_COLOR[demand.priority]||"#64748b";
-  const cur = FLOW.indexOf(demand.status);
-  const pct = demand.status==="rejeitada"?0:Math.max(0,Math.min(100,(cur/(FLOW.length-1))*100));
-  const tc  = demand.tag?TAG_COLOR[demand.tag]:null;
+  const sq  = SQUAD_COLOR[demand.squad]||{h:"#64748b",rgb:"100,116,139"};
+  const sm  = STATUS[demand.status]||STATUS.pendente;
+  const pc  = PRIO_COLOR[demand.priority]||"#64748b";
+  const tc  = demand.tag ? TAG_COLOR[demand.tag] : null;
   const isActive = demand.status==="em_andamento";
+  const isRejected = demand.status==="rejeitada";
+  const isDone = demand.status==="concluida";
 
   return(
-    <div onClick={onClick} style={{background:"var(--s2)",border:"1px solid var(--border)",borderRadius:16,overflow:"hidden",cursor:"pointer",transition:"all .2s",animation:`fadeUp .3s ease ${index*.05}s both`,position:"relative"}}
-      onMouseOver={e=>{e.currentTarget.style.borderColor=sq.h+"66";e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 28px rgba(0,0,0,.4)`;}}
+    <div onClick={onClick}
+      style={{background:"var(--s2)",border:"1px solid var(--border)",borderRadius:14,
+        overflow:"hidden",cursor:"pointer",transition:"all .2s cubic-bezier(.34,1.56,.64,1)",
+        animation:`fadeUp .25s ease ${index*.04}s both`,position:"relative"}}
+      onMouseOver={e=>{e.currentTarget.style.borderColor=sq.h+"55";e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow=`0 12px 32px rgba(0,0,0,.45),0 0 0 1px ${sq.h}22`;}}
       onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="none";}}>
 
-      {/* Squad accent bar */}
-      <div style={{height:3,background:`linear-gradient(90deg,${sq.h},transparent)`}}/>
+      {/* Colored top border */}
+      <div style={{height:2,background:isRejected?"rgba(239,68,68,.6)":isDone?`rgba(62,207,142,.6)`:`linear-gradient(90deg,${sq.h},${sq.h}44)`}}/>
 
-      <div style={{padding:"16px 18px"}}>
-        {/* Top row */}
+      <div style={{padding:"14px 16px"}}>
+        {/* Header row */}
         <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:10}}>
-          <div style={{width:42,height:42,borderRadius:12,background:`rgba(${sq.rgb},.15)`,border:`1.5px solid rgba(${sq.rgb},.3)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,boxShadow:`0 4px 12px rgba(${sq.rgb},.12)`}}>
+          {/* Squad icon */}
+          <div style={{width:36,height:36,borderRadius:10,background:`rgba(${sq.rgb},.15)`,border:`1px solid rgba(${sq.rgb},.25)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>
             {SQUAD_ICON[demand.squad]}
           </div>
+          {/* Title + meta */}
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontWeight:700,fontSize:14,lineHeight:1.3,marginBottom:4,color:"var(--t1)"}}>{demand.title}</div>
-            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-              <span style={{fontSize:11,color:"var(--t3)"}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> {demand.user_name}</span>
-              {demand.team&&<span style={{fontSize:11,color:"var(--t3)"}}>· <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> {demand.team}</span>}
-              {demand.sprint&&<span style={{fontSize:10,color:"#38bdf8",fontFamily:"var(--mono)"}}>Sprint {demand.sprint}</span>}
+            <div style={{fontWeight:700,fontSize:13,lineHeight:1.4,color:"var(--t1)",marginBottom:4,
+              textDecoration:isRejected?"line-through":"none",opacity:isRejected?.6:1}}>
+              {demand.title}
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+              <span style={{fontSize:10,color:"var(--t3)",display:"flex",alignItems:"center",gap:3}}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                {demand.user_name?.split(" ")[0]}
+              </span>
+              {demand.team&&<span style={{fontSize:10,color:"var(--t3)"}}>· {demand.team}</span>}
             </div>
           </div>
-          {/* Status dot */}
-          <div style={{width:10,height:10,borderRadius:"50%",background:sm.dot,boxShadow:`0 0 12px ${sm.dot},0 0 4px ${sm.dot}`,flexShrink:0,marginTop:4,animation:isActive?"pulse 1.5s infinite":"none"}}/>
+          {/* Status badge */}
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:5,flexShrink:0}}>
+            <span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:999,
+              background:`${sm.dot}18`,border:`1px solid ${sm.dot}40`,color:sm.dot,
+              display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
+              <span style={{width:5,height:5,borderRadius:"50%",background:sm.dot,display:"inline-block",
+                boxShadow:isActive?`0 0 6px ${sm.dot}`:undefined,
+                animation:isActive?"pulse 1.5s infinite":"none"}}/>
+              {sm.label}
+            </span>
+          </div>
         </div>
 
-        {/* Progress bar */}
-        {demand.status!=="rejeitada"&&(
-          <div style={{marginBottom:10}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-              {FLOW.map((s,i)=>{
-                const s2=STATUS[s]; const done=cur>i; const active=cur===i;
-                return(
-                  <div key={s} title={s2.label} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,flex:1}}>
-                    <div style={{width:18,height:18,borderRadius:"50%",background:done||active?`${s2.dot}20`:"var(--s1)",border:`1.5px solid ${done||active?s2.dot:"var(--border)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,transition:"all .3s",boxShadow:active?`0 0 8px ${s2.dot}50`:"none"}}>
-                      {done?<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={s2.dot} strokeWidth="3.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>:active?<span style={{fontSize:10}}>{s2.icon}</span>:""}
-                    </div>
-                    {i<FLOW.length-1&&<div style={{display:"none"}}/>}
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{height:3,background:"var(--border)",borderRadius:3,overflow:"hidden"}}>
-              <div style={{height:"100%",background:`linear-gradient(90deg,${sq.h},${sm.dot})`,width:`${pct}%`,transition:"width .5s ease",borderRadius:3}}/>
-            </div>
-          </div>
-        )}
-
-        {demand.status==="rejeitada"&&(
-          <div style={{marginBottom:10,padding:"5px 10px",borderRadius:7,background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.2)",fontSize:11,color:"#f87171"}}>❌ Rejeitada{demand.admin_note&&` — ${demand.admin_note.slice(0,50)}`}</div>
-        )}
-
-        {/* Footer badges */}
+        {/* Sprint + priority row */}
         <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-          <span className="pill" style={{background:`${pc}12`,color:pc,border:`1px solid ${pc}30`,fontSize:10}}>{PRIO_LABEL[demand.priority]}</span>
-          {tc&&<span className="tag-chip" style={{background:`${tc}12`,color:tc,border:`1px solid ${tc}30`,fontSize:10}}>{TAG_ICON[demand.tag]} {TAG_LABEL[demand.tag]}</span>}
+          {demand.sprint&&(
+            <span style={{fontSize:10,padding:"2px 8px",borderRadius:999,
+              background:"rgba(56,189,248,.08)",border:"1px solid rgba(56,189,248,.2)",
+              color:"#38bdf8",fontFamily:"var(--mono)",fontWeight:600}}>
+              S{demand.sprint}
+            </span>
+          )}
+          <span style={{fontSize:10,padding:"2px 8px",borderRadius:999,
+            background:`${pc}10`,border:`1px solid ${pc}25`,color:pc,fontWeight:600}}>
+            {PRIO_LABEL[demand.priority]}
+          </span>
+          {tc&&<span style={{fontSize:10,padding:"2px 8px",borderRadius:999,
+            background:`${tc}10`,border:`1px solid ${tc}25`,color:tc,fontWeight:600}}>
+            {TAG_LABEL[demand.tag]}
+          </span>}
           <span style={{marginLeft:"auto",fontSize:10,color:"var(--t3)"}}>{fmtDate(demand.created_at||demand.createdAt)}</span>
         </div>
+
+        {/* Rejected note */}
+        {isRejected&&demand.admin_note&&(
+          <div style={{marginTop:8,padding:"5px 9px",borderRadius:6,background:"rgba(239,68,68,.06)",border:"1px solid rgba(239,68,68,.15)",fontSize:10,color:"#f87171",lineHeight:1.5}}>
+            {demand.admin_note.slice(0,80)}{demand.admin_note.length>80?"…":""}
+          </div>
+        )}
+
+        {/* Attachments indicator */}
+        {demand.files?.length>0&&(
+          <div style={{marginTop:8,display:"flex",alignItems:"center",gap:4,fontSize:10,color:"var(--t3)"}}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            {demand.files.length} anexo{demand.files.length>1?"s":""}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1539,167 +1560,178 @@ function NotifDropdown({notifs,onMarkRead,onClose,onOpen}) {
 function QueueView({demands,overrides,onOpen}) {
   const [squad,setSquad] = useState("industria");
   const cur = curSprint();
-  const sq  = demands.filter(d=>{
-    const dSquads = d.squads||(d.squad?[d.squad]:[]);
-    return dSquads.includes(squad)||d.squad===squad;
+  const sqColor = SQUAD_COLOR[squad];
+
+  // Filter demands for selected squad
+  const sqDemands = demands.filter(d=>{
+    const ds = d.squads||(d.squad?[d.squad]:[]);
+    return ds.includes(squad)||d.squad===squad;
   });
-  const inSprint = sq.filter(d=>["aprovada","em_andamento","em_aprovacao","concluida"].includes(d.status)&&d.sprint);
-  const pending  = sq.filter(d=>d.status==="pendente");
-  const rejected = sq.filter(d=>d.status==="rejeitada");
+
+  const inSprint = sqDemands.filter(d=>["aprovada","em_andamento","em_aprovacao","concluida"].includes(d.status)&&d.sprint);
+  const pending  = sqDemands.filter(d=>d.status==="pendente");
+  const rejected = sqDemands.filter(d=>d.status==="rejeitada");
   const sprints  = [...new Set(inSprint.map(d=>d.sprint))].sort((a,b)=>a-b);
-  const sqColor  = SQUAD_COLOR[squad];
-  const totalAll = demands.length;
 
   return(
-    <div style={{flex:1,padding:"24px 0",animation:"fadeUp .35s ease"}}>
+    <div style={{flex:1,padding:"24px 0",animation:"fadeUp .3s ease"}}>
 
-      {/* Header with sprint badge */}
-      <div style={{marginBottom:24,display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
+      {/* Page header */}
+      <div style={{marginBottom:20,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
         <div>
-          <h1 style={{fontSize:24,fontWeight:900,letterSpacing:"-.8px",marginBottom:6,color:"var(--t1)"}}>Filas por Sprint</h1>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:13,color:"var(--t3)"}}>Sprint atual:</span>
-            <span style={{padding:"3px 12px",borderRadius:999,background:`rgba(${sqColor.rgb},.12)`,border:`1px solid rgba(${sqColor.rgb},.25)`,fontSize:12,fontWeight:700,color:sqColor.h}}>
-              Sprint {cur}
-            </span>
-            <span style={{fontSize:12,color:"var(--t3)",fontFamily:"var(--mono)"}}>{sprintRange(cur,overrides)}</span>
+          <h1 style={{fontSize:22,fontWeight:900,letterSpacing:"-.6px",color:"var(--t1)"}}>Filas</h1>
+          <div style={{fontSize:12,color:"var(--t3)",marginTop:3,display:"flex",alignItems:"center",gap:8}}>
+            <span>Sprint {cur}</span>
+            <span style={{color:"var(--border)"}}>·</span>
+            <span style={{fontFamily:"var(--mono)"}}>{sprintRange(cur,overrides)}</span>
           </div>
         </div>
-        {/* Quick stats */}
-        <div style={{display:"flex",gap:8}}>
-          {[["Total",totalAll,"var(--t2)"],["Ativas",demands.filter(d=>["aprovada","em_andamento","em_aprovacao"].includes(d.status)).length,"#5b8dee"],["Concluídas",demands.filter(d=>d.status==="concluida").length,"#3ecf8e"]].map(([l,v,c])=>(
-            <div key={l} style={{padding:"8px 14px",background:"var(--s2)",border:"1px solid var(--border)",borderRadius:10,textAlign:"center",minWidth:72}}>
-              <div style={{fontSize:20,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
-              <div style={{fontSize:10,color:"var(--t3)",marginTop:3,fontWeight:600}}>{l}</div>
+        {/* Global stats */}
+        <div style={{display:"flex",gap:6}}>
+          {[
+            {l:"Pendentes",v:demands.filter(d=>d.status==="pendente").length,c:"#f59e0b"},
+            {l:"Ativas",v:demands.filter(d=>["aprovada","em_andamento","em_aprovacao"].includes(d.status)).length,c:"#5b8dee"},
+            {l:"Concluídas",v:demands.filter(d=>d.status==="concluida").length,c:"#3ecf8e"},
+          ].map(({l,v,c})=>(
+            <div key={l} style={{padding:"6px 12px",background:"var(--s2)",border:"1px solid var(--border)",borderRadius:8,textAlign:"center"}}>
+              <div style={{fontSize:16,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
+              <div style={{fontSize:9,color:"var(--t3)",marginTop:2,textTransform:"uppercase",letterSpacing:".4px"}}>{l}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Squad selector — tabs style */}
-      <div style={{display:"flex",gap:8,marginBottom:28,padding:"4px",background:"var(--s2)",borderRadius:14,border:"1px solid var(--border)",width:"fit-content"}}>
+      {/* Squad tabs */}
+      <div style={{display:"flex",gap:4,marginBottom:24,background:"var(--s1)",padding:4,borderRadius:12,border:"1px solid var(--border)",width:"fit-content"}}>
         {SQUADS.map(s=>{
-          const sq2=SQUAD_COLOR[s]; const active=s===squad;
-          const total=demands.filter(d=>d.squad===s).length;
-          const pend=demands.filter(d=>d.squad===s&&d.status==="pendente").length;
+          const c=SQUAD_COLOR[s]; const active=s===squad;
+          const pend=demands.filter(d=>(d.squads||[d.squad]).includes(s)&&d.status==="pendente").length;
           return(
             <button key={s} onClick={()=>setSquad(s)}
-              style={{display:"flex",alignItems:"center",gap:10,padding:"10px 18px",borderRadius:10,border:`1px solid ${active?sq2.h+"50":"transparent"}`,
-                background:active?`rgba(${sq2.rgb},.1)`:"transparent",
-                cursor:"pointer",transition:"all .2s cubic-bezier(.34,1.56,.64,1)",color:"inherit",minWidth:160}}>
-              <div style={{width:34,height:34,borderRadius:10,background:`rgba(${sq2.rgb},.15)`,border:`1px solid rgba(${sq2.rgb},.3)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0,transition:"all .2s",boxShadow:active?`0 4px 12px rgba(${sq2.rgb},.25)`:"none"}}>
-                {SQUAD_ICON[s]}
-              </div>
+              style={{display:"flex",alignItems:"center",gap:8,padding:"8px 16px",borderRadius:9,
+                border:`1px solid ${active?c.h+"50":"transparent"}`,
+                background:active?`rgba(${c.rgb},.1)`:"transparent",
+                cursor:"pointer",transition:"all .18s",color:"inherit"}}>
+              <span style={{fontSize:16}}>{SQUAD_ICON[s]}</span>
               <div style={{textAlign:"left"}}>
-                <div style={{fontWeight:700,fontSize:14,color:active?sq2.h:"var(--t2)",transition:"color .15s"}}>{SQUAD_LABEL[s]}</div>
-                <div style={{fontSize:10,color:"var(--t3)",marginTop:1}}>{total} task{total!==1?"s":""}  {pend>0&&<span style={{color:"#f59e0b"}}>· {pend} pendente{pend!==1?"s":""}</span>}</div>
+                <div style={{fontSize:13,fontWeight:active?700:500,color:active?c.h:"var(--t2)",transition:"color .15s"}}>{SQUAD_LABEL[s]}</div>
+                {pend>0&&<div style={{fontSize:9,color:"#f59e0b",fontWeight:600}}>{pend} pendente{pend>1?"s":""}</div>}
               </div>
-              {active&&<div style={{marginLeft:"auto",width:7,height:7,borderRadius:"50%",background:sq2.h,boxShadow:`0 0 10px ${sq2.h}`,animation:"pulse 2s infinite",flexShrink:0}}/>}
             </button>
           );
         })}
       </div>
 
-      {/* Content */}
-      {demands.length===0
-        ?<EmptySlate icon="📭" title="Nenhuma demanda ainda" sub="Quando usuários enviarem tasks, elas aparecerão aqui organizadas por sprint."/>
-        :<div style={{display:"flex",flexDirection:"column",gap:28}}>
-          {/* Sprint sections */}
-          {sprints.map(sp=>{
-            const spDemands=inSprint.filter(d=>d.sprint===sp).sort((a,b)=>PRIO_ORDER[a.priority]-PRIO_ORDER[b.priority]);
-            const isCur=sp===cur; const isPast=sp<cur;
-            const {start,end}=sprintDates(sp,overrides);
-            const elapsed=Math.min(100,Math.max(0,Math.round(((new Date()-start)/((end.getTime()+86400000)-start.getTime()))*100)));
-            return(
-              <div key={sp}>
-                {/* Sprint header */}
-                <div className="sprint-header" style={{padding:"14px 18px",marginBottom:14,display:"flex",alignItems:"center",gap:14,
-                  borderColor:isCur?`${sqColor.h}40`:"var(--border)",
-                  boxShadow:isCur?`0 0 0 1px ${sqColor.h}15,0 4px 16px rgba(0,0,0,.2)`:"none"}}>
-                  <div style={{width:44,height:44,borderRadius:12,
-                    background:isCur?`rgba(${sqColor.rgb},.15)`:"var(--s3)",
-                    border:`2px solid ${isCur?sqColor.h:"var(--border)"}`,
-                    display:"flex",alignItems:"center",justifyContent:"center",
-                    fontFamily:"var(--mono)",fontSize:14,fontWeight:900,
-                    color:isCur?sqColor.h:"var(--t3)",flexShrink:0}}>
-                    {sp}
-                  </div>
-                  <div style={{flex:1}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
-                      <span style={{fontWeight:800,fontSize:15,color:"var(--t1)"}}>Sprint {sp}</span>
-                      <span style={{padding:"2px 10px",borderRadius:999,fontSize:11,fontWeight:600,
-                        background:isCur?"rgba(62,207,142,.12)":isPast?"rgba(148,163,184,.08)":"rgba(91,141,238,.1)",
-                        border:`1px solid ${isCur?"rgba(62,207,142,.25)":isPast?"rgba(148,163,184,.15)":"rgba(91,141,238,.2)"}`,
-                        color:isCur?"#3ecf8e":isPast?"var(--t3)":"#5b8dee"}}>
-                        {isCur?"● Em andamento":isPast?"✓ Concluída":"◎ Futura"}
-                      </span>
-                      {overrides[sp]&&<span style={{fontSize:10,color:"#f59e0b",fontWeight:600}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17z"/></svg> editada</span>}
+      {/* Main content */}
+      {sqDemands.length===0
+        ? <EmptySlate icon={SQUAD_ICON[squad]} title={`Nenhuma task para ${SQUAD_LABEL[squad]}`} sub="Tasks aprovadas e pendentes aparecerão aqui."/>
+        : <div style={{display:"flex",flexDirection:"column",gap:20}}>
+
+            {/* Sprint sections */}
+            {sprints.map(sp=>{
+              const spDemands = inSprint.filter(d=>d.sprint===sp).sort((a,b)=>PRIO_ORDER[a.priority]-PRIO_ORDER[b.priority]);
+              const isCur=sp===cur, isPast=sp<cur;
+              const {start,end}=sprintDates(sp,overrides);
+              const elapsed=Math.min(100,Math.max(0,Math.round(((new Date()-start)/((end.getTime()+86400000)-start.getTime()))*100)));
+              const done = spDemands.filter(d=>d.status==="concluida").length;
+              const statusGroups = [
+                {key:"aprovada",    label:"Aprovadas",     color:STATUS.aprovada.dot},
+                {key:"em_andamento",label:"Em Andamento",  color:STATUS.em_andamento.dot},
+                {key:"em_aprovacao",label:"Em Aprovação",  color:STATUS.em_aprovacao.dot},
+                {key:"concluida",   label:"Concluídas",    color:STATUS.concluida.dot},
+              ].map(g=>({...g, items:spDemands.filter(d=>d.status===g.key)})).filter(g=>g.items.length>0);
+
+              return(
+                <div key={sp} style={{background:"var(--s2)",border:`1px solid ${isCur?sqColor.h+"35":"var(--border)"}`,borderRadius:16,overflow:"hidden",
+                  boxShadow:isCur?`0 0 0 1px ${sqColor.h}10`:undefined}}>
+
+                  {/* Sprint header */}
+                  <div style={{padding:"14px 18px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",gap:12,
+                    background:isCur?`rgba(${sqColor.rgb},.04)`:"transparent"}}>
+                    <div style={{width:36,height:36,borderRadius:9,
+                      background:isCur?`rgba(${sqColor.rgb},.15)`:"var(--s3)",
+                      border:`2px solid ${isCur?sqColor.h:"var(--border)"}`,
+                      display:"flex",alignItems:"center",justifyContent:"center",
+                      fontFamily:"var(--mono)",fontSize:13,fontWeight:900,
+                      color:isCur?sqColor.h:"var(--t3)",flexShrink:0}}>
+                      {sp}
                     </div>
-                    <div style={{fontSize:12,color:"var(--t3)",fontFamily:"var(--mono)",marginBottom:isCur||isPast?6:0}}>
-                      {sprintRange(sp,overrides)} · <strong style={{color:"var(--t2)"}}>{spDemands.length}</strong> task(s)
-                    </div>
-                    {(isCur||isPast)&&(
-                      <div style={{height:4,background:"var(--border)",borderRadius:4,overflow:"hidden"}}>
-                        <div style={{height:"100%",borderRadius:4,transition:"width .6s ease",
-                          background:isCur?`linear-gradient(90deg,${sqColor.h},${sqColor.h}88)`:sqColor.h,
-                          width:`${isCur?elapsed:100}%`}}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                        <span style={{fontWeight:800,fontSize:14,color:"var(--t1)"}}>Sprint {sp}</span>
+                        <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:999,
+                          background:isCur?"rgba(62,207,142,.12)":isPast?"rgba(148,163,184,.07)":"rgba(91,141,238,.1)",
+                          border:`1px solid ${isCur?"rgba(62,207,142,.2)":isPast?"rgba(148,163,184,.12)":"rgba(91,141,238,.18)"}`,
+                          color:isCur?"#3ecf8e":isPast?"var(--t3)":"#5b8dee"}}>
+                          {isCur?"Em andamento":isPast?"Encerrada":"Futura"}
+                        </span>
+                        <span style={{fontSize:11,color:"var(--t3)",fontFamily:"var(--mono)"}}>{sprintRange(sp,overrides)}</span>
                       </div>
-                    )}
+                      {(isCur||isPast)&&(
+                        <div style={{marginTop:6,display:"flex",alignItems:"center",gap:8}}>
+                          <div style={{flex:1,height:4,background:"var(--border)",borderRadius:4,overflow:"hidden"}}>
+                            <div style={{height:"100%",borderRadius:4,
+                              background:isCur?`linear-gradient(90deg,${sqColor.h},${sqColor.h}88)`:sqColor.h,
+                              width:`${isCur?elapsed:100}%`,transition:"width .6s ease"}}/>
+                          </div>
+                          <span style={{fontSize:10,color:"var(--t3)",flexShrink:0,fontFamily:"var(--mono)"}}>{done}/{spDemands.length}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  {isCur&&<div style={{textAlign:"right",flexShrink:0}}>
-                    <div style={{fontSize:12,fontWeight:700,color:sqColor.h}}>{elapsed}%</div>
-                    <div style={{fontSize:10,color:"var(--t3)"}}>concluído</div>
-                  </div>}
+
+                  {/* Status groups inside sprint */}
+                  <div style={{padding:"14px 18px",display:"flex",flexDirection:"column",gap:14}}>
+                    {statusGroups.map(g=>(
+                      <div key={g.key}>
+                        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:8}}>
+                          <span style={{width:7,height:7,borderRadius:"50%",background:g.color,display:"inline-block",boxShadow:g.key==="em_andamento"?`0 0 8px ${g.color}`:undefined}}/>
+                          <span style={{fontSize:11,fontWeight:700,color:"var(--t3)",textTransform:"uppercase",letterSpacing:".5px"}}>{g.label}</span>
+                          <span style={{fontSize:10,color:"var(--t3)",marginLeft:2}}>({g.items.length})</span>
+                        </div>
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:8}}>
+                          {g.items.map((d,i)=><TaskCard key={d.id} demand={d} index={i} overrides={overrides} onClick={()=>onOpen(d)}/>)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(330px,1fr))",gap:12,paddingLeft:10,borderLeft:`2px solid ${sqColor.h}20`}}>
-                  {spDemands.map((d,i)=><TaskCard key={d.id} demand={d} index={i} overrides={overrides} onClick={()=>onOpen(d)}/>)}
+              );
+            })}
+
+            {/* Pending */}
+            {pending.length>0&&(
+              <div style={{background:"var(--s2)",border:"1px solid rgba(245,158,11,.2)",borderRadius:16,overflow:"hidden"}}>
+                <div style={{padding:"12px 18px",borderBottom:"1px solid rgba(245,158,11,.15)",background:"rgba(245,158,11,.04)",display:"flex",alignItems:"center",gap:8}}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span style={{fontWeight:700,fontSize:13,color:"#fbbf24"}}>Aguardando Aprovação</span>
+                  <span style={{fontSize:11,color:"var(--t3)",marginLeft:2}}>({pending.length})</span>
+                </div>
+                <div style={{padding:"14px 18px",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:8}}>
+                  {pending.map((d,i)=><TaskCard key={d.id} demand={d} index={i} overrides={overrides} onClick={()=>onOpen(d)}/>)}
                 </div>
               </div>
-            );
-          })}
+            )}
 
-          {/* Pending section */}
-          {pending.length>0&&(
-            <div>
-              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
-                <div style={{height:1,flex:1,background:"linear-gradient(90deg,var(--border),transparent)"}}/>
-                <span style={{display:"flex",alignItems:"center",gap:7,fontSize:12,fontWeight:700,color:"var(--t3)",padding:"5px 14px",borderRadius:999,border:"1px solid var(--border)",background:"var(--s2)",whiteSpace:"nowrap"}}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  Aguardando Aprovação · {pending.length}
-                </span>
-                <div style={{height:1,width:40,background:"var(--border)"}}/>
+            {/* Rejected */}
+            {rejected.length>0&&(
+              <div style={{background:"var(--s2)",border:"1px solid rgba(239,68,68,.15)",borderRadius:16,overflow:"hidden"}}>
+                <div style={{padding:"12px 18px",borderBottom:"1px solid rgba(239,68,68,.12)",background:"rgba(239,68,68,.04)",display:"flex",alignItems:"center",gap:8}}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                  <span style={{fontWeight:700,fontSize:13,color:"#f87171"}}>Rejeitadas</span>
+                  <span style={{fontSize:11,color:"var(--t3)",marginLeft:2}}>({rejected.length})</span>
+                </div>
+                <div style={{padding:"14px 18px",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:8}}>
+                  {rejected.map((d,i)=><TaskCard key={d.id} demand={d} index={i} overrides={overrides} onClick={()=>onOpen(d)}/>)}
+                </div>
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(330px,1fr))",gap:12}}>
-                {pending.map((d,i)=><TaskCard key={d.id} demand={d} index={i} overrides={overrides} onClick={()=>onOpen(d)}/>)}
-              </div>
-            </div>
-          )}
-
-          {/* Rejected section */}
-          {rejected.length>0&&(
-            <div>
-              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
-                <div style={{height:1,flex:1,background:"linear-gradient(90deg,rgba(239,68,68,.2),transparent)"}}/>
-                <span style={{display:"flex",alignItems:"center",gap:7,fontSize:12,fontWeight:700,color:"#f87171",padding:"5px 14px",borderRadius:999,border:"1px solid rgba(239,68,68,.2)",background:"rgba(239,68,68,.06)",whiteSpace:"nowrap"}}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                  Rejeitadas · {rejected.length}
-                </span>
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(330px,1fr))",gap:12}}>
-                {rejected.map((d,i)=><TaskCard key={d.id} demand={d} index={i} overrides={overrides} onClick={()=>onOpen(d)}/>)}
-              </div>
-            </div>
-          )}
-
-          {/* Empty squad state */}
-          {sq.length===0&&(
-            <EmptySlate icon={SQUAD_ICON[squad]} title={`Nenhuma task para ${SQUAD_LABEL[squad]}`} sub="Este squad ainda não tem demandas. Tasks aprovadas e pendentes aparecerão aqui."/>
-          )}
-        </div>
+            )}
+          </div>
       }
     </div>
   );
 }
+
 // ─────────────────────────────────────────────────────────────────────────────
 // MY TASKS VIEW
 // ─────────────────────────────────────────────────────────────────────────────
