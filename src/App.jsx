@@ -1560,13 +1560,17 @@ function NotifDropdown({notifs,onMarkRead,onClose,onOpen}) {
 function QueueView({demands,overrides,onOpen}) {
   const [squad,setSquad] = useState("industria");
   const cur = curSprint();
-  const sqColor = SQUAD_COLOR[squad];
+  const sqColor = squad==="all" ? {h:"#5b8dee",rgb:"91,141,238"} : SQUAD_COLOR[squad];
 
-  // Filter demands for selected squad
-  const sqDemands = demands.filter(d=>{
-    const ds = d.squads||(d.squad?[d.squad]:[]);
-    return ds.includes(squad)||d.squad===squad;
-  });
+  // Strict filter — only show tasks that EXPLICITLY belong to this squad
+  const sqDemands = squad==="all"
+    ? demands
+    : demands.filter(d=>{
+        const ds = Array.isArray(d.squads) && d.squads.length>0
+          ? d.squads
+          : [d.squad].filter(Boolean);
+        return ds.includes(squad);
+      });
 
   const inSprint = sqDemands.filter(d=>["aprovada","em_andamento","em_aprovacao","concluida"].includes(d.status)&&d.sprint);
   const pending  = sqDemands.filter(d=>d.status==="pendente");
@@ -1586,12 +1590,11 @@ function QueueView({demands,overrides,onOpen}) {
             <span style={{fontFamily:"var(--mono)"}}>{sprintRange(cur,overrides)}</span>
           </div>
         </div>
-        {/* Global stats */}
         <div style={{display:"flex",gap:6}}>
           {[
-            {l:"Pendentes",v:demands.filter(d=>d.status==="pendente").length,c:"#f59e0b"},
-            {l:"Ativas",v:demands.filter(d=>["aprovada","em_andamento","em_aprovacao"].includes(d.status)).length,c:"#5b8dee"},
-            {l:"Concluídas",v:demands.filter(d=>d.status==="concluida").length,c:"#3ecf8e"},
+            {l:"Pendentes", v:demands.filter(d=>d.status==="pendente").length,            c:"#f59e0b"},
+            {l:"Ativas",    v:demands.filter(d=>["aprovada","em_andamento","em_aprovacao"].includes(d.status)).length, c:"#5b8dee"},
+            {l:"Concluídas",v:demands.filter(d=>d.status==="concluida").length,           c:"#3ecf8e"},
           ].map(({l,v,c})=>(
             <div key={l} style={{padding:"6px 12px",background:"var(--s2)",border:"1px solid var(--border)",borderRadius:8,textAlign:"center"}}>
               <div style={{fontSize:16,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
@@ -1602,20 +1605,45 @@ function QueueView({demands,overrides,onOpen}) {
       </div>
 
       {/* Squad tabs */}
-      <div style={{display:"flex",gap:4,marginBottom:24,background:"var(--s1)",padding:4,borderRadius:12,border:"1px solid var(--border)",width:"fit-content"}}>
+      <div style={{display:"flex",gap:4,marginBottom:24,background:"var(--s1)",padding:4,borderRadius:12,border:"1px solid var(--border)",width:"fit-content",flexWrap:"wrap"}}>
+
+        {/* Todos */}
+        <button onClick={()=>setSquad("all")}
+          style={{display:"flex",alignItems:"center",gap:7,padding:"8px 14px",borderRadius:9,
+            border:`1px solid ${squad==="all"?"rgba(91,141,238,.5)":"transparent"}`,
+            background:squad==="all"?"rgba(91,141,238,.1)":"transparent",
+            cursor:"pointer",transition:"all .18s",color:"inherit"}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={squad==="all"?"#5b8dee":"var(--t3)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span style={{fontSize:13,fontWeight:squad==="all"?700:500,color:squad==="all"?"#5b8dee":"var(--t2)"}}>Todos</span>
+          <span style={{fontSize:10,padding:"1px 6px",borderRadius:999,background:"rgba(255,255,255,.06)",color:"var(--t3)"}}>{demands.length}</span>
+        </button>
+
+        <div style={{width:1,background:"var(--border)",margin:"4px 0"}}/>
+
+        {/* Per squad */}
         {SQUADS.map(s=>{
           const c=SQUAD_COLOR[s]; const active=s===squad;
-          const pend=demands.filter(d=>(d.squads||[d.squad]).includes(s)&&d.status==="pendente").length;
+          // Count only tasks explicitly in this squad
+          const count = demands.filter(d=>{
+            const ds = Array.isArray(d.squads)&&d.squads.length>0 ? d.squads : [d.squad].filter(Boolean);
+            return ds.includes(s);
+          }).length;
+          const pend = demands.filter(d=>{
+            const ds = Array.isArray(d.squads)&&d.squads.length>0 ? d.squads : [d.squad].filter(Boolean);
+            return ds.includes(s) && d.status==="pendente";
+          }).length;
           return(
             <button key={s} onClick={()=>setSquad(s)}
-              style={{display:"flex",alignItems:"center",gap:8,padding:"8px 16px",borderRadius:9,
+              style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",borderRadius:9,
                 border:`1px solid ${active?c.h+"50":"transparent"}`,
                 background:active?`rgba(${c.rgb},.1)`:"transparent",
                 cursor:"pointer",transition:"all .18s",color:"inherit"}}>
-              <span style={{fontSize:16}}>{SQUAD_ICON[s]}</span>
+              <span style={{fontSize:15}}>{SQUAD_ICON[s]}</span>
               <div style={{textAlign:"left"}}>
-                <div style={{fontSize:13,fontWeight:active?700:500,color:active?c.h:"var(--t2)",transition:"color .15s"}}>{SQUAD_LABEL[s]}</div>
-                {pend>0&&<div style={{fontSize:9,color:"#f59e0b",fontWeight:600}}>{pend} pendente{pend>1?"s":""}</div>}
+                <div style={{fontSize:13,fontWeight:active?700:500,color:active?c.h:"var(--t2)"}}>{SQUAD_LABEL[s]}</div>
+                <div style={{fontSize:9,color:pend>0?"#f59e0b":"var(--t3)",fontWeight:600}}>
+                  {count} task{count!==1?"s":""}{pend>0?` · ${pend} pend.`:""}
+                </div>
               </div>
             </button>
           );
@@ -1624,7 +1652,7 @@ function QueueView({demands,overrides,onOpen}) {
 
       {/* Main content */}
       {sqDemands.length===0
-        ? <EmptySlate icon={SQUAD_ICON[squad]} title={`Nenhuma task para ${SQUAD_LABEL[squad]}`} sub="Tasks aprovadas e pendentes aparecerão aqui."/>
+        ? <EmptySlate icon={squad==="all"?"📭":SQUAD_ICON[squad]} title={squad==="all"?"Nenhuma demanda ainda":`Nenhuma task para ${SQUAD_LABEL[squad]}`} sub={squad==="all"?"Quando usuários enviarem tasks, elas aparecerão aqui.":"Este squad ainda não tem demandas."}/>
         : <div style={{display:"flex",flexDirection:"column",gap:20}}>
 
             {/* Sprint sections */}
