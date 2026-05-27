@@ -1762,7 +1762,6 @@ function QueueView({demands,overrides,onOpen}) {
                         </div>
                       )}
                       {(()=>{
-                        const hols = local[sp] ? holidaysInRange(local[sp].start||toISO(sprintDates(sp,overrides).start), local[sp]?.end||toISO(sprintDates(sp,overrides).end)) : holidaysInRange(toISO(sprintDates(sp,overrides).start), toISO(sprintDates(sp,overrides).end));
                         const hols2 = holidaysInRange(toISO(sprintDates(sp,overrides).start), toISO(sprintDates(sp,overrides).end));
                         if(!hols2.length) return null;
                         return <div style={{marginTop:5,display:"flex",gap:4,flexWrap:"wrap"}}>
