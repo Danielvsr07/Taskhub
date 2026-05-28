@@ -45,17 +45,19 @@ const session = {
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
-const SQUADS = ["industria","reparadores","inovacao"];
-const SQUAD_LABEL = { industria:"Indústria", reparadores:"Reparadores", inovacao:"Inovação" };
+const SQUADS = ["industria","reparadores","inovacao","produto"];
+const SQUAD_LABEL = { industria:"Indústria", reparadores:"Reparadores", inovacao:"Inovação", produto:"Produto" };
 const SQUAD_ICON  = {
   industria:   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg>,
   reparadores: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>,
   inovacao:    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>,
+  produto:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>,
 };
 const SQUAD_COLOR = {
   industria:   { h:"#00c9a7", rgb:"0,201,167" },
   reparadores: { h:"#f7971e", rgb:"247,151,30" },
   inovacao:    { h:"#a78bfa", rgb:"167,139,250" },
+  produto:     { h:"#38bdf8", rgb:"56,189,248" },
 };
 const PRIO_LABEL = { critica:"Crítica", alta:"Alta", media:"Média", baixa:"Baixa" };
 const PRIO_COLOR = { critica:"#ef4444", alta:"#f97316", media:"#eab308", baixa:"#22c55e" };
@@ -88,7 +90,7 @@ const ADMIN_EMAILS = ["daniel.cunha@oficinabrasil.com.br"];
 // ─────────────────────────────────────────────────────────────────────────────
 // SPRINT HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
-const SPRINT_ANCHOR = new Date("2025-01-06T12:00:00"); // noon to avoid timezone shift
+const SPRINT_ANCHOR = new Date("2025-01-13T12:00:00"); // Sprint 36 = 18/05/2026
 function sprintNum(date = new Date()) {
   const d = new Date(date); d.setHours(12,0,0,0);
   return Math.max(1, Math.floor((d - SPRINT_ANCHOR) / (14 * 86400000)) + 1);
@@ -653,7 +655,13 @@ function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}
   const [editing,setEditing] = useState(false);
   const [viewerIdx,setViewerIdx] = useState(null); // index into imgFiles
   const [zoom,setZoom] = useState(1);
-  const [form,setForm]     = useState({title:demand.title,description:demand.description,team:demand.team||"",priority:demand.priority,tag:demand.tag,squad:demand.squad,squads:demand.squads||(demand.squad?[demand.squad]:[])});
+  const [form,setForm] = useState({
+    title:demand.title, description:demand.description,
+    team:demand.team||"", priority:demand.priority,
+    tag:demand.tag, squad:demand.squad,
+    squads:demand.squads||(demand.squad?[demand.squad]:[]),
+    sprint:demand.sprint||null
+  });
   const [saving,setSaving] = useState(false);
 
   // All image files
@@ -771,7 +779,15 @@ function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}
     );
   }
 
-  async function save() { setSaving(true); await onEdit(demand.id,form); setSaving(false); setEditing(false); }
+  async function save() {
+    setSaving(true);
+    await onEdit(demand.id, {
+      ...form,
+      squad: form.squads?.[0]||form.squad,
+    });
+    setSaving(false);
+    setEditing(false);
+  }
 
   const topComments    = comments.filter(c=>!c.parent_id);
   const getReplies     = id => comments.filter(c=>c.parent_id===id);
@@ -900,16 +916,59 @@ function TaskModal({demand,overrides,onClose,canEdit,onEdit,isAdmin,currentUser}
                 :<div style={{fontSize:14,lineHeight:1.85,color:"var(--t2)",whiteSpace:"pre-wrap",padding:"12px 14px",background:"var(--s1)",borderRadius:10,border:"1px solid var(--border)",marginTop:6}}>{demand.description}</div>
               }
               {editing&&(
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginTop:14}}>
-                  <div><FieldLabel>Time</FieldLabel><input className="input" value={form.team} onChange={fe("team")} placeholder="Ex.: Operações"/></div>
-                  <div><FieldLabel>Prioridade</FieldLabel>
+                <div style={{display:"flex",flexDirection:"column",gap:14,marginTop:14}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                    <div><FieldLabel>Time</FieldLabel><input className="input" value={form.team} onChange={fe("team")} placeholder="Ex.: Operações"/></div>
+                    <div><FieldLabel>Prioridade</FieldLabel>
+                      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>
+                        {Object.entries(PRIO_LABEL).map(([k,v])=>(
+                          <button key={k} onClick={()=>setForm(p=>({...p,priority:k}))} className="btn" style={{padding:"5px 9px",borderRadius:7,fontSize:11,fontWeight:700,border:`1px solid ${form.priority===k?PRIO_COLOR[k]:"var(--border)"}`,background:form.priority===k?`${PRIO_COLOR[k]}15`:"var(--s1)",color:form.priority===k?PRIO_COLOR[k]:"var(--t3)"}}>{v}</button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Squad */}
+                  <div>
+                    <FieldLabel>Squads</FieldLabel>
                     <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>
-                      {Object.entries(PRIO_LABEL).map(([k,v])=>(
-                        <button key={k} onClick={()=>setForm(p=>({...p,priority:k}))} className="btn" style={{padding:"5px 9px",borderRadius:7,fontSize:11,fontWeight:700,border:`1px solid ${form.priority===k?PRIO_COLOR[k]:"var(--border)"}`,background:form.priority===k?`${PRIO_COLOR[k]}15`:"var(--s1)",color:form.priority===k?PRIO_COLOR[k]:"var(--t3)"}}>{v}</button>
+                      {SQUADS.map(s=>{
+                        const c=SQUAD_COLOR[s];
+                        const sel=(form.squads||[]).includes(s);
+                        return(
+                          <button key={s} onClick={()=>{
+                            const cur=form.squads||[];
+                            const next=sel?(cur.length>1?cur.filter(x=>x!==s):cur):[...cur,s];
+                            setForm(p=>({...p,squads:next,squad:next[0]||s}));
+                          }} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:sel?700:400,
+                            border:`1px solid ${sel?c.h+"60":"var(--border)"}`,
+                            background:sel?`rgba(${c.rgb},.12)`:"var(--s1)",
+                            color:sel?c.h:"var(--t2)",cursor:"pointer",transition:"all .15s"}}>
+                            {SQUAD_ICON[s]} {SQUAD_LABEL[s]}
+                            {sel&&(form.squads||[])[0]===s&&<span style={{fontSize:9,padding:"1px 5px",borderRadius:999,background:`rgba(${c.rgb},.2)`}}>principal</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Sprint */}
+                  <div>
+                    <FieldLabel>Sprint</FieldLabel>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6,alignItems:"center"}}>
+                      <button onClick={()=>setForm(p=>({...p,sprint:null}))} style={{padding:"5px 10px",borderRadius:7,fontSize:11,fontWeight:!form.sprint?700:400,border:`1px solid ${!form.sprint?"#f59e0b":"var(--border)"}`,background:!form.sprint?"rgba(245,158,11,.12)":"var(--s1)",color:!form.sprint?"#fbbf24":"var(--t3)",cursor:"pointer"}}>
+                        Sem sprint
+                      </button>
+                      {Array.from({length:8},(_,i)=>curSprint()+i-1).map(sp=>(
+                        <button key={sp} onClick={()=>setForm(p=>({...p,sprint:sp}))} style={{padding:"5px 10px",borderRadius:7,fontSize:11,fontWeight:form.sprint===sp?700:400,fontFamily:"var(--mono)",border:`1px solid ${form.sprint===sp?"#38bdf8":"var(--border)"}`,background:form.sprint===sp?"rgba(56,189,248,.12)":"var(--s1)",color:form.sprint===sp?"#38bdf8":"var(--t3)",cursor:"pointer"}}>
+                          {sp}{sp===curSprint()?" ●":""}
+                        </button>
                       ))}
                     </div>
                   </div>
-                  <div style={{gridColumn:"1/-1"}}><FieldLabel>Tipo</FieldLabel>
+
+                  {/* Tipo */}
+                  <div><FieldLabel>Tipo</FieldLabel>
                     <div style={{display:"flex",gap:8,marginTop:6}}>
                       {Object.entries(TAG_LABEL).map(([k,v])=>(
                         <button key={k} onClick={()=>setForm(p=>({...p,tag:k}))} className="btn" style={{padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:600,border:`1px solid ${form.tag===k?TAG_COLOR[k]:"var(--border)"}`,background:form.tag===k?`${TAG_COLOR[k]}15`:"var(--s1)",color:form.tag===k?TAG_COLOR[k]:"var(--t3)"}}>{TAG_ICON[k]} {v}</button>
@@ -1482,7 +1541,7 @@ export default function App() {
         <TaskModal
           demand={taskModal} overrides={overrides}
           onClose={()=>setTaskModal(null)}
-          canEdit={taskModal.status==="pendente"&&(taskModal.user_id===user?.id||taskModal.user_email===user?.email)}
+          canEdit={taskModal.status==="pendente"&&(taskModal.user_id===user?.id||taskModal.user_email===user?.email)||isAdmin||isMod}
           onEdit={handleEditDemand}
           isAdmin={isAdmin}
           currentUser={user}
